@@ -817,6 +817,8 @@ def helpCmd(message):
     response+= "\n> "
     response+= "\n> **!reset**"
     response+= "\n>    DO NOT USE UNLESS ASKED.  Generates a final graph for use with !lastweek and resets all data for all users"
+    response+= "\n> "
+    response+= "\n> turbot created by TheAstropath"
 
     return response
 
