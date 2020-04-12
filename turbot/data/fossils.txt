@@ -1,0 +1,73 @@
+acanthostega
+amber
+ammonite
+ankylo skull
+ankylo tail
+ankylo torso
+anomalocaris
+archaeopteryx
+archelon skull
+archelon tail
+australopith
+brachio chest
+brachio pelvis
+brachio skull
+brachio tail
+coprolite
+deinony tail
+deinony torso
+dimetrodon skull
+dimetrodon torso
+dinosaur track
+diplo chest
+diplo neck
+diplo pelvis
+diplo skull
+diplo tail
+diplo tail tip
+dunkleosteus
+eusthenopteron
+iguanodon skull
+iguanodon tail
+iguanodon torso
+juramaia
+left megalo side
+left ptera wing
+left quetzal wing
+mammoth skull
+mammoth torso
+megacero skull
+megacero tail
+megacero torso
+myllokunmingia
+ophthalmo skull
+ophthalmo torso
+pachy skull
+pachy tail
+parasaur skull
+parasaur tail
+parasaur torso
+plesio body
+plesio skull
+plesio tail
+ptera body
+quetzal torso
+right megalo side
+right ptera wing
+right quetzal wing
+sabertooth skull
+sabertooth tail
+shark-tooth pattern
+spino skull
+spino tail
+spino torso
+stego skull
+stego tail
+stego torso
+t. rex skull
+t. rex tail
+t. rex torso
+tricera skull
+tricera tail
+tricera torso
+trilobite
