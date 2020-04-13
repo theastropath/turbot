@@ -425,7 +425,7 @@ def generateGraph(message, user,graphname):
 def graphCmd(message):
     print("Generate graph")
     response = "__**Historical Graph for "
-    
+
     splitmsg = message.content.split(" ")
     lookupName = ""
 
@@ -465,7 +465,8 @@ def turnippatternCmd(message):
     splitmsg = message.content.split(" ")
 
     if len(splitmsg) < 3 or len(splitmsg) > 3:
-        response = "Please only provide Daisy Mae's price and your Monday morning price"
+        response = "Please provide Daisy Mae's price and your Monday morning price\n"
+        response+= "eg. !turnippattern <buy price> <Monday morning sell price>"
     else:
         buyprice = splitmsg[1]
         mondayprice = splitmsg[2]
@@ -911,8 +912,12 @@ async def on_message(message):
         response = bestBuyCmd(message) 
 
     if message.content.startswith("!graph"):
-        response = graphCmd(message)
-        attachment = discord.File(graphcmdFile)
+        #Graph generation isn't instantaneous,
+        #so show that the bot is typing for
+        #some feedback
+        async with message.channel.typing():
+            response = graphCmd(message)
+            attachment = discord.File(graphcmdFile)
 
     if message.content.startswith("!clear"):
         response = clearCmd(message)
