@@ -754,6 +754,44 @@ def fossilsearchCmd(message):
 
     return response
 
+def fossilcountCmd(message):
+    print("Provide fossil counts for users")
+    response = ""
+
+    splitmsg = message.content.split(" ")
+
+    if len(splitmsg) == 1:
+        response = "Please provide at least one user name to search for a fossil count"
+    else:
+        searchuserstr = " ".join(splitmsg[1:])
+        searchusers = searchuserstr.split(",")
+        
+        valid = []
+        invalid = []
+
+        for user in searchusers:
+            searchname = user.strip()
+            username = lookupUserName(message,searchname)
+            if username == None:
+                invalid.append(searchname)
+            else:
+                userid = lookupIdByName(message,username)
+                valid.append((username,userid))
+
+        if len(valid)>0:
+            response+="__**Fossil Count**__\n"
+            for user in valid:
+                fossils = loadFossilFileToList(str(user[1])+".txt")
+                response+="> **"+user[0]+"** has "+str(len(fossils))+" fossils remaining\n"
+            response+="\n"
+
+        if len(invalid)>0:
+            response+="__**Did not recognize the following names**__\n"
+            for user in invalid:
+                response+="> "+user+"\n"
+
+    return response
+
 def fossilhelpCmd(message):
     print("Fossil help")
     response = "__**Turbot Fossil Help!**__"
@@ -774,6 +812,9 @@ def fossilhelpCmd(message):
     response+= "\n> "
     response+= "\n> **!fossilsearch <list of fossils>**"
     response+= "\n>    Searches all users to see who needs the listed fossils.  The names must match the in-game item name, and more than one can be provided if separated by commas"
+    response+= "\n> "
+    response+= "\n> **!fossilcount <list of users>**"
+    response+= "\n>    Provides a count of the number of fossils remaining for the comma-separated list of users"
     return response
 
 def helpCmd(message):
@@ -907,6 +948,9 @@ async def on_message(message):
 
     if message.content.startswith("!fossilsearch"):
         response = fossilsearchCmd(message)
+
+    if message.content.startswith("!fossilcount"):
+        response = fossilcountCmd(message)
 
 
     if response != None:
