@@ -390,7 +390,9 @@ def generateGraph(message, user,graphname):
             if price[0]=="sell":
                 prices.append(int(price[1]))
                 dates.append(datetime.fromtimestamp(float(price[2])))
-        plt.plot(dates,prices,linestyle="-",marker='o',label=userName)
+
+        if len(dates)>0:
+            plt.plot(dates,prices,linestyle="-",marker='o',label=userName)
 
     else: #Lookup all
         for filename in os.listdir("prices"):
@@ -404,7 +406,8 @@ def generateGraph(message, user,graphname):
                 if price[0]=="sell":
                     prices.append(int(price[1]))
                     dates.append(datetime.fromtimestamp(float(price[2])))
-            plt.plot(dates,prices,linestyle="-",marker='o',label=userName)
+            if len(dates)>0:
+                plt.plot(dates,prices,linestyle="-",marker='o',label=userName)
     
     plt.xticks(rotation=45,ha="right",rotation_mode="anchor")
     plt.subplots_adjust(left=0.05,bottom=0.2,right=0.85)
@@ -420,6 +423,8 @@ def generateGraph(message, user,graphname):
 
     plt.savefig(graphname,dpi=100)
     plt.close('all')
+    
+    return True
 
 
 def graphCmd(message):
@@ -433,12 +438,30 @@ def graphCmd(message):
        #History for specific user
        lookupName = splitmsg[1]
        userId = lookupIdByName(message,lookupName)
+       if userId == None:
+           response = "No user found matching name "+lookupName
+           if os.path.exists(graphcmdFile):
+               #Remove any lingering file so that it doesn't get
+               #attached to the message
+               os.remove(graphcmdFile)
+           return response
+
+       #If we found the user ID, we SHOULD be able to find the name
+       #since the user is likely still in the server.
+       #Theoretically there is a very low probability race-condition here
+       #if the user left the server between the userID lookup and the name
+       #lookup, but I think that is so unlikely I don't want to bother
+       #handling it.  I probably should have just put the check in here
+       #instead of typing out this long comment.
        userName = lookupNameById(message,userId)
        response+=userName+"**__"
     else:
         response+="All Users**__"
 
-    generateGraph(message, lookupName,graphcmdFile)
+    if generateGraph(message, lookupName,graphcmdFile):
+        return response
+    else:
+        response+="\n Could not generate graph"
     
     return response
 
@@ -917,7 +940,8 @@ async def on_message(message):
         #some feedback
         async with message.channel.typing():
             response = graphCmd(message)
-            attachment = discord.File(graphcmdFile)
+            if os.path.exists(graphcmdFile):
+                attachment = discord.File(graphcmdFile)
 
     if message.content.startswith("!clear"):
         response = clearCmd(message)
