@@ -1,0 +1,76 @@
+allfossils: |-
+  __**All Possible Fossils**__
+  >>> $list
+best: '> $name: $price bells at $timestamp'
+bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
+bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
+buy: Logged buying price of $price for user $name.
+buy_no_params: Please include buying price after command name.
+buy_nonnumeric_price: Buying price must be a number.
+buy_nonpositive_price: Buying price must be greater than zero.
+clear: '**Cleared history for $name.**'
+collect_bad: |-
+  Did not recognize the following fossils:
+  > $items
+collect_dupe: |-
+  The following fossils had already been collected:
+  > $items
+collect_new: |-
+  Marked the following fossils as collected:
+  > $items
+collect_no_params: Please provide the name of a fossil to mark as collected.
+collectedfossils: |-
+  __**$count Fossils donated by $name**__
+  >>> $items
+did_you_mean: 'Did you mean: $possible?'
+fossilcount_invalid: '> $name'
+fossilcount_invalid_header: __**Did not recognize the following names**__
+fossilcount_no_params: Please provide at least one user name to search for a fossil count.
+fossilcount_valid: '> **$name** has $count fossils remaining.'
+fossilcount_valid_header: __**Fossil Count**__
+fossilsearch_header: __**Fossil Search**__
+fossilsearch_no_params: Please provide the name of a fossil to lookup users that don't have it.
+fossilsearch_noneed: No one currently needs this.
+fossilsearch_row: '> $name needs: $fossils'
+graph_all_users: __**Historical Graph for All Users**__
+graph_user: __**Historical Graph for $name**__
+hello: Hello!
+history_buy: '> Can buy turnips from Daisy Mae for $price bells at $timestamp'
+history_header: __**Historical info for $name**__
+history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
+lastweek: __**Historical Graph from Last Week**__
+lastweek_none: No graph from last week.
+listfossils: |-
+  __**$count Fossils remaining for $name**__
+  >>> $items
+lookup: $user_id
+lookup_no_params: Please provide the name of a user to lookup.
+oops: '**Deleting last logged price for $name.**'
+reset: '**Resetting data for a new week!**'
+sell_higher_price: Logged selling price of $price for user $name. (Higher than last selling price of $last_price bells)
+sell_lower_price: Logged selling price of $price for user $name. (Lower than last selling price of $last_price bells)
+sell_new_price: Logged selling price of $price for user $name.
+sell_no_params: Please include selling price after command name.
+sell_nonnumeric_price: Selling price must be a number.
+sell_nonpositive_price: Selling price must be greater than zero.
+sell_same_price: Logged selling price of $price for user $name. (Same as last selling price)
+turnippattern_bad_params: |-
+  Please provide Daisy Mae's price and your Monday morning price
+  eg. !turnippattern <buy price> <Monday morning sell price>
+turnippattern_header: 'Based on your prices, you will see one of the following patterns this week:'
+turnippattern_nonnumeric_price: Prices must be numbers.
+turnippattern_pattern1: '> **Random**: Prices are completely random. Sell when it goes over your buying price.'
+turnippattern_pattern2: '> **Decreasing**: Prices will continuously fall.'
+turnippattern_pattern3: '> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.'
+turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.'
+uncollect_already: |-
+  The following fossils were already marked as not collected:
+  > $items
+uncollect_bad: |-
+  Did not recognize the following fossils:
+  > $items
+uncollect_deleted: |-
+  Unmarked the following fossils as collected:
+  > $items
+uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
+user_cant_find: Can not find the user named $name in this channel.
