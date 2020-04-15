@@ -103,6 +103,8 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot, "FOSSILS_FILE", tmp_path / "fossils.csv")
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
+    monkeypatch.setattr(turbot, "PRICES_DATA", None)
+    monkeypatch.setattr(turbot, "FOSSILS_DATA", None)
     freezer.move_to(NOW)
     return turbot.Turbot(CLIENT_TOKEN, [AUTHORIZED_CHANNEL])
 
