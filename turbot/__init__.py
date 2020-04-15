@@ -343,7 +343,7 @@ class Turbot(discord.Client):
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
         idx = buys.groupby(by="author")["timestamp"].idxmax()
         prices = buys.loc[idx]
-        prices.to_csv(PRICES_FILE, index=False)
+        save_prices(prices)
         return s("reset"), None
 
     def lastweek_command(self, channel, author, params):
@@ -426,7 +426,7 @@ class Turbot(discord.Client):
 
         prices = load_prices()
         prices = prices.drop(prices[prices.author == target_id].tail(1).index)
-        prices.to_csv(PRICES_FILE, index=False)
+        save_prices(prices)
         return s("oops", name=target_name), None
 
     def clear_command(self, channel, author, params):
@@ -434,7 +434,7 @@ class Turbot(discord.Client):
         user_id = discord_user_id(channel, str(author))
         prices = load_prices()
         prices = prices[prices.author != user_id]
-        prices.to_csv(PRICES_FILE, index=False)
+        save_prices(prices)
         return s("clear", name=author), None
 
     def _best(self, channel, author, kind):
