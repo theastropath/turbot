@@ -3,7 +3,6 @@
 import inspect
 import logging
 import sys
-import time
 from collections import defaultdict
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
@@ -227,7 +226,6 @@ def paginate(text):
     remaining = text
     while len(remaining) > 2000:
         breakpoint = 1999
-        foundnewline = False
 
         for char in breakpoints:
             index = remaining.rfind(char, 1800, 1999)

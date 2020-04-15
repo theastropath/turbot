@@ -1,16 +1,17 @@
 import os
 import random
-import time
 from collections import defaultdict
-from contextlib import asynccontextmanager, redirect_stdout
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
+from os import chdir
+from os.path import abspath, dirname, join, pardir, realpath, split
 from pathlib import Path
+from subprocess import run
 from unittest.mock import MagicMock
 
 import pytest
 import pytz
 from callee import Matching, String
-from yaml import load
 
 import turbot
 
@@ -22,6 +23,9 @@ AUTHORIZED_CHANNEL = "good channel"
 UNAUTHORIZED_CHANNEL = "bad channel"
 
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
+
+SRC_ROOT = Path(dirname(realpath(__file__))).parent
+SRC_DIRS = ["tests", "turbot"]
 
 
 class Member:
@@ -933,3 +937,23 @@ class TestTurbot:
             f"> {PUNK.name}",
             None,
         )
+
+
+class TestCodebase:
+    def test_flake8(self):
+        """Assures that the Python codebase passes configured Flake8 checks."""
+        chdir(SRC_ROOT)
+        proc = run(["flake8", "--select", "BLK", *SRC_DIRS], capture_output=True)
+        assert proc.returncode == 0, f"Flake8 issues:\n{proc.stdout.decode('utf-8')}"
+
+    def test_black(self):
+        """Assures that the Python codebase passes configured black checks."""
+        chdir(SRC_ROOT)
+        proc = run(["black", "--check", *SRC_DIRS], capture_output=True)
+        assert proc.returncode == 0, f"black issues:\n{proc.stdout.decode('utf-8')}"
+
+    def test_isort(self):
+        """Assures that the Python codebase imports are correctly sorted."""
+        chdir(SRC_ROOT)
+        proc = run(["isort", "-df", "-rc", "-c", *SRC_DIRS], capture_output=True)
+        assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"

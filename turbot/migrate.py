@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-import time
 from pathlib import Path
 
 import pandas as pd
-import pytz
 
 from turbot import FOSSILS, load_fossils, load_prices, save_fossils, save_prices
 
