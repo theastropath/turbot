@@ -579,7 +579,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             "__**Historical Graph for All Users**__", Matching(is_discord_file)
         )
-        graph.assert_called_with(channel, "", turbot.GRAPHCMD_FILE)
+        graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
 
     async def test_on_message_graph_with_user(self, client, graph):
@@ -634,7 +634,7 @@ class TestTurbot:
 
         await client.on_message(Message(someone(), channel, "!reset"))
         channel.sent.assert_called_with(f"**Resetting data for a new week!**", None)
-        lastweek.assert_called_with(channel, "", turbot.LASTWEEKCMD_FILE)
+        lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
 
         await client.on_message(Message(someone(), channel, "!lastweek"))
@@ -679,7 +679,7 @@ class TestTurbot:
             f"{BUDDY.id},buy,122,{later}\n",
             f"{GUY.id},buy,102,{later}\n",
         ]
-        lastweek.assert_called_with(channel, "", turbot.LASTWEEKCMD_FILE)
+        lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         Path(turbot.LASTWEEKCMD_FILE).exists()
 
     async def test_on_message_collect_no_list(self, client):
