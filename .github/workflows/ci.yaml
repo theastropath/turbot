@@ -4,6 +4,7 @@ on: [push]
 
 jobs:
   build:
+<<<<<<< HEAD
 
     runs-on: ubuntu-latest
     strategy:
@@ -14,6 +15,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v1
+=======
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-python@v1
+      with:
+        python-version: '3.7'
+>>>>>>> Adds github ci workflow
     - name: Install tox
       run: pip install tox
     - name: Run tox
