@@ -50,3 +50,11 @@ $ migrate
 ```
 
 The script can be run multiple times without corrupting or duplicating data. Any existing new format data will be merged with the old format data and saved.
+
+### Formatting and linting
+
+Codebase consistency is maintained by the industry standard too [black](https://black.readthedocs.io/en/stable/). For linting we use [flake8](https://flake8.pycqa.org/en/latest/) with the [flake8-black](https://pypi.org/project/flake8-black/) support plugin. Imports are kept in order by [isort](https://timothycrosley.github.io/isort/). The included test suite can run these tools against the codebase and report on any errors:
+
+```bash
+$ tox -- -k codebase
+```
