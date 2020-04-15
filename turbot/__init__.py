@@ -208,11 +208,21 @@ def get_last_price(user_id):
 
 def paginate(text):
     """Discord responses must be 2000 characters of less; paginate can break them up."""
+    breakpoints=["\n",".",",","-"," "]
     remaining = text
-    while remaining:
-        yield remaining[0:1999]
-        remaining = remaining[2000:]
+    while len(remaining)>2000:
+        breakpoint = 1999
+        foundnewline = False
 
+        for char in breakpoints:
+            index = remaining.rfind(char,1800,1999)
+            if index != -1:
+                breakpoint = index
+                break
+        
+        yield remaining[0:breakpoint]
+        remaining = remaining[breakpoint+1:]
+    yield remaining
 
 class Turbot(discord.Client):
     """Discord turnip bot"""
