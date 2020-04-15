@@ -32,6 +32,8 @@ PRICES_FILE = "prices.csv"
 FOSSILS_FILE = "fossils.csv"
 GRAPHCMD_FILE = "graphcmd.png"
 LASTWEEKCMD_FILE = "lastweek.png"
+PRICES_DATA = None
+FOSSILS_DATA = None
 
 with open(Path(ROOT) / "data" / "strings.yaml") as f:
     STRINGS = load(f, Loader=Loader)
@@ -90,20 +92,29 @@ def build_prices():
 
 def save_prices(data):
     """Saves the given prices data to csv file."""
-    data.to_csv(PRICES_FILE, index=False)
+    global PRICES_DATA
+    PRICES_DATA = data
+    PRICES_DATA.to_csv(PRICES_FILE, index=False)
 
 
 def load_prices():
     """Returns a DataFrame of price data or creates an empty one if there isn't any."""
-    try:
-        return pd.read_csv(PRICES_FILE).astype({"timestamp": "datetime64[ns, UTC]"})
-    except FileNotFoundError:
-        return build_prices()
+    global PRICES_DATA
+    if PRICES_DATA is None:
+        try:
+            PRICES_DATA = pd.read_csv(PRICES_FILE).astype(
+                {"timestamp": "datetime64[ns, UTC]"}
+            )
+        except FileNotFoundError:
+            PRICES_DATA = build_prices()
+    return PRICES_DATA
 
 
 def save_fossils(data):
     """Saves the given fossils data to csv file."""
-    data.to_csv(FOSSILS_FILE, index=False)
+    global FOSSILS_DATA
+    FOSSILS_DATA = data
+    FOSSILS_DATA.to_csv(FOSSILS_FILE, index=False)
 
 
 def build_fossils():
@@ -113,10 +124,13 @@ def build_fossils():
 
 def load_fossils():
     """Returns a DataFrame of fossils data or creates an empty one if there isn't any."""
-    try:
-        return pd.read_csv(FOSSILS_FILE)
-    except FileNotFoundError:
-        return build_fossils()
+    global FOSSILS_DATA
+    if FOSSILS_DATA is None:
+        try:
+            FOSSILS_DATA = pd.read_csv(FOSSILS_FILE)
+        except FileNotFoundError:
+            FOSSILS_DATA = build_fossils()
+    return FOSSILS_DATA
 
 
 def generate_graph(channel, user, graphname):
@@ -194,7 +208,8 @@ def append_price(author, kind, price):
         pd.DataFrame(
             columns=prices.columns,
             data=[[author.id, kind, price, datetime.now(pytz.utc)]],
-        )
+        ),
+        ignore_index=True,
     )
     save_prices(prices)
 
@@ -208,21 +223,22 @@ def get_last_price(user_id):
 
 def paginate(text):
     """Discord responses must be 2000 characters of less; paginate can break them up."""
-    breakpoints=["\n",".",",","-"," "]
+    breakpoints = ["\n", ".", ",", "-", " "]
     remaining = text
-    while len(remaining)>2000:
+    while len(remaining) > 2000:
         breakpoint = 1999
         foundnewline = False
 
         for char in breakpoints:
-            index = remaining.rfind(char,1800,1999)
+            index = remaining.rfind(char, 1800, 1999)
             if index != -1:
                 breakpoint = index
                 break
-        
+
         yield remaining[0:breakpoint]
-        remaining = remaining[breakpoint+1:]
+        remaining = remaining[breakpoint + 1 :]
     yield remaining
+
 
 class Turbot(discord.Client):
     """Discord turnip bot"""
@@ -478,7 +494,7 @@ class Turbot(discord.Client):
         new_names = list(set(valid) - set(dupes))
         new_data = [[author.id, name] for name in new_names]
         new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
-        fossils = fossils.append(new_fossils)
+        fossils = fossils.append(new_fossils, ignore_index=True)
         save_fossils(fossils)
 
         lines = []
