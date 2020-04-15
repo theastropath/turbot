@@ -417,15 +417,11 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def oops_command(self, channel, author, params):
-        """Remove the last logged turnip price. If no user is specified, it will clear your own last logged price. | [user]"""
-        target = author.id if not params else params[0]
+        """Remove your last logged turnip price."""
+        target = author.id
         target_name = discord_user_name(channel, target)
-        target_id = discord_user_id(channel, target_name)
-        if not target_name or not target_id:
-            return s("user_cant_find", name=target), None
-
         prices = load_prices()
-        prices = prices.drop(prices[prices.author == target_id].tail(1).index)
+        prices = prices.drop(prices[prices.author == author.id].tail(1).index)
         save_prices(prices)
         return s("oops", name=target_name), None
 

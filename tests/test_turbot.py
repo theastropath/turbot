@@ -369,29 +369,7 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_oops_bad_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-
-        # first log some buy and sell prices
-        await client.on_message(Message(author, channel, "!buy 1"))
-        await client.on_message(Message(author, channel, "!sell 2"))
-        await client.on_message(Message(author, channel, "!buy 3"))
-
-        # then try to remove the last line for a user that isn't there
-        message = Message(author, channel, f"!oops {PUNK.name}")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
-        )
-        assert lines(turbot.PRICES_FILE) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},buy,1,{NOW}\n",
-            f"{author.id},sell,2,{NOW}\n",
-            f"{author.id},buy,3,{NOW}\n",
-        ]
-
-    async def test_on_message_oops_without_name(self, client, lines):
+    async def test_on_message_oops(self, client, lines):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
@@ -410,30 +388,6 @@ class TestTurbot:
             "author,kind,price,timestamp\n",
             f"{author.id},buy,1,{NOW}\n",
             f"{author.id},sell,2,{NOW}\n",
-        ]
-
-    async def test_on_message_oops_with_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 1"))
-        await client.on_message(Message(FRIEND, channel, "!sell 2"))
-        await client.on_message(Message(FRIEND, channel, "!buy 3"))
-        await client.on_message(Message(BUDDY, channel, "!buy 4"))
-        await client.on_message(Message(BUDDY, channel, "!sell 5"))
-
-        # then ensure we can remove the last entered price
-        message = Message(BUDDY, channel, f"!oops {FRIEND.name}")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"**Deleting last logged price for {FRIEND}.**", None
-        )
-        assert lines(turbot.PRICES_FILE) == [
-            "author,kind,price,timestamp\n",
-            f"{FRIEND.id},buy,1,{NOW}\n",
-            f"{FRIEND.id},sell,2,{NOW}\n",
-            f"{BUDDY.id},buy,4,{NOW}\n",
-            f"{BUDDY.id},sell,5,{NOW}\n",
         ]
 
     async def test_on_message_history_bad_name(self, client):
