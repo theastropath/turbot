@@ -302,7 +302,7 @@ class Turbot(discord.Client):
                 title = f"{title} {params}"
             usage += f"\n> **{title}**"
             usage += f"\n>    {use}"
-            usage += f"\n> "
+            usage += "\n> "
         usage += "\n> turbot created by TheAstropath"
         return usage, None
 
