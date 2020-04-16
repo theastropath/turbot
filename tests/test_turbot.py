@@ -1,10 +1,9 @@
-import os
 import random
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from os import chdir
-from os.path import abspath, dirname, join, pardir, realpath, split
+from os.path import dirname, realpath
 from pathlib import Path
 from subprocess import run
 from unittest.mock import MagicMock
@@ -485,21 +484,21 @@ class TestTurbot:
         message = Message(someone(), channel, "!turnippattern 100 86")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Decreasing**: Prices will continuously fall.\n> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",
+            "Based on your prices, you will see one of the following patterns this week:\n> **Decreasing**: Prices will continuously fall.\n> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
         message = Message(someone(), channel, "!turnippattern 100 99")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Random**: Prices are completely random. Sell when it goes over your buying price.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",
+            "Based on your prices, you will see one of the following patterns this week:\n> **Random**: Prices are completely random. Sell when it goes over your buying price.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
         message = Message(someone(), channel, "!turnippattern 100 22")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",
+            "Based on your prices, you will see one of the following patterns this week:\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
@@ -771,21 +770,7 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**All Possible Fossils**__\n"
-            ">>> acanthostega, amber, ammonite, ankylo skull, ankylo tail, ankylo torso, "
-            "anomalocaris, archaeopteryx, archelon skull, archelon tail, australopith, "
-            "brachio chest, brachio pelvis, brachio skull, brachio tail, coprolite, "
-            "deinony tail, deinony torso, dimetrodon skull, dimetrodon torso, dinosaur "
-            "track, diplo chest, diplo neck, diplo pelvis, diplo skull, diplo tail, diplo "
-            "tail tip, dunkleosteus, eusthenopteron, iguanodon skull, iguanodon tail, "
-            "iguanodon torso, juramaia, left megalo side, left ptera wing, left quetzal "
-            "wing, mammoth skull, mammoth torso, megacero skull, megacero tail, megacero "
-            "torso, myllokunmingia, ophthalmo skull, ophthalmo torso, pachy skull, pachy "
-            "tail, parasaur skull, parasaur tail, parasaur torso, plesio body, plesio "
-            "skull, plesio tail, ptera body, quetzal torso, right megalo side, right "
-            "ptera wing, right quetzal wing, sabertooth skull, sabertooth tail, "
-            "shark-tooth pattern, spino skull, spino tail, spino torso, stego skull, "
-            "stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso, tricera "
-            "skull, tricera tail, tricera torso, trilobite",
+            ">>> acanthostega, amber, ammonite, ankylo skull, ankylo tail, ankylo torso, anomalocaris, archaeopteryx, archelon skull, archelon tail, australopith, brachio chest, brachio pelvis, brachio skull, brachio tail, coprolite, deinony tail, deinony torso, dimetrodon skull, dimetrodon torso, dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo skull, diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, iguanodon skull, iguanodon tail, iguanodon torso, juramaia, left megalo side, left ptera wing, left quetzal wing, mammoth skull, mammoth torso, megacero skull, megacero tail, megacero torso, myllokunmingia, ophthalmo skull, ophthalmo torso, pachy skull, pachy tail, parasaur skull, parasaur tail, parasaur torso, plesio body, plesio skull, plesio tail, ptera body, quetzal torso, right megalo side, right ptera wing, right quetzal wing, sabertooth skull, sabertooth tail, shark-tooth pattern, spino skull, spino tail, spino torso, stego skull, stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso, tricera skull, tricera tail, tricera torso, trilobite",  # noqa: E501
             None,
         )
 
@@ -943,7 +928,7 @@ class TestCodebase:
     def test_flake8(self):
         """Assures that the Python codebase passes configured Flake8 checks."""
         chdir(SRC_ROOT)
-        proc = run(["flake8", "--select", "BLK", *SRC_DIRS], capture_output=True)
+        proc = run(["flake8", *SRC_DIRS], capture_output=True)
         assert proc.returncode == 0, f"Flake8 issues:\n{proc.stdout.decode('utf-8')}"
 
     def test_black(self):

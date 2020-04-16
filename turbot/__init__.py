@@ -286,13 +286,17 @@ class Turbot(discord.Client):
         logging.debug("logged in as %s", self.user)
 
     def help_command(self, channel, author, params):
-        """Shows this help screen."""
+        """
+        Shows this help screen.
+        """
         members = inspect.getmembers(self, predicate=inspect.ismethod)
         commands = [member[1] for member in members if member[0].endswith("_command")]
         usage = "__**Turbot Help!**__"
         for command in commands:
             doc = command.__doc__.split("|")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
+            use = inspect.cleandoc(use)
+
             title = f"!{command.__name__.replace('_command', '')}"
             if params:
                 title = f"{title} {params}"
@@ -303,11 +307,15 @@ class Turbot(discord.Client):
         return usage, None
 
     def hello_command(self, channel, author, params):
-        """Says hello to you."""
+        """
+        Says hello to you.
+        """
         return s("hello"), None
 
     def lookup_command(self, channel, author, params):
-        """Gets a user's id given a name. | <name>"""
+        """
+        Gets a user's id given a name. | <name>
+        """
         if not params:
             return s("lookup_no_params"), None
         name = " ".join(params)
@@ -315,7 +323,9 @@ class Turbot(discord.Client):
         return s("lookup", user_id=user_id), None
 
     def sell_command(self, channel, author, params):
-        """Log the price that you can sell turnips for on your island. | <price>"""
+        """
+        Log the price that you can sell turnips for on your island. | <price>
+        """
         if not params:
             return s("sell_no_params"), None
 
@@ -344,7 +354,9 @@ class Turbot(discord.Client):
         return s(key, price=price, name=author, last_price=last_price), None
 
     def buy_command(self, channel, author, params):
-        """Log the price that you can buy turnips from Daisy Mae on your island. | <price>"""
+        """
+        Log the price that you can buy turnips from Daisy Mae on your island. | <price>
+        """
         if not params:
             return s("buy_no_params"), None
 
@@ -361,7 +373,10 @@ class Turbot(discord.Client):
         return s("buy", price=price, name=author), None
 
     def reset_command(self, channel, author, params):
-        """DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and resets all data for all users."""
+        """
+        DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and
+        resets all data for all users.
+        """
         generate_graph(channel, None, LASTWEEKCMD_FILE)
         prices = load_prices()
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
@@ -371,13 +386,18 @@ class Turbot(discord.Client):
         return s("reset"), None
 
     def lastweek_command(self, channel, author, params):
-        """Displays the final graph from the last week before the data was reset."""
+        """
+        Displays the final graph from the last week before the data was reset.
+        """
         if not Path(LASTWEEKCMD_FILE).exists():
             return s("lastweek_none"), None
         return s("lastweek"), discord.File(LASTWEEKCMD_FILE)
 
     def graph_command(self, channel, author, params):
-        """Generates a graph of turnip prices for all users. If a user is specified, only graph that users prices. | [user]"""
+        """
+        Generates a graph of turnip prices for all users. If a user is specified, only
+        graph that users prices. | [user]
+        """
         if not params:
             generate_graph(channel, None, GRAPHCMD_FILE)
             return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
@@ -391,7 +411,11 @@ class Turbot(discord.Client):
         return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
 
     def turnippattern_command(self, channel, author, params):
-        """Calculates the patterns you will see in your shop based on Daisy Mae's price on your island and your Monday morning sell price. | <Sunday Buy Price> <Monday Morning Sell Price>"""
+        """
+        Calculates the patterns you will see in your shop based on Daisy Mae's price
+        on your island and your Monday morning sell price. |
+        <Sunday Buy Price> <Monday Morning Sell Price>
+        """
         if len(params) != 2:
             return s("turnippattern_bad_params"), None
 
@@ -424,7 +448,10 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def history_command(self, channel, author, params):
-        """Show the historical turnip prices for a user. If no user is specified, it will display your own prices. | [user]"""
+        """
+        Show the historical turnip prices for a user. If no user is specified, it will
+        display your own prices. | [user]
+        """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
@@ -441,7 +468,9 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def oops_command(self, channel, author, params):
-        """Remove your last logged turnip price."""
+        """
+        Remove your last logged turnip price.
+        """
         target = author.id
         target_name = discord_user_name(channel, target)
         prices = load_prices()
@@ -450,7 +479,9 @@ class Turbot(discord.Client):
         return s("oops", name=target_name), None
 
     def clear_command(self, channel, author, params):
-        """Clears all of your own historical turnip prices."""
+        """
+        Clears all of your own historical turnip prices.
+        """
         user_id = discord_user_id(channel, str(author))
         prices = load_prices()
         prices = prices[prices.author != user_id]
@@ -470,15 +501,23 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def bestbuy_command(self, channel, author, params):
-        """Finds the best (and most recent) buying prices logged in the last 12 hours."""
+        """
+        Finds the best (and most recent) buying prices logged in the last 12 hours.
+        """
         return self._best(channel, author, "buy")
 
     def bestsell_command(self, channel, author, params):
-        """Finds the best (and most recent) selling prices logged in the last 12 hours."""
+        """
+        Finds the best (and most recent) selling prices logged in the last 12 hours.
+        """
         return self._best(channel, author, "sell")
 
     def collect_command(self, channel, author, params):
-        """Mark fossils as donated to your museum. The names must match the in-game item name, and more than one can be provided if separated by commas. | <list of fossils>"""
+        """
+        Mark fossils as donated to your museum. The names must match the in-game item
+        name, and more than one can be provided if separated by commas.
+        | <list of fossils>
+        """
         if not params:
             return s("collect_no_params"), None
 
@@ -505,7 +544,11 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def uncollect_command(self, channel, author, params):
-        """Unmark fossils as donated to your museum. The names must match the in-game item name, and more than one can be provided if separated by commas. | <list of fossils>"""
+        """
+        Unmark fossils as donated to your museum. The names must match the in-game item
+        name, and more than one can be provided if separated by commas.
+        | <list of fossils>
+        """
         if not params:
             return s("uncollect_no_params"), None
 
@@ -531,7 +574,11 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def fossilsearch_command(self, channel, author, params):
-        """Searches all users to see who needs the listed fossils. The names must match the in-game item name, and more than one can be provided if separated by commas. | <list of fossils>"""
+        """
+        Searches all users to see who needs the listed fossils. The names must match the
+        in-game item name, and more than one can be provided if separated by commas.
+        | <list of fossils>
+        """
         if not params:
             return s("fossilsearch_no_params"), None
 
@@ -559,11 +606,16 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     def allfossils_command(self, channel, author, params):
-        """Shows all possible fossils that you can donate to the museum."""
+        """
+        Shows all possible fossils that you can donate to the museum.
+        """
         return s("allfossils", list=", ".join(sorted(FOSSILS))), None
 
     def listfossils_command(self, channel, author, params):
-        """Lists all fossils that you still need to donate. If a user is provided, it gives the same information for that user instead. | [user]"""
+        """
+        Lists all fossils that you still need to donate. If a user is provided, it gives
+        the same information for that user instead. | [user]
+        """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
@@ -585,7 +637,10 @@ class Turbot(discord.Client):
         )
 
     def collectedfossils_command(self, channel, author, params):
-        """Lists all fossils that you have already donated. If a user is provided, it gives the same information for that user instead. | [user]"""
+        """
+        Lists all fossils that you have already donated. If a user is provided, it
+        gives the same information for that user instead. | [user]
+        """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
@@ -607,7 +662,10 @@ class Turbot(discord.Client):
         )
 
     def fossilcount_command(self, channel, author, params):
-        """Provides a count of the number of fossils remaining for the comma-separated list of users. | <list of users>"""
+        """
+        Provides a count of the number of fossils remaining for the comma-separated list
+        of users. | <list of users>
+        """
         if not params:
             return s("fossilcount_no_params"), None
 
