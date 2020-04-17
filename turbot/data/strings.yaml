@@ -66,7 +66,7 @@ turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Price
 uncollect_already: |-
   The following fossils were already marked as not collected:
   > $items
-uncollect_bad: |-
+fossil_bad: |-
   Did not recognize the following fossils:
   > $items
 uncollect_deleted: |-
