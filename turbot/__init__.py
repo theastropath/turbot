@@ -248,6 +248,20 @@ def paginate(text):
     yield remaining
 
 
+def is_turbot_admin(channel, user):
+    """Checks to see if user has the Turbot Admin role in this server"""
+
+    # Is there a way to go from User to Member to roles?
+    # member.roles
+    member = channel.guild.get_member(user.id)
+    if member:  # Since the user sent a message, they should be a member
+        for role in member.roles:
+            if str(role) == "Turbot Admin":
+                return True
+
+    return False
+
+
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
@@ -372,6 +386,11 @@ class Turbot(discord.Client):
         DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and
         resets all data for all users.
         """
+
+        # Disabled until role is added on our server...
+        # if not is_turbot_admin(channel,author):
+        #    return "User is not a Turbot Admin", None
+
         generate_graph(channel, None, LASTWEEKCMD_FILE)
         prices = load_prices()
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
