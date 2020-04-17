@@ -909,7 +909,8 @@ class TestTurbot:
         message = Message(author, channel, "!collectedfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull",
+            f"__**3 Fossils donated by {author}**__\n"
+            ">>> amber, ammonite, ankylo skull",
             None,
         )
 
