@@ -222,7 +222,12 @@ def append_price(author, kind, price):
 def get_last_price(user_id):
     """Returns the last sell price for the given user id."""
     prices = load_prices()
-    last = prices[prices.author == user_id].sort_values(by=["timestamp"]).tail(1).price
+    last = (
+        prices[(prices.author == user_id) & (prices.kind == "sell")]
+        .sort_values(by=["timestamp"])
+        .tail(1)
+        .price
+    )
     return int(last) if last.any() else None
 
 
