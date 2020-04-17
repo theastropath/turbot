@@ -990,6 +990,33 @@ class TestTurbot:
             None,
         )
 
+    async def test_get_last_price(self, client, freezer):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        # when there's no data for the user
+        assert turbot.get_last_price(GUY) is None
+
+        # when there's only buy data
+        freezer.move_to(NOW + timedelta(days=1))
+        await client.on_message(Message(GUY, channel, "!buy 102"))
+        assert turbot.get_last_price(GUY.id) is None
+
+        # when there's sell data for someone else
+        freezer.move_to(NOW + timedelta(days=2))
+        await client.on_message(Message(BUDDY, channel, "!sell 102"))
+        assert turbot.get_last_price(GUY.id) is None
+
+        # when there's one sell price
+        freezer.move_to(NOW + timedelta(days=3))
+        await client.on_message(Message(GUY, channel, "!sell 82"))
+        assert turbot.get_last_price(GUY.id) == 82
+
+        # when there's more than one sell price
+        freezer.move_to(NOW + timedelta(days=4))
+        await client.on_message(Message(GUY, channel, "!sell 45"))
+        await client.on_message(Message(GUY, channel, "!sell 98"))
+        assert turbot.get_last_price(GUY.id) == 98
+
 
 class TestCodebase:
     def test_flake8(self):
