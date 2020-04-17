@@ -28,6 +28,7 @@ matplotlib.use("Agg")
 
 ROOT = dirname(realpath(__file__))
 PRICES_FILE = "prices.csv"
+DATESTAMP_PRICES_FILE = "prices-%Y-%m-%d.csv"
 FOSSILS_FILE = "fossils.csv"
 GRAPHCMD_FILE = "graphcmd.png"
 LASTWEEKCMD_FILE = "lastweek.png"
@@ -90,11 +91,15 @@ def build_prices():
     )
 
 
-def save_prices(data):
+def save_prices(data, filename=None):
     """Saves the given prices data to csv file."""
     global PRICES_DATA
+
+    if filename == None:
+        filename = PRICES_FILE
+
     PRICES_DATA = data
-    PRICES_DATA.to_csv(PRICES_FILE, index=False)
+    PRICES_DATA.to_csv(filename, index=False)
 
 
 def load_prices():
@@ -372,8 +377,10 @@ class Turbot(discord.Client):
         DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and
         resets all data for all users.
         """
+        backupFileName = datetime.now().strftime(str(DATESTAMP_PRICES_FILE))
         generate_graph(channel, None, LASTWEEKCMD_FILE)
         prices = load_prices()
+        save_prices(prices, filename=backupFileName)  # Create a backup...
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
         idx = buys.groupby(by="author")["timestamp"].idxmax()
         prices = buys.loc[idx]
