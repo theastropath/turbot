@@ -8,6 +8,8 @@ buy: Logged buying price of $price for user $name.
 buy_no_params: Please include buying price after command name.
 buy_nonnumeric_price: Buying price must be a number.
 buy_nonpositive_price: Buying price must be greater than zero.
+cant_find_buy: There is no recent buy price for $name.
+cant_find_user: Can not find the user named $name in this channel.
 clear: '**Cleared history for $name.**'
 collect_bad: |-
   Did not recognize the following fossils:
@@ -23,6 +25,9 @@ collectedfossils: |-
   __**$count Fossils donated by $name**__
   >>> $items
 did_you_mean: 'Did you mean: $possible?'
+fossil_bad: |-
+  Did not recognize the following fossils:
+  > $items
 fossilcount_invalid: '> $name'
 fossilcount_invalid_header: __**Did not recognize the following names**__
 fossilcount_no_params: Please provide at least one user name to search for a fossil count.
@@ -46,6 +51,7 @@ listfossils: |-
 lookup: $user_id
 lookup_no_params: Please provide the name of a user to lookup.
 oops: '**Deleting last logged price for $name.**'
+predict: '$name''s turnip prediction link: $url'
 reset: '**Resetting data for a new week!**'
 sell_higher_price: Logged selling price of $price for user $name. (Higher than last selling price of $last_price bells)
 sell_lower_price: Logged selling price of $price for user $name. (Lower than last selling price of $last_price bells)
@@ -66,13 +72,7 @@ turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Price
 uncollect_already: |-
   The following fossils were already marked as not collected:
   > $items
-fossil_bad: |-
-  Did not recognize the following fossils:
-  > $items
 uncollect_deleted: |-
   Unmarked the following fossils as collected:
   > $items
 uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
-cant_find_user: Can not find the user named $name in this channel.
-cant_find_buy: There is no recent buy price for $name.
-predict: "$name's turnip prediction link: $url"
