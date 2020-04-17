@@ -732,7 +732,7 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", "1,ammonite\n"]
+        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", f"{author.id},ammonite\n"]
 
     async def test_on_message_allfossils(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
