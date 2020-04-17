@@ -158,36 +158,22 @@ class TestTurbot:
         invalid_channel_type = "voice"
         channel = Channel(invalid_channel_type, AUTHORIZED_CHANNEL)
         author = someone()
-        message = Message(author, channel, "!hello")
+        message = Message(author, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
 
     async def test_on_message_from_admin(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(ADMIN, channel, "!hello")
+        message = Message(ADMIN, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
 
     async def test_on_message_in_unauthorized_channel(self, client):
         channel = Channel("text", UNAUTHORIZED_CHANNEL)
         author = someone()
-        message = Message(author, channel, "!hello")
+        message = Message(author, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
-
-    async def test_on_message_hello(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-        message = Message(author, channel, "!hello")
-        await client.on_message(message)
-        channel.sent.assert_called_with("Hello!", None)
-
-    async def test_on_message_hello_prefix(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-        message = Message(author, channel, "!hell")
-        await client.on_message(message)
-        channel.sent.assert_called_with("Hello!", None)
 
     async def test_on_message_ambiguous_request(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -195,24 +181,8 @@ class TestTurbot:
         message = Message(author, channel, "!h")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did you mean: !hello, !help, !history?", None,
+            "Did you mean: !help, !history?", None,
         )
-
-    async def test_on_message_lookup_no_params(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, "!lookup")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Please provide the name of a user to lookup.", None
-        )
-
-    async def test_on_message_lookup(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-        target = someone()
-        message = Message(author, channel, f"!lookup {target.name}")
-        await client.on_message(message)
-        channel.sent.assert_called_with(f"{target.id}", None)
 
     async def test_on_message_sell_no_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)

@@ -307,22 +307,6 @@ class Turbot(discord.Client):
         usage += "\n> turbot created by TheAstropath"
         return usage, None
 
-    def hello_command(self, channel, author, params):
-        """
-        Says hello to you.
-        """
-        return s("hello"), None
-
-    def lookup_command(self, channel, author, params):
-        """
-        Gets a user's id given a name. | <name>
-        """
-        if not params:
-            return s("lookup_no_params"), None
-        name = " ".join(params)
-        user_id = discord_user_id(channel, name)
-        return s("lookup", user_id=user_id), None
-
     def sell_command(self, channel, author, params):
         """
         Log the price that you can sell turnips for on your island. | <price>
