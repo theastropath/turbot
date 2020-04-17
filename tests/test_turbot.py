@@ -106,6 +106,7 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot, "FOSSILS_FILE", tmp_path / "fossils.csv")
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
+    monkeypatch.setattr(turbot, "DATESTAMP_PRICES_FILE", tmp_path / "prices-%Y-%m-%d.csv")
     monkeypatch.setattr(turbot, "PRICES_DATA", None)
     monkeypatch.setattr(turbot, "FOSSILS_DATA", None)
     freezer.move_to(NOW)
@@ -609,7 +610,9 @@ class TestTurbot:
             f"{GUY.id},buy,102,{later}\n",
         ]
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
-        Path(turbot.LASTWEEKCMD_FILE).exists()
+        assert Path(turbot.LASTWEEKCMD_FILE).exists()
+        datestampfilename = datetime.now().strftime(str(turbot.DATESTAMP_PRICES_FILE))
+        assert Path(datestampfilename).exists()
 
     async def test_on_message_collect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
