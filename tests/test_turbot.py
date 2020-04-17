@@ -175,20 +175,6 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_not_called()
 
-    async def test_on_message_hello(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-        message = Message(author, channel, "!hello")
-        await client.on_message(message)
-        channel.sent.assert_called_with("Hello!", None)
-
-    async def test_on_message_hello_prefix(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        author = someone()
-        message = Message(author, channel, "!hell")
-        await client.on_message(message)
-        channel.sent.assert_called_with("Hello!", None)
-
     async def test_on_message_ambiguous_request(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
