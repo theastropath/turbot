@@ -33,6 +33,7 @@ GRAPHCMD_FILE = "graphcmd.png"
 LASTWEEKCMD_FILE = "lastweek.png"
 PRICES_DATA = None
 FOSSILS_DATA = None
+PROPHET_URL = "https://turnipprophet.io/?prices="
 
 with open(Path(ROOT) / "data" / "strings.yaml") as f:
     STRINGS = load(f, Loader=Loader)
@@ -405,7 +406,7 @@ class Turbot(discord.Client):
         user_id = discord_user_id(channel, params[0])
         user_name = discord_user_name(channel, user_id)
         if not user_id or not user_name:
-            return s("user_cant_find", name=params[0]), None
+            return s("cant_find_user", name=params[0]), None
 
         generate_graph(channel, user_name, GRAPHCMD_FILE)
         return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
@@ -456,7 +457,7 @@ class Turbot(discord.Client):
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
         if not target_name or not target_id:
-            return s("user_cant_find", name=target), None
+            return s("cant_find_user", name=target), None
 
         prices = load_prices()
         yours = prices[prices.author == target_id]
@@ -620,7 +621,7 @@ class Turbot(discord.Client):
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
         if not target_name or not target_id:
-            return s("user_cant_find", name=target), None
+            return s("cant_find_user", name=target), None
 
         fossils = load_fossils()
         yours = fossils[fossils.author == target_id]
@@ -645,7 +646,7 @@ class Turbot(discord.Client):
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
         if not target_name or not target_id:
-            return s("user_cant_find", name=target), None
+            return s("cant_find_user", name=target), None
 
         fossils = load_fossils()
         yours = fossils[fossils.author == target_id]
@@ -695,6 +696,45 @@ class Turbot(discord.Client):
             for user in invalid:
                 lines.append(s("fossilcount_invalid", name=user))
         return "\n".join(lines), None
+
+    def predict_command(self, channel, author, params):
+        """
+        Get a link to a prediction calulator for a price history. | [user]
+        """
+        target = author.id if not params else params[0]
+        target_name = discord_user_name(channel, target)
+        target_id = discord_user_id(channel, target_name)
+        if not target_name or not target_id:
+            return s("cant_find_user", name=target), None
+
+        prices = load_prices()
+        past = datetime.now(pytz.utc) - timedelta(days=12)
+        yours = prices[(prices.author == target_id) & (prices.timestamp > past)]
+        yours = yours.sort_values(by=["timestamp"])
+
+        recent_buy = yours[yours.kind == "buy"].tail(1)
+        if recent_buy.empty:
+            return s("cant_find_buy", name=target_name)
+
+        buy_date = np.datetime64(recent_buy.timestamp.values[0])
+        buy_price = int(recent_buy.price)
+
+        sells = yours[yours.kind == "sell"]
+        groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
+        sell_data = {}
+        for day, df in groups:
+            days_since_buy = (day.tz_convert(None) - buy_date).days
+            sell_data[days_since_buy] = df.price.values.tolist()[0:2]
+
+        sequence = [""] * 12
+        for day in range(0, 6):
+            if day in sell_data:
+                sequence[day * 2] = sell_data[day][0]
+                if len(sell_data[day]) > 1:
+                    sequence[day * 2 + 1] = sell_data[day][1]
+
+        query = f"{buy_price}.{'.'.join(str(i) for i in sequence)}".rstrip(".")
+        return f"{PROPHET_URL}{query}", None
 
 
 def get_token():
