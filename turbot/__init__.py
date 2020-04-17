@@ -588,15 +588,11 @@ class Turbot(discord.Client):
         invalid = items - valid
 
         fossils = load_fossils()
-        # I think we should still show if the searcher needs the fossil being
-        # searched for, just in case they missed it.
-        # theirs = fossils[fossils.author != author.id]
-        theirs = fossils
-        them = theirs.author.unique()
+        users = fossils.author.unique()
         results = defaultdict(list)
         for fossil in valid:
-            havers = theirs[theirs.name == fossil].author.unique()
-            needers = np.setdiff1d(them, havers).tolist()
+            havers = fossils[fossils.name == fossil].author.unique()
+            needers = np.setdiff1d(users, havers).tolist()
             for needer in needers:
                 name = discord_user_from_id(channel, needer)
                 results[name].append(fossil)
