@@ -588,36 +588,32 @@ class Turbot(discord.Client):
         invalid = items - valid
 
         fossils = load_fossils()
-        # I think we should still show if the searcher needs the fossil being
-        # searched for, just in case they missed it.
-        # theirs = fossils[fossils.author != author.id]
-        theirs = fossils
-        them = theirs.author.unique()
+        users = fossils.author.unique()
         results = defaultdict(list)
         for fossil in valid:
-            havers = theirs[theirs.name == fossil].author.unique()
-            needers = np.setdiff1d(them, havers).tolist()
+            havers = fossils[fossils.name == fossil].author.unique()
+            needers = np.setdiff1d(users, havers).tolist()
             for needer in needers:
                 name = discord_user_from_id(channel, needer)
                 results[name].append(fossil)
 
-        if not results:
-            if len(invalid) > 0:
-                lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
-            else:
-                lines = [s("fossilsearch_noneed")]
+        if not results and not invalid:
+            return s("fossilsearch_noneed"), None
 
+        if not results and invalid:
+            lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
+            if valid:
+                lines.append(
+                    s("fossilsearch_row", name="No one", fossils=", ".join(sorted(valid)))
+                )
             return "\n".join(lines), None
 
         lines = [s("fossilsearch_header")]
         for name, needed in results.items():
             need_list = fossils = ", ".join(sorted(needed))
             lines.append(s("fossilsearch_row", name=name, fossils=need_list))
-
-        if len(invalid) > 0:
-            lines.append(" ")
+        if invalid:
             lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-
         return "\n".join(lines), None
 
     def allfossils_command(self, channel, author, params):
