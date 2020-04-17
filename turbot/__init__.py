@@ -588,9 +588,9 @@ class Turbot(discord.Client):
         invalid = items - valid
 
         fossils = load_fossils()
-        #I think we should still show if the searcher needs the fossil being
-        #searched for, just in case they missed it.
-        #theirs = fossils[fossils.author != author.id]
+        # I think we should still show if the searcher needs the fossil being
+        # searched for, just in case they missed it.
+        # theirs = fossils[fossils.author != author.id]
         theirs = fossils
         them = theirs.author.unique()
         results = defaultdict(list)
@@ -603,21 +603,21 @@ class Turbot(discord.Client):
 
         if not results:
             if len(invalid) > 0:
-                lines=[s("fossil_bad", items=", ".join(sorted(invalid)))]
+                lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
             else:
                 lines = [s("fossilsearch_noneed")]
-               
+
             return "\n".join(lines), None
 
         lines = [s("fossilsearch_header")]
         for name, needed in results.items():
             need_list = fossils = ", ".join(sorted(needed))
             lines.append(s("fossilsearch_row", name=name, fossils=need_list))
-        
+
         if len(invalid) > 0:
             lines.append(" ")
             lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-            
+
         return "\n".join(lines), None
 
     def allfossils_command(self, channel, author, params):
@@ -728,7 +728,7 @@ class Turbot(discord.Client):
 
         recent_buy = yours[yours.kind == "buy"].tail(1)
         if recent_buy.empty:
-            return s("cant_find_buy", name=target_name),None
+            return s("cant_find_buy", name=target_name), None
 
         buy_date = np.datetime64(recent_buy.timestamp.values[0])
         buy_price = int(recent_buy.price)
