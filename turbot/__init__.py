@@ -597,23 +597,23 @@ class Turbot(discord.Client):
                 name = discord_user_from_id(channel, needer)
                 results[name].append(fossil)
 
-        if not results:
-            if len(invalid) > 0:
-                lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
-            else:
-                lines = [s("fossilsearch_noneed")]
+        if not results and not invalid:
+            return s("fossilsearch_noneed"), None
 
+        if not results and invalid:
+            lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
+            if valid:
+                lines.append(
+                    s("fossilsearch_row", name="No one", fossils=", ".join(sorted(valid)))
+                )
             return "\n".join(lines), None
 
         lines = [s("fossilsearch_header")]
         for name, needed in results.items():
             need_list = fossils = ", ".join(sorted(needed))
             lines.append(s("fossilsearch_row", name=name, fossils=need_list))
-
-        if len(invalid) > 0:
-            lines.append(" ")
+        if invalid:
             lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-
         return "\n".join(lines), None
 
     def allfossils_command(self, channel, author, params):
