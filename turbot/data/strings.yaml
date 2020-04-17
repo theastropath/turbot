@@ -39,7 +39,6 @@ fossilsearch_noneed: No one currently needs this.
 fossilsearch_row: '> $name needs: $fossils'
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
-hello: Hello!
 history_buy: '> Can buy turnips from Daisy Mae for $price bells at $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
@@ -48,8 +47,6 @@ lastweek_none: No graph from last week.
 listfossils: |-
   __**$count Fossils remaining for $name**__
   >>> $items
-lookup: $user_id
-lookup_no_params: Please provide the name of a user to lookup.
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
 reset: '**Resetting data for a new week!**'
