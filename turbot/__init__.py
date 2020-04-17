@@ -728,13 +728,14 @@ class Turbot(discord.Client):
 
         sequence = [""] * 12
         for day in range(0, 6):
-            if day in sell_data:
+            if day in sell_data and sell_data[day]:
                 sequence[day * 2] = sell_data[day][0]
                 if len(sell_data[day]) > 1:
                     sequence[day * 2 + 1] = sell_data[day][1]
 
         query = f"{buy_price}.{'.'.join(str(i) for i in sequence)}".rstrip(".")
-        return f"{PROPHET_URL}{query}", None
+        url = f"{PROPHET_URL}{query}"
+        return s("predict", name=target_name, url=url), None
 
 
 def get_token():

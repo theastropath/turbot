@@ -923,8 +923,33 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_predict(self, client):
-        pass  # TODO: write tests for this command
+    async def test_on_message_predict(self, client, freezer):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        await client.on_message(Message(author, channel, "!buy 110"))
+
+        freezer.move_to(NOW + timedelta(days=1))
+        await client.on_message(Message(author, channel, "!sell 100"))
+        await client.on_message(Message(author, channel, "!sell 95"))
+
+        freezer.move_to(NOW + timedelta(days=2))
+        await client.on_message(Message(author, channel, "!sell 90"))
+        await client.on_message(Message(author, channel, "!sell 85"))
+
+        freezer.move_to(NOW + timedelta(days=4))
+        await client.on_message(Message(author, channel, "!sell 90"))
+
+        freezer.move_to(NOW + timedelta(days=5))
+        await client.on_message(Message(author, channel, "!sell 120"))
+
+        message = Message(author, channel, "!predict")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"{author}'s turnip prediction link: "
+            "https://turnipprophet.io/?prices=110...100.95.90.85...90..120",
+            None,
+        )
 
 
 class TestCodebase:
