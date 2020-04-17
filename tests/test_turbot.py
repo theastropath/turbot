@@ -710,6 +710,26 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with("No one currently needs this.", None)
 
+    async def test_on_message_fossilsearch_no_need_with_bad(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        # first collect some valid fossils
+        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(Message(BUDDY, channel, "!collect amber, ammonite"))
+        await client.on_message(
+            Message(GUY, channel, "!collect amber, ammonite, coprolite")
+        )
+
+        # then search for things that no one needs
+        message = Message(PUNK, channel, "!fossilsearch amber, ammonite, unicorn bits")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Did not recognize the following fossils:\n"
+            "> unicorn bits\n"
+            "> No one needs: amber, ammonite",
+            None,
+        )
+
     async def test_on_message_fossilsearch(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
@@ -731,6 +751,41 @@ class TestTurbot:
             f"> {GUY} needs: ankylo skull",
         }
         assert not attachment
+
+    async def test_on_message_fossilsearch_with_bad(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        # first collect some valid fossils
+        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(Message(BUDDY, channel, "!collect amber"))
+        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
+
+        # then search for some things
+        message = Message(
+            PUNK, channel, "!fossilsearch amber, ammonite, ankylo skull, unicorn bits"
+        )
+        await client.on_message(message)
+        last_call = channel.sent.call_args_list[-1][0]
+        response, attachment = last_call[0], last_call[1]
+        lines = response.split("\n")
+        assert lines[0] == "__**Fossil Search**__"
+        assert set(lines[1:]) == {
+            "Did not recognize the following fossils:",
+            "> unicorn bits",
+            f"> {FRIEND} needs: ankylo skull",
+            f"> {BUDDY} needs: ammonite, ankylo skull",
+            f"> {GUY} needs: ankylo skull",
+        }
+        assert not attachment
+
+    async def test_on_message_fossilsearch_with_only_bad(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        message = Message(PUNK, channel, "!fossilsearch unicorn bits")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Did not recognize the following fossils:\n> unicorn bits", None
+        )
 
     async def test_on_message_uncollect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
