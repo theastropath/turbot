@@ -200,10 +200,10 @@ class TestTurbot:
 
     async def test_on_message_lookup_no_params(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, f"!lookup")
+        message = Message(someone(), channel, "!lookup")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Please provide the name of a user to lookup.", None
+            "Please provide the name of a user to lookup.", None
         )
 
     async def test_on_message_lookup(self, client):
@@ -217,7 +217,7 @@ class TestTurbot:
     async def test_on_message_sell_no_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
-        message = Message(author, channel, f"!sell")
+        message = Message(author, channel, "!sell")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please include selling price after command name.", None
@@ -226,14 +226,14 @@ class TestTurbot:
     async def test_on_message_sell_nonnumeric_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
-        message = Message(author, channel, f"!sell foot")
+        message = Message(author, channel, "!sell foot")
         await client.on_message(message)
         channel.sent.assert_called_with("Selling price must be a number.", None)
 
     async def test_on_message_sell_nonpositive_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
-        message = Message(author, channel, f"!sell 0")
+        message = Message(author, channel, "!sell 0")
         await client.on_message(message)
         channel.sent.assert_called_with("Selling price must be greater than zero.", None)
 
@@ -586,19 +586,19 @@ class TestTurbot:
         author = someone()
         message = Message(author, channel, "!lastweek")
         await client.on_message(message)
-        channel.sent.assert_called_with(f"No graph from last week.", None)
+        channel.sent.assert_called_with("No graph from last week.", None)
 
     async def test_on_message_lastweek(self, client, freezer, lastweek):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
         await client.on_message(Message(someone(), channel, "!reset"))
-        channel.sent.assert_called_with(f"**Resetting data for a new week!**", None)
+        channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
 
         await client.on_message(Message(someone(), channel, "!lastweek"))
         channel.sent.assert_called_with(
-            f"__**Historical Graph from Last Week**__", Matching(is_discord_file)
+            "__**Historical Graph from Last Week**__", Matching(is_discord_file)
         )
 
     async def test_on_message_reset(self, client, lines, freezer, lastweek):
@@ -629,9 +629,9 @@ class TestTurbot:
         await client.on_message(Message(GUY, channel, "!sell 802"))
 
         # then reset price data
-        message = Message(someone(), channel, f"!reset")
+        message = Message(someone(), channel, "!reset")
         await client.on_message(message)
-        channel.sent.assert_called_with(f"**Resetting data for a new week!**", None)
+        channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         assert lines(turbot.PRICES_FILE) == [
             "author,kind,price,timestamp\n",
             f"{FRIEND.id},buy,102,{later}\n",
@@ -643,10 +643,10 @@ class TestTurbot:
 
     async def test_on_message_collect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, f"!collect")
+        message = Message(someone(), channel, "!collect")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Please provide the name of a fossil to mark as collected.", None
+            "Please provide the name of a fossil to mark as collected.", None
         )
 
     async def test_on_message_collect(self, client, lines):
@@ -688,10 +688,10 @@ class TestTurbot:
 
     async def test_on_message_fossilsearch_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, f"!fossilsearch")
+        message = Message(someone(), channel, "!fossilsearch")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Please provide the name of a fossil to lookup users that don't have it.",
+            "Please provide the name of a fossil to lookup users that don't have it.",
             None,
         )
 
@@ -699,10 +699,10 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, f"!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, f"!collect amber, ammonite"))
+        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(Message(BUDDY, channel, "!collect amber, ammonite"))
         await client.on_message(
-            Message(GUY, channel, f"!collect amber, ammonite, coprolite")
+            Message(GUY, channel, "!collect amber, ammonite, coprolite")
         )
 
         # then search for things that no one needs
@@ -714,12 +714,12 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, f"!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, f"!collect amber"))
-        await client.on_message(Message(GUY, channel, f"!collect amber, ammonite"))
+        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(Message(BUDDY, channel, "!collect amber"))
+        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
 
         # then search for some things
-        message = Message(PUNK, channel, f"!fossilsearch amber, ammonite, ankylo skull")
+        message = Message(PUNK, channel, "!fossilsearch amber, ammonite, ankylo skull")
         await client.on_message(message)
         last_call = channel.sent.call_args_list[-1][0]
         response, attachment = last_call[0], last_call[1]
@@ -734,10 +734,10 @@ class TestTurbot:
 
     async def test_on_message_uncollect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, f"!uncollect")
+        message = Message(someone(), channel, "!uncollect")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Please provide the name of a fossil to mark as uncollected.", None
+            "Please provide the name of a fossil to mark as uncollected.", None
         )
 
     async def test_on_message_uncollect(self, client, lines):
@@ -766,7 +766,7 @@ class TestTurbot:
 
     async def test_on_message_allfossils(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, f"!allfossils")
+        message = Message(someone(), channel, "!allfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**All Possible Fossils**__\n"
@@ -800,7 +800,7 @@ class TestTurbot:
         await client.on_message(message)
 
         # then list them
-        message = Message(author, channel, f"!listfossils")
+        message = Message(author, channel, "!listfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**70 Fossils remaining for {author}**__\n"
@@ -867,7 +867,7 @@ class TestTurbot:
         await client.on_message(message)
 
         # then list them
-        message = Message(author, channel, f"!collectedfossils")
+        message = Message(author, channel, "!collectedfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull",
@@ -894,7 +894,7 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!fossilcount")
+        message = Message(author, channel, "!fossilcount")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide at least one user name to search for a fossil count.", None
@@ -905,9 +905,9 @@ class TestTurbot:
         author = someone()
 
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, f"!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, f"!collect amber"))
-        await client.on_message(Message(GUY, channel, f"!collect amber, ammonite"))
+        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(Message(BUDDY, channel, "!collect amber"))
+        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
 
         # then get fossil counts
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
