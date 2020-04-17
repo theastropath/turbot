@@ -223,7 +223,7 @@ def get_last_price(user_id):
 
 def paginate(text):
     """Discord responses must be 2000 characters of less; paginate can break them up."""
-    breakpoints = ["\n", ".", ",", "-", " "]
+    breakpoints = ["\n", ".", ",", "-"]
     remaining = text
     while len(remaining) > 2000:
         breakpoint = 1999
@@ -234,8 +234,17 @@ def paginate(text):
                 breakpoint = index
                 break
 
+        # A trailing blank quoted line just shows the > symbol, so if possible
+        # we should try bumping that into the remainder if it is present
+        lastnlindex = remaining.rfind("\n", 1800, breakpoint - 1)
+        finalline = remaining[lastnlindex:breakpoint]
+        if finalline.strip() == ">":
+            # the breakpoint should actually be bumped back a bit
+            breakpoint = lastnlindex
+
         yield remaining[0:breakpoint]
         remaining = remaining[breakpoint + 1 :]
+
     yield remaining
 
 
@@ -297,6 +306,7 @@ class Turbot(discord.Client):
             doc = command.__doc__.split("|")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
             use = inspect.cleandoc(use)
+            use = use.replace("\n", "")
 
             title = f"!{command.__name__.replace('_command', '')}"
             if params:
