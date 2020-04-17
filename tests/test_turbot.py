@@ -6,7 +6,7 @@ from os import chdir
 from os.path import dirname, realpath
 from pathlib import Path
 from subprocess import run
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
@@ -43,6 +43,8 @@ GUY = Member("guy", 82988021019836416)
 CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, ADMIN]
 
 PUNK = Member("punk", 119678027792646146)
+
+S_SPY = Mock(wraps=turbot.s)
 
 
 def someone():
@@ -109,6 +111,7 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot, "DATESTAMP_PRICES_FILE", tmp_path / "prices-%Y-%m-%d.csv")
     monkeypatch.setattr(turbot, "PRICES_DATA", None)
     monkeypatch.setattr(turbot, "FOSSILS_DATA", None)
+    monkeypatch.setattr(turbot, "s", S_SPY)
     freezer.move_to(NOW)
     return turbot.Turbot(CLIENT_TOKEN, [AUTHORIZED_CHANNEL])
 
@@ -1010,3 +1013,18 @@ class TestCodebase:
         chdir(SRC_ROOT)
         proc = run(["isort", "-df", "-rc", "-c", *SRC_DIRS], capture_output=True)
         assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"
+
+    # This test will fail in isolation, you must run the full test suite
+    # for it to actually pass. This is because it tracks the usage of
+    # string keys over the entire test session. It can fail for two reasons:
+    #
+    # 1. There's a key in strings.yaml that's not being used at all.
+    # 2. There's a key in strings.yaml that isn't being used in the tests.
+    #
+    # For situation #1 the solution is to remove the key from the config.
+    # As for #2, there should be a new test which utilizes this key.
+    def test_strings(self):
+        """Assues that there are no missing or unused strings data."""
+        used_keys = set(call[0][0] for call in S_SPY.call_args_list)
+        config_keys = set(turbot.STRINGS.keys())
+        assert config_keys - used_keys == set()
