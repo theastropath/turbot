@@ -16,7 +16,7 @@ import turbot
 
 CLIENT_TOKEN = "my-token"
 CLIENT_USER = "ADMIN"
-CLIENT_USER_ID = 0
+CLIENT_USER_ID = 82226367030108160
 
 AUTHORIZED_CHANNEL = "good channel"
 UNAUTHORIZED_CHANNEL = "bad channel"
@@ -37,12 +37,12 @@ class Member:
 
 
 ADMIN = Member(CLIENT_USER, CLIENT_USER_ID)
-FRIEND = Member("friend", 1)
-BUDDY = Member("buddy", 2)
-GUY = Member("guy", 3)
+FRIEND = Member("friend", 82169952898912256)
+BUDDY = Member("buddy", 82942320688758784)
+GUY = Member("guy", 82988021019836416)
 CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, ADMIN]
 
-PUNK = Member("punk", 4)
+PUNK = Member("punk", 119678027792646146)
 
 
 def someone():
@@ -817,7 +817,18 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", "1,ammonite\n"]
+        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", f"{author.id},ammonite\n"]
+
+    async def test_on_message_uncollect_with_only_bad(self, client, lines):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        fossils = "a foot, unicorn bits"
+        message = Message(author, channel, f"!uncollect {fossils}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Did not recognize the following fossils:\n> a foot, unicorn bits", None
+        )
 
     async def test_on_message_allfossils(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
