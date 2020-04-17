@@ -923,6 +923,9 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_predict(self, client):
+        pass  # TODO: write tests for this command
+
 
 class TestCodebase:
     def test_flake8(self):

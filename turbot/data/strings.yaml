@@ -73,4 +73,5 @@ uncollect_deleted: |-
   Unmarked the following fossils as collected:
   > $items
 uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
-user_cant_find: Can not find the user named $name in this channel.
+cant_find_user: Can not find the user named $name in this channel.
+cant_find_buy: There is no recent buy price for $name.
