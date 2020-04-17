@@ -495,6 +495,13 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_turnippattern_nonnumeric_prices(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        message = Message(someone(), channel, "!turnippattern something nothing")
+        await client.on_message(message)
+        channel.sent.assert_called_with("Prices must be numbers.", None)
+
     async def test_on_message_graph_without_user(self, client, graph):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
@@ -964,6 +971,14 @@ class TestTurbot:
             "__**Did not recognize the following names**__\n"
             f"> {PUNK.name}",
             None,
+        )
+
+    async def test_on_message_predict_no_buy(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+        await client.on_message(Message(author, channel, "!predict"))
+        channel.sent.assert_called_with(
+            f"There is no recent buy price for {author}.", None
         )
 
     async def test_on_message_predict(self, client, freezer):
