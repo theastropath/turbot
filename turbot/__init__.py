@@ -846,7 +846,7 @@ def main(
     prices_file,
     fossils_file,
 ):
-    auth_channels = [get_channels(auth_channels_file), *channel]
+    auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
         print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
