@@ -637,11 +637,12 @@ class Turbot(discord.Client):
             return s("fossilsearch_noneed"), None
 
         if not results and invalid:
-            lines = [s("fossil_bad", items=", ".join(sorted(invalid)))]
+            lines = [s("fossilsearch_header")]
             if valid:
                 lines.append(
                     s("fossilsearch_row", name="No one", fossils=", ".join(sorted(valid)))
                 )
+            lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
             return "\n".join(lines), None
 
         lines = [s("fossilsearch_header")]

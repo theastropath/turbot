@@ -714,9 +714,10 @@ class TestTurbot:
         message = Message(PUNK, channel, "!fossilsearch amber, ammonite, unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
+            "__**Fossil Search**__\n"
+            "> No one needs: amber, ammonite\n"
             "Did not recognize the following fossils:\n"
-            "> unicorn bits\n"
-            "> No one needs: amber, ammonite",
+            "> unicorn bits",
             None,
         )
 
@@ -774,7 +775,9 @@ class TestTurbot:
         message = Message(PUNK, channel, "!fossilsearch unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did not recognize the following fossils:\n> unicorn bits", None
+            "__**Fossil Search**__\n"
+            "Did not recognize the following fossils:\n> unicorn bits",
+            None,
         )
 
     async def test_on_message_uncollect_no_list(self, client):
