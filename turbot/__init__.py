@@ -10,6 +10,7 @@ from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
 
+import click
 import discord
 import matplotlib
 import matplotlib.dates as mdates
@@ -27,19 +28,15 @@ except ImportError:
 matplotlib.use("Agg")
 
 ROOT = dirname(realpath(__file__))
-PRICES_FILE = "prices.csv"
-DATESTAMP_PRICES_FILE = "prices-%Y-%m-%d.csv"
-FOSSILS_FILE = "fossils.csv"
 GRAPHCMD_FILE = "graphcmd.png"
 LASTWEEKCMD_FILE = "lastweek.png"
-PRICES_DATA = None
-FOSSILS_DATA = None
-PROPHET_URL = "https://turnipprophet.io/?prices="
+STRINGS_DATA_FILE = Path(ROOT) / "data" / "strings.yaml"
+FOSSILS_DATA_FILE = Path(ROOT) / "data" / "fossils.txt"
 
-with open(Path(ROOT) / "data" / "strings.yaml") as f:
+with open(STRINGS_DATA_FILE) as f:
     STRINGS = load(f, Loader=Loader)
 
-with open(Path(ROOT) / "data" / "fossils.txt") as f:
+with open(FOSSILS_DATA_FILE) as f:
     FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
 
 
@@ -84,192 +81,195 @@ def discord_user_id(channel, name):
     return getattr(discord_user_from_name(channel, name), "id", None)
 
 
-def build_prices():
-    """Returns an empty DataFrame suitable for storing price data."""
-    return pd.DataFrame(columns=["author", "kind", "price", "timestamp"]).astype(
-        {"timestamp": "datetime64[ns, UTC]"}
-    )
-
-
-def save_prices(data, filename=None):
-    """Saves the given prices data to csv file."""
-    global PRICES_DATA
-
-    if filename == None:
-        filename = PRICES_FILE
-
-    PRICES_DATA = data
-    PRICES_DATA.to_csv(filename, index=False)
-
-
-def load_prices():
-    """Returns a DataFrame of price data or creates an empty one if there isn't any."""
-    global PRICES_DATA
-    if PRICES_DATA is None:
-        try:
-            PRICES_DATA = pd.read_csv(PRICES_FILE).astype(
-                {"timestamp": "datetime64[ns, UTC]"}
-            )
-        except FileNotFoundError:
-            PRICES_DATA = build_prices()
-    return PRICES_DATA
-
-
-def save_fossils(data):
-    """Saves the given fossils data to csv file."""
-    global FOSSILS_DATA
-    FOSSILS_DATA = data
-    FOSSILS_DATA.to_csv(FOSSILS_FILE, index=False)
-
-
-def build_fossils():
-    """Returns an empty DataFrame suitable for storing fossil data."""
-    return pd.DataFrame(columns=["author", "name"])
-
-
-def load_fossils():
-    """Returns a DataFrame of fossils data or creates an empty one if there isn't any."""
-    global FOSSILS_DATA
-    if FOSSILS_DATA is None:
-        try:
-            FOSSILS_DATA = pd.read_csv(FOSSILS_FILE)
-        except FileNotFoundError:
-            FOSSILS_DATA = build_fossils()
-    return FOSSILS_DATA
-
-
-def generate_graph(channel, user, graphname):
-    HOURS = mdates.HourLocator()
-    HOURS_FMT = mdates.DateFormatter("%b %d %H:%M")
-    TWELVEHOUR = mdates.HourLocator(interval=12)
-
-    plt.figure(figsize=(10, 12), dpi=100)
-    _, ax = plt.subplots()
-    ax.xaxis.set_major_locator(TWELVEHOUR)
-    ax.xaxis.set_major_formatter(HOURS_FMT)
-    ax.xaxis.set_minor_locator(HOURS)
-
-    ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
-
-    priceList = load_prices()
-    legendElems = []
-
-    if user:  # graph specific user
-        dates = []
-        prices = []
-        userId = discord_user_id(channel, user)
-        userName = discord_user_name(channel, userId)
-        if not userId or not userName:
-            return False
-        legendElems.append(userName)
-        yours = priceList.loc[priceList.author == userId]
-        for _, row in yours.iterrows():
-            if row.kind == "sell":
-                prices.append(row.price)
-                dates.append(row.timestamp)
-        if dates:
-            plt.plot(dates, prices, linestyle="-", marker="o", label=userName)
-    else:  # graph all users
-        found_at_least_one_user = False
-        for user_id, df in priceList.groupby(by="author"):
-            dates = []
-            prices = []
-            user_name = discord_user_name(channel, user_id)
-            if not user_name:
-                continue
-            found_at_least_one_user = True
-            legendElems.append(user_name)
-            for _, row in df.iterrows():
-                if row.kind == "sell":
-                    prices.append(row.price)
-                    dates.append(row.timestamp)
-            if dates:
-                plt.plot(dates, prices, linestyle="-", marker="o", label=user_name)
-        if not found_at_least_one_user:
-            return False
-
-    plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
-    plt.subplots_adjust(left=0.05, bottom=0.2, right=0.85)
-    plt.grid(b=True, which="major", color="#666666", linestyle="-")
-    ax.yaxis.grid(b=True, which="minor", color="#555555", linestyle=":")
-    plt.ylabel("Price")
-    plt.xlabel("Time (Eastern)")
-    plt.title("Selling Prices")
-    plt.legend(legendElems, loc="upper left", bbox_to_anchor=(1, 1))
-
-    figure = plt.gcf()
-    figure.set_size_inches(18, 9)
-
-    plt.savefig(graphname, dpi=100)
-    plt.close("all")
-
-    return True
-
-
-def append_price(author, kind, price):
-    """Adds a price to the prices data file for the given author and kind."""
-    prices = load_prices()
-    prices = prices.append(
-        pd.DataFrame(
-            columns=prices.columns,
-            data=[[author.id, kind, price, datetime.now(pytz.utc)]],
-        ),
-        ignore_index=True,
-    )
-    save_prices(prices)
-
-
-def get_last_price(user_id):
-    """Returns the last sell price for the given user id."""
-    prices = load_prices()
-    last = (
-        prices[(prices.author == user_id) & (prices.kind == "sell")]
-        .sort_values(by=["timestamp"])
-        .tail(1)
-        .price
-    )
-    return int(last) if last.any() else None
-
-
-def paginate(text):
-    """Discord responses must be 2000 characters of less; paginate can break them up."""
-    breakpoints = ["\n", ".", ",", "-"]
-    remaining = text
-    while len(remaining) > 2000:
-        breakpoint = 1999
-
-        for char in breakpoints:
-            index = remaining.rfind(char, 1800, 1999)
-            if index != -1:
-                breakpoint = index
-                break
-
-        # A trailing blank quoted line just shows the > symbol, so if possible
-        # we should try bumping that into the remainder if it is present
-        lastnlindex = remaining.rfind("\n", 1800, breakpoint - 1)
-        finalline = remaining[lastnlindex:breakpoint]
-        if finalline.strip() == ">":
-            # the breakpoint should actually be bumped back a bit
-            breakpoint = lastnlindex
-
-        yield remaining[0:breakpoint]
-        remaining = remaining[breakpoint + 1 :]
-
-    yield remaining
-
-
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
-    def __init__(self, token, channels):
+    def __init__(self, token, channels, prices_file, fossils_file, log_level=None):
+        if log_level:
+            logging.basicConfig(level=log_level)
         super().__init__()
         self.token = token
         self.channels = channels
+        self.prices_file = prices_file
+        self.fossils_file = fossils_file
+        self.base_prophet_url = "https://turnipprophet.io/?prices="  # TODO: configurable?
+        self._prices_data = None  # do not use directly, load it from load_prices()
+        self._fossils_data = None  # do not use directly, load it from load_fossils()
+        self._last_backup_filename = None
 
     def run(self):
         super().run(self.token)
 
+    def build_prices(self):
+        """Returns an empty DataFrame suitable for storing price data."""
+        return pd.DataFrame(columns=["author", "kind", "price", "timestamp"]).astype(
+            {"timestamp": "datetime64[ns, UTC]"}
+        )
+
+    def save_prices(self, data):
+        """Saves the given prices data to csv file."""
+        data.to_csv(self.prices_file, index=False)  # persist to disk
+        self._prices_data = data  # in-memory optimization
+
+    def last_backup_filename(self):
+        """Return the name of the last known backup file for prices or None if unknown."""
+        return self._last_backup_filename
+
+    def backup_prices(self, data):
+        """Backs up the prices data to a datetime stamped file."""
+        filename = datetime.now().strftime("prices-%Y-%m-%d.csv")  # TODO: configurable?
+        filepath = Path(self.prices_file).parent / filename
+        self._last_backup_filename = filepath
+        data.to_csv(filepath, index=False)
+
+    def load_prices(self):
+        """Returns a DataFrame of price data or creates an empty one."""
+        if self._prices_data is None:
+            try:
+                self._prices_data = pd.read_csv(self.prices_file).astype(
+                    {"timestamp": "datetime64[ns, UTC]"}
+                )
+            except FileNotFoundError:
+                self._prices_data = self.build_prices()
+        return self._prices_data
+
+    def save_fossils(self, data):
+        """Saves the given fossils data to csv file."""
+        data.to_csv(self.fossils_file, index=False)  # persist to disk
+        self._fossils_data = data  # in-memory optimization
+
+    def build_fossils(self):
+        """Returns an empty DataFrame suitable for storing fossil data."""
+        return pd.DataFrame(columns=["author", "name"])
+
+    def load_fossils(self):
+        """Returns a DataFrame of fossils data or creates an empty one."""
+        if self._fossils_data is None:
+            try:
+                self._fossils_data = pd.read_csv(self.fossils_file)
+            except FileNotFoundError:
+                self._fossils_data = self.build_fossils()
+        return self._fossils_data
+
+    def generate_graph(self, channel, user, graphname):
+        """Generates a nice looking graph of user data."""
+        HOURS = mdates.HourLocator()
+        HOURS_FMT = mdates.DateFormatter("%b %d %H:%M")
+        TWELVEHOUR = mdates.HourLocator(interval=12)
+
+        plt.figure(figsize=(10, 12), dpi=100)
+        _, ax = plt.subplots()
+        ax.xaxis.set_major_locator(TWELVEHOUR)
+        ax.xaxis.set_major_formatter(HOURS_FMT)
+        ax.xaxis.set_minor_locator(HOURS)
+
+        ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
+
+        priceList = self.load_prices()
+        legendElems = []
+
+        if user:  # graph specific user
+            dates = []
+            prices = []
+            userId = discord_user_id(channel, user)
+            userName = discord_user_name(channel, userId)
+            if not userId or not userName:
+                return False
+            legendElems.append(userName)
+            yours = priceList.loc[priceList.author == userId]
+            for _, row in yours.iterrows():
+                if row.kind == "sell":
+                    prices.append(row.price)
+                    dates.append(row.timestamp)
+            if dates:
+                plt.plot(dates, prices, linestyle="-", marker="o", label=userName)
+        else:  # graph all users
+            found_at_least_one_user = False
+            for user_id, df in priceList.groupby(by="author"):
+                dates = []
+                prices = []
+                user_name = discord_user_name(channel, user_id)
+                if not user_name:
+                    continue
+                found_at_least_one_user = True
+                legendElems.append(user_name)
+                for _, row in df.iterrows():
+                    if row.kind == "sell":
+                        prices.append(row.price)
+                        dates.append(row.timestamp)
+                if dates:
+                    plt.plot(dates, prices, linestyle="-", marker="o", label=user_name)
+            if not found_at_least_one_user:
+                return False
+
+        plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
+        plt.subplots_adjust(left=0.05, bottom=0.2, right=0.85)
+        plt.grid(b=True, which="major", color="#666666", linestyle="-")
+        ax.yaxis.grid(b=True, which="minor", color="#555555", linestyle=":")
+        plt.ylabel("Price")
+        plt.xlabel("Time (Eastern)")
+        plt.title("Selling Prices")
+        plt.legend(legendElems, loc="upper left", bbox_to_anchor=(1, 1))
+
+        figure = plt.gcf()
+        figure.set_size_inches(18, 9)
+
+        plt.savefig(graphname, dpi=100)
+        plt.close("all")
+
+        return True
+
+    def append_price(self, author, kind, price):
+        """Adds a price to the prices data file for the given author and kind."""
+        prices = self.load_prices()
+        prices = prices.append(
+            pd.DataFrame(
+                columns=prices.columns,
+                data=[[author.id, kind, price, datetime.now(pytz.utc)]],
+            ),
+            ignore_index=True,
+        )
+        self.save_prices(prices)
+
+    def get_last_price(self, user_id):
+        """Returns the last sell price for the given user id."""
+        prices = self.load_prices()
+        last = (
+            prices[(prices.author == user_id) & (prices.kind == "sell")]
+            .sort_values(by=["timestamp"])
+            .tail(1)
+            .price
+        )
+        return int(last) if last.any() else None
+
+    def paginate(self, text):
+        """Discord responses must be 2000 characters of less; paginate breaks them up."""
+        breakpoints = ["\n", ".", ",", "-"]
+        remaining = text
+        while len(remaining) > 2000:
+            breakpoint = 1999
+
+            for char in breakpoints:
+                index = remaining.rfind(char, 1800, 1999)
+                if index != -1:
+                    breakpoint = index
+                    break
+
+            # A trailing blank quoted line just shows the > symbol, so if possible
+            # we should try bumping that into the remainder if it is present
+            lastnlindex = remaining.rfind("\n", 1800, breakpoint - 1)
+            finalline = remaining[lastnlindex:breakpoint]
+            if finalline.strip() == ">":
+                # the breakpoint should actually be bumped back a bit
+                breakpoint = lastnlindex
+
+            yield remaining[0:breakpoint]
+            remaining = remaining[breakpoint + 1 :]
+
+        yield remaining
+
     async def process(self, message):
+        """Process a command message."""
         tokens = message.content.split(" ")
         request, params = tokens[0].lstrip("!"), tokens[1:]
         members = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -287,13 +287,18 @@ class Turbot(discord.Client):
             method = getattr(self, command)
             async with message.channel.typing():
                 response, attachment = method(message.channel, message.author, params)
-            pages = list(paginate(response))
+            pages = list(self.paginate(response))
             last_page_index = len(pages) - 1
             for i, page in enumerate(pages):
                 file = attachment if attachment and i == last_page_index else None
                 await message.channel.send(page, file=file)
 
+    ##############################
+    # Discord Client Behavior
+    ##############################
+
     async def on_message(self, message):
+        """Behavior when the client gets a message from Discord."""
         if (
             str(message.channel.type) == "text"
             and message.author.id != self.user.id
@@ -303,7 +308,33 @@ class Turbot(discord.Client):
             await self.process(message)
 
     async def on_ready(self):
+        """Behavior when the client has successfully connected to Discord."""
         logging.debug("logged in as %s", self.user)
+
+    ##############################
+    # Bot Command Functions
+    ##############################
+
+    # Any method of this class that end in the name _command are automatically
+    # detected as bot commands. The methods should have a signature like:
+    #
+    #     def your_command(self, channel, author, params)
+    #
+    # - `channel` is the Discord channel where the command message was sent.
+    # - `author` is the Discord author who sent the command.
+    # - `params` are any space delimitered parameters also sent with the command.
+    #
+    # The return value for a command method should be `(string, discord.File)` where the
+    # string is the response message the bot should send to the channel and the file
+    # object is an attachment to send with the message. For no attachment, use `None`.
+    #
+    # The docstring used for the command method will be automatically used as the help
+    # message for the command. To document commands with parameters use a | to delimit
+    # the help message from the parameter documentation. For example:
+    #
+    #     """This is the help message for your command. | [and] [these] [are] [params]"""
+    #
+    # A [parameter] is optional whereas a <parameter> is required.
 
     def help_command(self, channel, author, params):
         """
@@ -342,10 +373,10 @@ class Turbot(discord.Client):
         if price <= 0:
             return s("sell_nonpositive_price"), None
 
-        last_price = get_last_price(author.id)
+        last_price = self.get_last_price(author.id)
 
         logging.debug("saving sell price of %s bells for user id %s", price, author.id)
-        append_price(author, "sell", price)
+        self.append_price(author, "sell", price)
 
         key = (
             "sell_new_price"
@@ -374,7 +405,7 @@ class Turbot(discord.Client):
             return s("buy_nonpositive_price"), None
 
         logging.debug("saving buy price of %s bells for user id %s", price, author.id)
-        append_price(author, "buy", price)
+        self.append_price(author, "buy", price)
         return s("buy", price=price, name=author), None
 
     def reset_command(self, channel, author, params):
@@ -382,14 +413,13 @@ class Turbot(discord.Client):
         DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and
         resets all data for all users.
         """
-        backupFileName = datetime.now().strftime(str(DATESTAMP_PRICES_FILE))
-        generate_graph(channel, None, LASTWEEKCMD_FILE)
-        prices = load_prices()
-        save_prices(prices, filename=backupFileName)  # Create a backup...
+        self.generate_graph(channel, None, LASTWEEKCMD_FILE)
+        prices = self.load_prices()
+        self.backup_prices(prices)
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
         idx = buys.groupby(by="author")["timestamp"].idxmax()
         prices = buys.loc[idx]
-        save_prices(prices)
+        self.save_prices(prices)
         return s("reset"), None
 
     def lastweek_command(self, channel, author, params):
@@ -406,7 +436,7 @@ class Turbot(discord.Client):
         graph that users prices. | [user]
         """
         if not params:
-            generate_graph(channel, None, GRAPHCMD_FILE)
+            self.generate_graph(channel, None, GRAPHCMD_FILE)
             return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
 
         user_id = discord_user_id(channel, params[0])
@@ -414,7 +444,7 @@ class Turbot(discord.Client):
         if not user_id or not user_name:
             return s("cant_find_user", name=params[0]), None
 
-        generate_graph(channel, user_name, GRAPHCMD_FILE)
+        self.generate_graph(channel, user_name, GRAPHCMD_FILE)
         return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
 
     def turnippattern_command(self, channel, author, params):
@@ -465,7 +495,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        prices = load_prices()
+        prices = self.load_prices()
         yours = prices[prices.author == target_id]
         lines = [s("history_header", name=target_name)]
         for _, row in yours.iterrows():
@@ -480,9 +510,9 @@ class Turbot(discord.Client):
         """
         target = author.id
         target_name = discord_user_name(channel, target)
-        prices = load_prices()
+        prices = self.load_prices()
         prices = prices.drop(prices[prices.author == author.id].tail(1).index)
-        save_prices(prices)
+        self.save_prices(prices)
         return s("oops", name=target_name), None
 
     def clear_command(self, channel, author, params):
@@ -490,13 +520,13 @@ class Turbot(discord.Client):
         Clears all of your own historical turnip prices.
         """
         user_id = discord_user_id(channel, str(author))
-        prices = load_prices()
+        prices = self.load_prices()
         prices = prices[prices.author != user_id]
-        save_prices(prices)
+        self.save_prices(prices)
         return s("clear", name=author), None
 
     def _best(self, channel, author, kind):
-        prices = load_prices()
+        prices = self.load_prices()
         past = datetime.now(pytz.utc) - timedelta(hours=12)
         sells = prices[(prices.kind == kind) & (prices.timestamp > past)]
         idx = sells.groupby(by="author").price.transform(max) == sells.price
@@ -532,14 +562,14 @@ class Turbot(discord.Client):
         valid = items.intersection(FOSSILS)
         invalid = items.difference(FOSSILS)
 
-        fossils = load_fossils()
+        fossils = self.load_fossils()
         yours = fossils[fossils.author == author.id]
         dupes = yours.loc[yours.name.isin(valid)].name.values.tolist()
         new_names = list(set(valid) - set(dupes))
         new_data = [[author.id, name] for name in new_names]
         new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
         fossils = fossils.append(new_fossils, ignore_index=True)
-        save_fossils(fossils)
+        self.save_fossils(fossils)
 
         lines = []
         if new_names:
@@ -563,13 +593,13 @@ class Turbot(discord.Client):
         valid = items.intersection(FOSSILS)
         invalid = items.difference(FOSSILS)
 
-        fossils = load_fossils()
+        fossils = self.load_fossils()
         yours = fossils[fossils.author == author.id]
         previously_collected = yours.loc[yours.name.isin(valid)]
         deleted = set(previously_collected.name.values.tolist())
         didnt_have = valid - deleted
         fossils = fossils.drop(previously_collected.index)
-        save_fossils(fossils)
+        self.save_fossils(fossils)
 
         lines = []
         if deleted:
@@ -593,7 +623,7 @@ class Turbot(discord.Client):
         valid = items.intersection(FOSSILS)
         invalid = items - valid
 
-        fossils = load_fossils()
+        fossils = self.load_fossils()
         users = fossils.author.unique()
         results = defaultdict(list)
         for fossil in valid:
@@ -639,7 +669,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = load_fossils()
+        fossils = self.load_fossils()
         yours = fossils[fossils.author == target_id]
         collected = set(yours.name.unique())
         remaining = FOSSILS - collected
@@ -664,7 +694,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = load_fossils()
+        fossils = self.load_fossils()
         yours = fossils[fossils.author == target_id]
         collected = set(yours.name.unique())
 
@@ -701,7 +731,7 @@ class Turbot(discord.Client):
         lines = []
         if valid:
             lines.append(s("fossilcount_valid_header"))
-            fossils = load_fossils()
+            fossils = self.load_fossils()
             for user_name, user_id in sorted(valid):
                 yours = fossils[fossils.author == user_id]
                 collected = set(yours.name.unique())
@@ -723,7 +753,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        prices = load_prices()
+        prices = self.load_prices()
         past = datetime.now(pytz.utc) - timedelta(days=12)
         yours = prices[(prices.author == target_id) & (prices.timestamp > past)]
         yours = yours.sort_values(by=["timestamp"])
@@ -750,37 +780,84 @@ class Turbot(discord.Client):
                     sequence[day * 2 + 1] = sell_data[day][1]
 
         query = f"{buy_price}.{'.'.join(str(i) for i in sequence)}".rstrip(".")
-        url = f"{PROPHET_URL}{query}"
+        url = f"{self.base_prophet_url}{query}"
         return s("predict", name=target_name, url=url), None
 
 
-def get_token():
-    """Returns the discord token from token.txt."""
+def get_token(token_file):
+    """Returns the discord token from your token file."""
     try:
-        with open("token.txt", "r") as token_file:
-            return token_file.readline().strip()
+        with open(token_file, "r") as f:
+            return f.readline().strip()
     except IOError as e:
         with redirect_stdout(sys.stderr):
             print("error:", e)
-            print("put your discord token in a file named 'token.txt'")
+            print(f"put your discord token in a file named '{token_file}'")
         sys.exit(1)
 
 
-def get_channels():
+def get_channels(channels_file):
     """Returns the authorized channels from channels.txt."""
     try:
-        with open("channels.txt", "r") as channels_file:
+        with open(channels_file, "r") as channels_file:
             return [line.strip() for line in channels_file.readlines()]
-    except IOError as e:
-        with redirect_stdout(sys.stderr):
-            print("error:", e)
-            print("put your authorized channels in a file named 'channels.txt'")
+    except IOError:
+        return []
+
+
+@click.command()
+@click.option(
+    "-l",
+    "--log-level",
+    type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]),
+    default="ERROR",
+)
+@click.option("-v", "--verbose", count=True, help="sets log level to DEBUG")
+@click.option(
+    "-b",
+    "--bot-token-file",
+    default="token.txt",
+    help="read your discord bot token from this file",
+)
+@click.option(
+    "-c",
+    "--channel",
+    multiple=True,
+    help="authorize a channel; use this multiple times to authorize multiple channels",
+)
+@click.option(
+    "-a",
+    "--auth-channels-file",
+    default="channels.txt",
+    help="read authorized channel names from this file",
+)
+@click.option(
+    "-p", "--prices-file", default="prices.csv", help="read price data from this file",
+)
+@click.option(
+    "-p", "--fossils-file", default="fossils.csv", help="read fossil data from this file",
+)
+def main(
+    log_level,
+    verbose,
+    bot_token_file,
+    channel,
+    auth_channels_file,
+    prices_file,
+    fossils_file,
+):
+    auth_channels = [get_channels(auth_channels_file), *channel]
+    if not auth_channels:
+        print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
 
-
-def main():
-    logging.basicConfig(level=logging.DEBUG)
-    Turbot(get_token(), get_channels()).run()
+    Turbot(
+        token=get_token(bot_token_file),
+        channels=auth_channels,
+        prices_file=prices_file,
+        fossils_file=fossils_file,
+        log_level=getattr(logging, "DEBUG" if verbose else log_level),
+    ).run()
 
 
 if __name__ == "__main__":

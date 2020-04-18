@@ -104,16 +104,16 @@ def set_random_seed():
 
 @pytest.fixture
 def client(monkeypatch, freezer, patch_discord, tmp_path):
-    monkeypatch.setattr(turbot, "PRICES_FILE", tmp_path / "prices.csv")
-    monkeypatch.setattr(turbot, "FOSSILS_FILE", tmp_path / "fossils.csv")
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
-    monkeypatch.setattr(turbot, "DATESTAMP_PRICES_FILE", tmp_path / "prices-%Y-%m-%d.csv")
-    monkeypatch.setattr(turbot, "PRICES_DATA", None)
-    monkeypatch.setattr(turbot, "FOSSILS_DATA", None)
     monkeypatch.setattr(turbot, "s", S_SPY)
     freezer.move_to(NOW)
-    return turbot.Turbot(CLIENT_TOKEN, [AUTHORIZED_CHANNEL])
+    return turbot.Turbot(
+        token=CLIENT_TOKEN,
+        channels=[AUTHORIZED_CHANNEL],
+        prices_file=tmp_path / "prices.csv",
+        fossils_file=tmp_path / "fossils.csv",
+    )
 
 
 @pytest.fixture
@@ -135,7 +135,7 @@ def graph(mocker, monkeypatch):
         Path(turbot.GRAPHCMD_FILE).touch()
 
     mock = mocker.Mock(side_effect=create_file)
-    monkeypatch.setattr(turbot, "generate_graph", mock)
+    monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
 
@@ -145,7 +145,7 @@ def lastweek(mocker, monkeypatch):
         Path(turbot.LASTWEEKCMD_FILE).touch()
 
     mock = mocker.Mock(side_effect=create_file)
-    monkeypatch.setattr(turbot, "generate_graph", mock)
+    monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
 
@@ -222,7 +222,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"Logged selling price of {amount} for user {author}.", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{NOW}\n",
         ]
@@ -237,7 +237,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{amount},{NOW}\n"]
 
         # higher price sale
         new_amount = amount + somebells()
@@ -250,7 +250,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{new_amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{new_amount},{NOW}\n"]
 
         # lower price sale
         last_amount = round(amount / 2)
@@ -263,7 +263,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{last_amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
 
     async def test_on_message_buy_no_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -297,7 +297,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"Logged buying price of {amount} for user {author}.", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,{amount},{NOW}\n",
         ]
@@ -322,7 +322,7 @@ class TestTurbot:
         message = Message(author, channel, "!clear")
         await client.on_message(message)
         channel.sent.assert_called_with(f"**Cleared history for {author}.**", None)
-        assert lines(turbot.PRICES_FILE) == ["author,kind,price,timestamp\n"]
+        assert lines(client.prices_file) == ["author,kind,price,timestamp\n"]
 
     async def test_on_message_bestsell(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -363,7 +363,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"**Deleting last logged price for {author}.**", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,1,{NOW}\n",
             f"{author.id},sell,2,{NOW}\n",
@@ -609,20 +609,27 @@ class TestTurbot:
         await client.on_message(Message(GUY, channel, "!buy 102"))
         await client.on_message(Message(GUY, channel, "!sell 802"))
 
+        old_data = lines(client.prices_file)
+
         # then reset price data
         message = Message(someone(), channel, "!reset")
         await client.on_message(message)
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
-        assert lines(turbot.PRICES_FILE) == [
-            "author,kind,price,timestamp\n",
-            f"{FRIEND.id},buy,102,{later}\n",
-            f"{BUDDY.id},buy,122,{later}\n",
-            f"{GUY.id},buy,102,{later}\n",
-        ]
+        with open(client.prices_file) as f:
+            assert f.readlines() == [
+                "author,kind,price,timestamp\n",
+                f"{FRIEND.id},buy,102,{later}\n",
+                f"{BUDDY.id},buy,122,{later}\n",
+                f"{GUY.id},buy,102,{later}\n",
+            ]
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
-        datestampfilename = datetime.now().strftime(str(turbot.DATESTAMP_PRICES_FILE))
-        assert Path(datestampfilename).exists()
+
+        # ensure the backup is correct
+        backup_file = Path(client.last_backup_filename())
+        assert backup_file.exists()
+        with open(backup_file) as f:
+            assert old_data == f.readlines()
 
     async def test_on_message_collect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -647,7 +654,7 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert set(lines(turbot.FOSSILS_FILE)) == {
+        assert set(lines(client.fossils_file)) == {
             "author,name\n",
             f"{author.id},amber\n",
             f"{author.id},ankylo skull\n",
@@ -667,7 +674,7 @@ class TestTurbot:
             "> an arm",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == [f"{author.id},plesio body\n"]
+        assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
     async def test_on_message_fossilsearch_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -800,7 +807,7 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", f"{author.id},ammonite\n"]
+        assert lines(client.fossils_file) == ["author,name\n", f"{author.id},ammonite\n"]
 
     async def test_on_message_uncollect_with_only_bad(self, client, lines):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -1013,28 +1020,28 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
         # when there's no data for the user
-        assert turbot.get_last_price(GUY) is None
+        assert client.get_last_price(GUY) is None
 
         # when there's only buy data
         freezer.move_to(NOW + timedelta(days=1))
         await client.on_message(Message(GUY, channel, "!buy 102"))
-        assert turbot.get_last_price(GUY.id) is None
+        assert client.get_last_price(GUY.id) is None
 
         # when there's sell data for someone else
         freezer.move_to(NOW + timedelta(days=2))
         await client.on_message(Message(BUDDY, channel, "!sell 102"))
-        assert turbot.get_last_price(GUY.id) is None
+        assert client.get_last_price(GUY.id) is None
 
         # when there's one sell price
         freezer.move_to(NOW + timedelta(days=3))
         await client.on_message(Message(GUY, channel, "!sell 82"))
-        assert turbot.get_last_price(GUY.id) == 82
+        assert client.get_last_price(GUY.id) == 82
 
         # when there's more than one sell price
         freezer.move_to(NOW + timedelta(days=4))
         await client.on_message(Message(GUY, channel, "!sell 45"))
         await client.on_message(Message(GUY, channel, "!sell 98"))
-        assert turbot.get_last_price(GUY.id) == 98
+        assert client.get_last_price(GUY.id) == 98
 
 
 class TestCodebase:
