@@ -1063,6 +1063,8 @@ class TestCodebase:
         proc = run(["isort", "-df", "-rc", "-c", *SRC_DIRS], capture_output=True)
         assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"
 
+
+class TestMeta:
     # This test will fail in isolation, you must run the full test suite
     # for it to actually pass. This is because it tracks the usage of
     # string keys over the entire test session. It can fail for two reasons:
