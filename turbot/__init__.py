@@ -843,8 +843,8 @@ class Turbot(discord.Client):
         if not params:
             return s("hemisphere_no_params"), None
 
-        home = params[0].lower().title()
-        if home not in ["Northern", "Southern"]:
+        home = params[0].lower()
+        if home not in ["northern", "southern"]:
             return s("hemisphere_bad_params"), None
 
         users = self.load_users()
@@ -861,7 +861,7 @@ class Turbot(discord.Client):
 
     def fish_command(self, channel, author, params):
         """
-        Tell you what fish are available now in your hemisphere.
+        Tell you what fish are available now in your hemisphere. | [name|leaving]
         """
         users = self.load_users()
         prefs = users[users.author == author.id]
@@ -872,11 +872,56 @@ class Turbot(discord.Client):
         hemisphere = prefs.at[0, "hemisphere"]
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
+        last_month = (now - timedelta(days=33)).strftime("%b").lower()
         available = FISH[(FISH.hemisphere == hemisphere) & (FISH[this_month] == 1)]
-        lines = [
-            s("fish", **row, alert="**GONE NEXT MONTH!**" if not row[next_month] else "",)
-            for _, row in available.iterrows()
-        ]
+
+        def details(row):
+            alert = (
+                "**GONE NEXT MONTH!**"
+                if not row[next_month]
+                else "_New this month_"
+                if not row[last_month]
+                else ""
+            )
+            months = ", ".join(
+                filter(
+                    None,
+                    [
+                        "Jan" if row["jan"] else None,
+                        "Feb" if row["feb"] else None,
+                        "Mar" if row["mar"] else None,
+                        "Apr" if row["apr"] else None,
+                        "May" if row["may"] else None,
+                        "Jun" if row["jun"] else None,
+                        "Jul" if row["jul"] else None,
+                        "Aug" if row["aug"] else None,
+                        "Sep" if row["sep"] else None,
+                        "Oct" if row["oct"] else None,
+                        "Nov" if row["nov"] else None,
+                        "Dec" if row["dec"] else None,
+                    ],
+                )
+            )
+            return {
+                **row,
+                "name": row["name"].capitalize(),
+                "months": months,
+                "alert": alert,
+            }
+
+        if params:
+            search = params[0]
+            if search == "leaving":
+                found = available[available[next_month] == 0]
+            else:
+                found = available[available.name.str.contains(search)]
+            if found.empty:
+                return s("fish_none_found", search=search), None
+            else:
+                lines = [s("fish_detail", **details(row)) for _, row in found.iterrows()]
+                return "\n".join(sorted(lines)), None
+
+        lines = [s("fish", **details(row)) for _, row in available.iterrows()]
         return "\n".join(sorted(lines)), None
 
 

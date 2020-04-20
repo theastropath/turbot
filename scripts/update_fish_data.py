@@ -13,8 +13,8 @@ tree = BeautifulSoup(page.content, "lxml")
 
 
 class Hemisphere(Enum):
-    Northern = 1
-    Southern = 2
+    NORTHERN = 1
+    SOUTHERN = 2
 
 
 def clean(item):
@@ -31,7 +31,8 @@ def ingest(writer, hemisphere):
     for row in range(1, len(tab_data)):
         data = [clean(i) for i in tab_data[row]]
         if data:
-            corrected = [hemisphere.name, data[0], *[d.lower() for d in data[2:]]]
+            # lowercase all data and strip out the image column (2nd column)
+            corrected = [d.lower() for d in [hemisphere.name, data[0], *data[2:]]]
             writer.writerow(corrected)
 
 
@@ -59,5 +60,5 @@ with open(Path("turbot") / "data" / "fish.csv", "w", newline="") as out:
             "dec",
         ]
     )
-    ingest(writer, Hemisphere.Northern)
-    ingest(writer, Hemisphere.Southern)
+    ingest(writer, Hemisphere.NORTHERN)
+    ingest(writer, Hemisphere.SOUTHERN)

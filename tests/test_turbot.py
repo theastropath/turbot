@@ -1080,7 +1080,7 @@ class TestTurbot:
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere\n",
-                f"{author.id},Southern\n",
+                f"{author.id},southern\n",
             ]
 
         message = Message(author, channel, f"!hemisphere NoRthErn")
@@ -1091,7 +1091,7 @@ class TestTurbot:
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere\n",
-                f"{author.id},Northern\n",
+                f"{author.id},northern\n",
             ]
 
     async def test_on_message_fish_no_hemisphere(self, client):
@@ -1102,6 +1102,57 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Please enter your hemisphere choice first using the !hemisphere command.",
+            None,
+        )
+
+    async def test_on_message_fish_none_found(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish Blinky")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f'Did not find any fish searching for "Blinky".', None
+        )
+
+    async def test_on_message_fish_search_query(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish ch")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Char** with shadow size 3 is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
+            "> **Cherry salmon** with shadow size 3 is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
+            "> **Loach** with shadow size 2 is available all day at river (sells for 400 bells) during Mar, Apr, May \n"  # noqa: E501
+            "> **Pale chub** with shadow size 1 is available 9 am - 4 pm at river (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Ranchu goldfish** with shadow size 2 is available 9 am - 4 pm at pond (sells for 4500 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec ",  # noqa: E501
+            None,
+        )
+
+    async def test_on_message_fish_search_leaving(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish leaving")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan, Feb, Mar, Apr, Jul, Aug, Sep, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Dab** with shadow size 3 is available all day at sea (sells for 300 bells) during Jan, Feb, Mar, Apr, Oct, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Tuna** with shadow size 6 is available all day at pier (sells for 7000 bells) during Jan, Feb, Mar, Apr, Nov, Dec **GONE NEXT MONTH!**",  # noqa: E501
             None,
         )
 
@@ -1120,51 +1171,51 @@ class TestTurbot:
         call = calls.pop()
         response, attachment = call[0][0], call[0][1]
         assert response == (
-            "> **Pale chub** is available 9 am - 4 pm at river (sells for 200 bells) \n"
+            "> **Oarfish** is available all day at sea (sells for 9000 bells) \n"  # noqa: E501
+            "> **Olive flounder** is available all day at sea (sells for 800 bells) \n"  # noqa: E501
+            "> **Pale chub** is available 9 am - 4 pm at river (sells for 200 bells) \n"  # noqa: E501
             "> **Pop-eyed goldfish** is available 9 am - 4 pm at pond (sells for 1300 bells) \n"  # noqa: E501
             "> **Ranchu goldfish** is available 9 am - 4 pm at pond (sells for 4500 bells) \n"  # noqa: E501
-            "> **Red snapper** is available all day at sea (sells for 3000 bells) \n"
-            "> **Sea bass** is available all day at sea (sells for 400 bells) \n"
-            "> **Sea horse** is available all day at sea (sells for 1100 bells) \n"
-            "> **Snapping Turtle** is available 9 pm - 4 am at river (sells for 5000 bells) \n"  # noqa: E501
-            "> **Squid** is available all day at sea (sells for 500 bells) \n"
-            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) \n"
-            "> **Tadpole** is available all day at pond (sells for 100 bells) \n"
+            "> **Red snapper** is available all day at sea (sells for 3000 bells) \n"  # noqa: E501
+            "> **Sea bass** is available all day at sea (sells for 400 bells) \n"  # noqa: E501
+            "> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_\n"  # noqa: E501
+            "> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_\n"  # noqa: E501
+            "> **Squid** is available all day at sea (sells for 500 bells) \n"  # noqa: E501
+            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
+            "> **Tadpole** is available all day at pond (sells for 100 bells) \n"  # noqa: E501
             "> **Tuna** is available all day at pier (sells for 7000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) "
+            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
         )
         assert attachment is None
 
         call = calls.pop()
         response, attachment = call[0][0], call[0][1]
         assert response == (
-            "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"
-            "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"
-            "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"
-            "> **Black bass** is available all day at river (sells for 400 bells) \n"
+            "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
+            "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"  # noqa: E501
+            "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"  # noqa: E501
+            "> **Black bass** is available all day at river (sells for 400 bells) \n"  # noqa: E501
             "> **Blue marlin** is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"
-            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) \n"
-            "> **Carp** is available all day at pond (sells for 300 bells) \n"
+            "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"  # noqa: E501
+            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
+            "> **Carp** is available all day at pond (sells for 300 bells) \n"  # noqa: E501
             "> **Char** is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) \n"  # noqa: E501
             "> **Cherry salmon** is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) \n"  # noqa: E501
-            "> **Clown fish** is available all day at sea (sells for 650 bells) \n"
+            "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
             "> **Coelacanth** is available all day at sea (while raining) (sells for 15000 bells) \n"  # noqa: E501
-            "> **Crawfish** is available all day at pond (sells for 200 bells) \n"
-            "> **Crucian carp** is available all day at river (sells for 160 bells) \n"
+            "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
+            "> **Crucian carp** is available all day at river (sells for 160 bells) \n"  # noqa: E501
             "> **Dab** is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"
+            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"  # noqa: E501
             "> **Freshwater goby** is available 4 pm - 9 am at river (sells for 400 bells) \n"  # noqa: E501
             "> **Golden trout** is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) \n"  # noqa: E501
-            "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"
-            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) \n"
-            "> **Horse mackerel** is available all day at sea (sells for 150 bells) \n"
-            "> **Killifish** is available all day at pond (sells for 300 bells) \n"
-            "> **Koi** is available 4 pm - 9 am at pond (sells for 4000 bells) \n"
-            "> **Loach** is available all day at river (sells for 400 bells) \n"
-            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) \n"
-            "> **Oarfish** is available all day at sea (sells for 9000 bells) \n"
-            "> **Olive flounder** is available all day at sea (sells for 800 bells) "
+            "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"  # noqa: E501
+            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_\n"  # noqa: E501
+            "> **Horse mackerel** is available all day at sea (sells for 150 bells) \n"  # noqa: E501
+            "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
+            "> **Koi** is available 4 pm - 9 am at pond (sells for 4000 bells) \n"  # noqa: E501
+            "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
+            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_"  # noqa: E501
         )
         assert attachment is None
 
