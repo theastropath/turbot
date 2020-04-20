@@ -46,6 +46,7 @@ DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
 DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
 DEFAULT_DB_USERS = DB_DIR / "users.csv"
 
+
 # temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
@@ -906,6 +907,7 @@ def get_channels(channels_file):
     "--prices-file",
     default=DEFAULT_DB_PRICES,
     help="read price data from this file",
+
 )
 @click.option(
     "-p",
@@ -918,7 +920,9 @@ def get_channels(channels_file):
     "--users-file",
     default=DEFAULT_DB_USERS,
     help="read users preferences data from this file",
+
 )
+                                 
 def main(
     log_level,
     verbose,
