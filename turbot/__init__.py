@@ -44,6 +44,8 @@ FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
 DB_DIR = RUNTIME_ROOT / "db"
 DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
 DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
+DEFAULT_DB_USERS = DB_DIR / "users.csv"
+
 
 # temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
@@ -107,7 +109,9 @@ def discord_user_id(channel, name):
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
-    def __init__(self, token, channels, prices_file, fossils_file, log_level=None):
+    def __init__(
+        self, token, channels, prices_file, fossils_file, users_file, log_level=None
+    ):
         if log_level:
             logging.basicConfig(level=log_level)
         super().__init__()
@@ -115,9 +119,11 @@ class Turbot(discord.Client):
         self.channels = channels
         self.prices_file = prices_file
         self.fossils_file = fossils_file
+        self.users_file = users_file
         self.base_prophet_url = "https://turnipprophet.io/?prices="  # TODO: configurable?
         self._prices_data = None  # do not use directly, load it from load_prices()
         self._fossils_data = None  # do not use directly, load it from load_fossils()
+        self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
 
     def run(self):
@@ -155,6 +161,24 @@ class Turbot(discord.Client):
             except FileNotFoundError:
                 self._prices_data = self.build_prices()
         return self._prices_data
+
+    def save_users(self, data):
+        """Saves the given users data to csv file."""
+        data.to_csv(self.users_file, index=False)  # persist to disk
+        self._users_data = data  # in-memory optimization
+
+    def build_users(self):
+        """Returns an empty DataFrame suitable for storing user data."""
+        return pd.DataFrame(columns=["author", "hemisphere"])
+
+    def load_users(self):
+        """Returns a DataFrame of user data or creates an empty one."""
+        if self._users_data is None:
+            try:
+                self._users_data = pd.read_csv(self.users_file)
+            except FileNotFoundError:
+                self._users_data = self.build_users()
+        return self._users_data
 
     def save_fossils(self, data):
         """Saves the given fossils data to csv file."""
@@ -807,6 +831,29 @@ class Turbot(discord.Client):
         url = f"{self.base_prophet_url}{query}"
         return s("predict", name=target_name, url=url), None
 
+    def hemisphere_command(self, channel, author, params):
+        """
+        Set your hemisphere. | [Northern|Southern]
+        """
+        if not params:
+            return s("hemisphere_no_params"), None
+
+        home = params[0].lower().title()
+        if home not in ["Northern", "Southern"]:
+            return s("hemisphere_bad_params"), None
+
+        users = self.load_users()
+        prefs = users[users.author == author.id]
+        if prefs.empty:
+            users = users.append(
+                pd.DataFrame(columns=users.columns, data=[[author.id, home]]),
+                ignore_index=True,
+            )
+        else:
+            users.at[prefs.index, "hemisphere"] = home
+        self.save_users(users)
+        return s("hemisphere", name=author), None
+
 
 def get_token(token_file):
     """Returns the discord token from your token config file."""
@@ -860,6 +907,7 @@ def get_channels(channels_file):
     "--prices-file",
     default=DEFAULT_DB_PRICES,
     help="read price data from this file",
+
 )
 @click.option(
     "-p",
@@ -867,6 +915,14 @@ def get_channels(channels_file):
     default=DEFAULT_DB_FOSSILS,
     help="read fossil data from this file",
 )
+@click.option(
+    "-u",
+    "--users-file",
+    default=DEFAULT_DB_USERS,
+    help="read users preferences data from this file",
+
+)
+                                 
 def main(
     log_level,
     verbose,
@@ -875,6 +931,7 @@ def main(
     auth_channels_file,
     prices_file,
     fossils_file,
+    users_file,
 ):
     auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
@@ -886,6 +943,7 @@ def main(
         channels=auth_channels,
         prices_file=prices_file,
         fossils_file=fossils_file,
+        users_file=users_file,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
     ).run()
 

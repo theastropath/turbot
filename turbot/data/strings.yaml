@@ -39,6 +39,9 @@ fossilsearch_noneed: No one currently needs this.
 fossilsearch_row: '> $name needs: $fossils'
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
+hemisphere: Hemisphere preference registered for $name.
+hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere name.
+hemisphere_no_params: 'Please provide the name of your hemisphere, northern or southern.'
 history_buy: '> Can buy turnips from Daisy Mae for $price bells at $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
