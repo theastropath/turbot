@@ -39,6 +39,7 @@ DEFAULT_CONFIG_CHANNELS = CONFIG_DIR / "channels.txt"
 DATA_DIR = PACKAGE_ROOT / "data"
 STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
 FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
+FISH_DATA_FILE = DATA_DIR / "fish.csv"
 
 # persisted user and application data
 DB_DIR = RUNTIME_ROOT / "db"
@@ -62,6 +63,8 @@ with open(STRINGS_DATA_FILE) as f:
 
 with open(FOSSILS_DATA_FILE) as f:
     FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
+
+FISH = pd.read_csv(FISH_DATA_FILE)
 
 
 def s(key, **kwargs):
@@ -145,7 +148,9 @@ class Turbot(discord.Client):
 
     def backup_prices(self, data):
         """Backs up the prices data to a datetime stamped file."""
-        filename = datetime.now().strftime("prices-%Y-%m-%d.csv")  # TODO: configurable?
+        filename = datetime.now(pytz.utc).strftime(
+            "prices-%Y-%m-%d.csv"  # TODO: configurable?
+        )
         filepath = Path(self.prices_file).parent / filename
         self._last_backup_filename = filepath
         data.to_csv(filepath, index=False)
@@ -852,6 +857,26 @@ class Turbot(discord.Client):
             users.at[prefs.index, "hemisphere"] = home
         self.save_users(users)
         return s("hemisphere", name=author), None
+
+    def fish_command(self, channel, author, params):
+        """
+        Tell you what fish are available now in your hemisphere.
+        """
+        users = self.load_users()
+        prefs = users[users.author == author.id]
+        if prefs.empty:
+            return s("fish_no_hemisphere"), None
+
+        now = datetime.now(pytz.utc)
+        hemisphere = prefs.at[0, "hemisphere"]
+        this_month = now.strftime("%b").lower()
+        next_month = (now + timedelta(days=33)).strftime("%b").lower()
+        available = FISH[(FISH.hemisphere == hemisphere) & (FISH[this_month] == 1)]
+        lines = [
+            s("fish", **row, alert="**GONE NEXT MONTH!**" if not row[next_month] else "",)
+            for _, row in available.iterrows()
+        ]
+        return "\n".join(sorted(lines)), None
 
 
 def get_token(token_file):

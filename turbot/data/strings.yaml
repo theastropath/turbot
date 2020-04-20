@@ -25,6 +25,8 @@ collectedfossils: |-
   __**$count Fossils donated by $name**__
   >>> $items
 did_you_mean: 'Did you mean: $possible?'
+fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
+fish_no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
 fossil_bad: |-
   Did not recognize the following fossils:
   > $items
