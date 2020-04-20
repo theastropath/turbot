@@ -907,7 +907,6 @@ def get_channels(channels_file):
     "--prices-file",
     default=DEFAULT_DB_PRICES,
     help="read price data from this file",
-
 )
 @click.option(
     "-p",
@@ -920,9 +919,7 @@ def get_channels(channels_file):
     "--users-file",
     default=DEFAULT_DB_USERS,
     help="read users preferences data from this file",
-
 )
-                                 
 def main(
     log_level,
     verbose,
