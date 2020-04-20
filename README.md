@@ -55,6 +55,16 @@ The script can be run multiple times without corrupting or duplicating data. Any
 
 Codebase consistency is maintained by the industry standard [black](https://black.readthedocs.io/en/stable/). For linting we use [flake8](https://flake8.pycqa.org/en/latest/) with configuration to work alongside the formatter. Imports are kept in order by [isort](https://timothycrosley.github.io/isort/). The included test suite can run these tools against the codebase and report on any errors:
 
-```bash
+```shell
 tox -- -k codebase
 ```
+
+### Updating fish data
+
+Data on fishes is captured from [the Animal Crossing fandom page](https://animalcrossing.fandom.com/wiki/Fish_(New_Horizons)) and then compiled into a csv file in the package's `data` directory. The script to do this is included in the `scripts` directory. Run it to fetch the latest data:
+
+```shell
+./scripts/update_fish_data.py
+```
+
+Note that you must have development requirements installed to run this script.

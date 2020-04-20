@@ -1,0 +1,161 @@
+hemisphere,name,price,location,shadow,time,jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+Northern,Bitterling,900,River,1,All day,1,1,1,0,0,0,0,0,0,0,1,1
+Northern,Pale chub,200,River,1,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Crucian carp,160,River,2,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Dace,240,River,3,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Carp,300,Pond,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Koi,4000,Pond,4,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Goldfish,1300,Pond,1,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Pop-eyed goldfish,1300,Pond,1,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Ranchu goldfish,4500,Pond,2,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Killifish,300,Pond,1,All day,0,0,0,1,1,1,1,1,0,0,0,0
+Northern,Crawfish,200,Pond,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Northern,Soft-shelled turtle,3750,River,4,4 PM - 9 AM,0,0,0,0,0,0,0,1,1,0,0,0
+Northern,Snapping Turtle,5000,River,4,9 PM - 4 AM,0,0,0,1,1,1,1,1,1,1,0,0
+Northern,Tadpole,100,Pond,1,All day,0,0,1,1,1,1,1,0,0,0,0,0
+Northern,Frog,120,Pond,2,All day,0,0,0,0,1,1,1,1,0,0,0,0
+Northern,Freshwater goby,400,River,2,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Loach,400,River,2,All day,0,0,1,1,1,0,0,0,0,0,0,0
+Northern,Catfish,800,Pond,4,4 PM - 9 AM,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Giant snakehead,5500,Pond,4,9 AM - 4 PM,0,0,0,0,0,1,1,1,0,0,0,0
+Northern,Bluegill,180,River,2,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Yellow perch,300,River,3,All day,1,1,1,0,0,0,0,0,0,1,1,1
+Northern,Black bass,400,River,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Tilapia,800,River,3,All day,0,0,0,0,0,1,1,1,1,1,0,0
+Northern,Pike,1800,River,5,All day,0,0,0,0,0,0,0,0,1,1,1,1
+Northern,Pond smelt,500,River,2,All day,1,1,0,0,0,0,0,0,0,0,0,1
+Northern,Sweetfish,900,River,3,All day,0,0,0,0,0,0,1,1,1,0,0,0
+Northern,Cherry salmon,800,River (Clifftop),3,4 PM - 9 AM,0,0,1,1,1,1,0,0,1,1,1,0
+Northern,Char,3800,River (Clifftop)  Pond,3,4 PM - 9 AM,0,0,1,1,1,1,0,0,1,1,1,0
+Northern,Golden trout,15000,River (Clifftop),3,4 PM - 9 AM,0,0,1,1,1,0,0,0,1,1,1,0
+Northern,Stringfish,15000,River (Clifftop),5,4 PM - 9 AM,1,1,1,0,0,0,0,0,0,0,0,1
+Northern,Salmon,700,River (Mouth),4,All day,0,0,0,0,0,0,0,0,1,0,0,0
+Northern,King salmon,1800,River (Mouth),6,All day,0,0,0,0,0,0,0,0,1,0,0,0
+Northern,Mitten crab,2000,River,2,4 PM - 9 AM,0,0,0,0,0,0,0,0,1,1,1,0
+Northern,Guppy,1300,River,1,9 AM - 4 PM,0,0,0,1,1,1,1,1,1,1,1,0
+Northern,Nibble fish,1500,River,1,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,0,0,0
+Northern,Angelfish,3000,River,2,4 PM - 9 AM,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Betta,2500,River,2,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Neon tetra,500,River,1,9 AM - 4 PM,0,0,0,1,1,1,1,1,1,1,1,0
+Northern,Rainbowfish,800,River,1,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Piranha,2500,River,2,9 AM - 4 PM & 9 PM - 4 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Arowana,10000,River,4,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Dorado,15000,River,5,4 AM - 9 PM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Gar,6000,Pond,5,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Arapaima,10000,River,6,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Saddled bichir,4000,River,4,9 PM - 4 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Sturgeon,10000,River (Mouth),6,All day,1,1,1,0,0,0,0,0,1,1,1,1
+Northern,Sea butterfly,1000,Sea,1,All day,1,1,1,0,0,0,0,0,0,0,0,1
+Northern,Sea horse,1100,Sea,1,All day,0,0,0,1,1,1,1,1,1,1,1,0
+Northern,Clown fish,650,Sea,1,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Northern,Surgeonfish,1000,Sea,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Northern,Butterfly fish,1000,Sea,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Northern,Napoleonfish,10000,Sea,6,4 AM - 9 PM,0,0,0,0,0,0,1,1,0,0,0,0
+Northern,Zebra turkeyfish,500,Sea,3,All day,0,0,0,1,1,1,1,1,1,1,1,0
+Northern,Blowfish,5000,Sea,3,9 PM - 4 AM,1,1,0,0,0,0,0,0,0,0,1,1
+Northern,Puffer fish,250,Sea,3,All day,0,0,0,0,0,0,1,1,1,0,0,0
+Northern,Anchovy,200,Sea,2,4 AM - 9 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Horse mackerel,150,Sea,2,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Barred knifejaw,5000,Sea,3,All day,0,0,1,1,1,1,1,1,1,1,1,0
+Northern,Sea bass,400,Sea,5,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Red snapper,3000,Sea,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Dab,300,Sea,3,All day,1,1,1,1,0,0,0,0,0,1,1,1
+Northern,Olive flounder,800,Sea,5,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Squid,500,Sea,3,All day,1,1,1,1,1,1,1,1,0,0,0,1
+Northern,Moray eel,2000,Sea,Narrow,All day,0,0,0,0,0,0,0,1,1,1,0,0
+Northern,Ribbon eel,600,Sea,Narrow,All day,0,0,0,0,0,1,1,1,1,1,0,0
+Northern,Tuna,7000,Pier,6,All day,1,1,1,1,0,0,0,0,0,0,1,1
+Northern,Blue marlin,10000,Pier,6,All day,1,1,1,1,0,0,1,1,1,0,1,1
+Northern,Giant trevally,4500,Pier,5,All day,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Mahi-mahi,6000,Pier,5,All day,0,0,0,0,1,1,1,1,1,1,0,0
+Northern,Ocean sunfish,4000,Sea,6 (Fin),4 AM - 9 PM,0,0,0,0,0,0,1,1,1,0,0,0
+Northern,Ray,3000,Sea,5,4 AM - 9 PM,0,0,0,0,0,0,0,1,1,1,1,0
+Northern,Saw shark,12000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Hammerhead shark,8000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Great white shark,15000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Whale shark,13000,Sea,6 (Fin),All day,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Suckerfish,1500,Sea,4 (Fin),All day,0,0,0,0,0,1,1,1,1,0,0,0
+Northern,Football fish,2500,Sea,4,4 PM - 9 AM,1,1,1,0,0,0,0,0,0,0,1,1
+Northern,Oarfish,9000,Sea,6,All day,1,1,1,1,1,0,0,0,0,0,0,1
+Northern,Barreleye,15000,Sea,2,9 PM - 4 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Northern,Coelacanth,15000,Sea (while raining),6,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Bitterling,900,River,1,All day,1,1,1,0,0,0,0,0,0,0,1,1
+Southern,Pale chub,200,River,1,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Crucian carp,160,River,2,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Dace,240,River,3,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Carp,300,Pond,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Koi,4000,Pond,4,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Goldfish,1300,Pond,1,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Pop-eyed goldfish,1300,Pond,1,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Ranchu goldfish,4500,Pond,2,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Killifish,300,Pond,1,All day,0,0,0,1,1,1,1,1,0,0,0,0
+Southern,Crawfish,200,Pond,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Southern,Soft-shelled turtle,3750,River,4,4 PM - 9 AM,0,0,0,0,0,0,0,1,1,0,0,0
+Southern,Snapping Turtle,5000,River,4,9 PM - 4 AM,0,0,0,1,1,1,1,1,1,1,0,0
+Southern,Tadpole,100,Pond,1,All day,0,0,1,1,1,1,1,0,0,0,0,0
+Southern,Frog,120,Pond,2,All day,0,0,0,0,1,1,1,1,0,0,0,0
+Southern,Freshwater goby,400,River,2,4 PM - 9 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Loach,400,River,2,All day,0,0,1,1,1,0,0,0,0,0,0,0
+Southern,Catfish,800,Pond,4,4 PM - 9 AM,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Giant snakehead,5500,Pond,4,9 AM - 4 PM,0,0,0,0,0,1,1,1,0,0,0,0
+Southern,Bluegill,180,River,2,9 AM - 4 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Yellow perch,300,River,3,All day,1,1,1,0,0,0,0,0,0,1,1,1
+Southern,Black bass,400,River,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Tilapia,800,River,3,All day,0,0,0,0,0,1,1,1,1,1,0,0
+Southern,Pike,1800,River,5,All day,0,0,0,0,0,0,0,0,1,1,1,1
+Southern,Pond smelt,500,River,2,All day,1,1,0,0,0,0,0,0,0,0,0,1
+Southern,Sweetfish,900,River,3,All day,0,0,0,0,0,0,1,1,1,0,0,0
+Southern,Cherry salmon,800,River (Clifftop),3,4 PM - 9 AM,0,0,1,1,1,1,0,0,1,1,1,0
+Southern,Char,3800,River (Clifftop)  Pond,3,4 PM - 9 AM,0,0,1,1,1,1,0,0,1,1,1,0
+Southern,Golden trout,15000,River (Clifftop),3,4 PM - 9 AM,0,0,1,1,1,0,0,0,1,1,1,0
+Southern,Stringfish,15000,River (Clifftop),5,4 PM - 9 AM,1,1,1,0,0,0,0,0,0,0,0,1
+Southern,Salmon,700,River (Mouth),4,All day,0,0,0,0,0,0,0,0,1,0,0,0
+Southern,King salmon,1800,River (Mouth),6,All day,0,0,0,0,0,0,0,0,1,0,0,0
+Southern,Mitten crab,2000,River,2,4 PM - 9 AM,0,0,0,0,0,0,0,0,1,1,1,0
+Southern,Guppy,1300,River,1,9 AM - 4 PM,0,0,0,1,1,1,1,1,1,1,1,0
+Southern,Nibble fish,1500,River,1,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,0,0,0
+Southern,Angelfish,3000,River,2,4 PM - 9 AM,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Betta,2500,River,2,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Neon tetra,500,River,1,9 AM - 4 PM,0,0,0,1,1,1,1,1,1,1,1,0
+Southern,Rainbowfish,800,River,1,9 AM - 4 PM,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Piranha,2500,River,2,9 AM - 4 PM & 9 PM - 4 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Arowana,10000,River,4,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Dorado,15000,River,5,4 AM - 9 PM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Gar,6000,Pond,5,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Arapaima,10000,River,6,4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Saddled bichir,4000,River,4,9 PM - 4 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Sturgeon,10000,River (Mouth),6,All day,1,1,1,0,0,0,0,0,1,1,1,1
+Southern,Sea butterfly,1000,Sea,1,All day,1,1,1,0,0,0,0,0,0,0,0,1
+Southern,Sea horse,1100,Sea,1,All day,0,0,0,1,1,1,1,1,1,1,1,0
+Southern,Clown fish,650,Sea,1,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Southern,Surgeonfish,1000,Sea,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Southern,Butterfly fish,1000,Sea,2,All day,0,0,0,1,1,1,1,1,1,0,0,0
+Southern,Napoleonfish,10000,Sea,6,4 AM - 9 PM,0,0,0,0,0,0,1,1,0,0,0,0
+Southern,Zebra turkeyfish,500,Sea,3,All day,0,0,0,1,1,1,1,1,1,1,1,0
+Southern,Blowfish,5000,Sea,3,9 PM - 4 AM,1,1,0,0,0,0,0,0,0,0,1,1
+Southern,Puffer fish,250,Sea,3,All day,0,0,0,0,0,0,1,1,1,0,0,0
+Southern,Anchovy,200,Sea,2,4 AM - 9 PM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Horse mackerel,150,Sea,2,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Barred knifejaw,5000,Sea,3,All day,0,0,1,1,1,1,1,1,1,1,1,0
+Southern,Sea bass,400,Sea,5,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Red snapper,3000,Sea,4,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Dab,300,Sea,3,All day,1,1,1,1,0,0,0,0,0,1,1,1
+Southern,Olive flounder,800,Sea,5,All day,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Squid,500,Sea,3,All day,1,1,1,1,1,1,1,1,0,0,0,1
+Southern,Moray eel,2000,Sea,Narrow,All day,0,0,0,0,0,0,0,1,1,1,0,0
+Southern,Ribbon eel,600,Sea,Narrow,All day,0,0,0,0,0,1,1,1,1,1,0,0
+Southern,Tuna,7000,Pier,6,All day,1,1,1,1,0,0,0,0,0,0,1,1
+Southern,Blue marlin,10000,Pier,6,All day,1,1,1,1,0,0,1,1,1,0,1,1
+Southern,Giant trevally,4500,Pier,5,All day,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Mahi-mahi,6000,Pier,5,All day,0,0,0,0,1,1,1,1,1,1,0,0
+Southern,Ocean sunfish,4000,Sea,6 (Fin),4 AM - 9 PM,0,0,0,0,0,0,1,1,1,0,0,0
+Southern,Ray,3000,Sea,5,4 AM - 9 PM,0,0,0,0,0,0,0,1,1,1,1,0
+Southern,Saw shark,12000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Hammerhead shark,8000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Great white shark,15000,Sea,6 (Fin),4 PM - 9 AM,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Whale shark,13000,Sea,6 (Fin),All day,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Suckerfish,1500,Sea,4 (Fin),All day,0,0,0,0,0,1,1,1,1,0,0,0
+Southern,Football fish,2500,Sea,4,4 PM - 9 AM,1,1,1,0,0,0,0,0,0,0,1,1
+Southern,Oarfish,9000,Sea,6,All day,1,1,1,1,1,0,0,0,0,0,0,1
+Southern,Barreleye,15000,Sea,2,9 PM - 4 AM,1,1,1,1,1,1,1,1,1,1,1,1
+Southern,Coelacanth,15000,Sea (while raining),6,All day,1,1,1,1,1,1,1,1,1,1,1,1
