@@ -24,7 +24,7 @@ UNAUTHORIZED_CHANNEL = "bad channel"
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 
 SRC_ROOT = Path(dirname(realpath(__file__))).parent
-SRC_DIRS = ["tests", "turbot"]
+SRC_DIRS = ["tests", "turbot", "scripts"]
 
 
 class Member:
@@ -113,6 +113,7 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
         channels=[AUTHORIZED_CHANNEL],
         prices_file=tmp_path / "prices.csv",
         fossils_file=tmp_path / "fossils.csv",
+        users_file=tmp_path / "users.csv",
     )
 
 
@@ -185,7 +186,7 @@ class TestTurbot:
         message = Message(author, channel, "!h")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did you mean: !help, !history?", None,
+            "Did you mean: !help, !hemisphere, !history?", None,
         )
 
     async def test_on_message_sell_no_price(self, client):
@@ -1045,6 +1046,53 @@ class TestTurbot:
         await client.on_message(Message(GUY, channel, "!sell 45"))
         await client.on_message(Message(GUY, channel, "!sell 98"))
         assert client.get_last_price(GUY.id) == 98
+
+    async def test_on_message_hemisphere_no_params(self, client, lines):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, "!hemisphere")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Please provide the name of your hemisphere, northern or southern.", None
+        )
+
+    async def test_on_message_hemisphere_bad_hemisphere(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!hemisphere upwards")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            'Please provide either "northern" or "southern" as your hemisphere name.',
+            None,
+        )
+
+    async def test_on_message_hemisphere(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!hemisphere souTherN")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Hemisphere preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere\n",
+                f"{author.id},Southern\n",
+            ]
+
+        message = Message(author, channel, f"!hemisphere NoRthErn")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Hemisphere preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere\n",
+                f"{author.id},Northern\n",
+            ]
 
 
 class TestCodebase:
