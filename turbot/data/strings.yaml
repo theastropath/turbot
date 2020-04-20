@@ -26,7 +26,9 @@ collectedfossils: |-
   >>> $items
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
+fish_detail: '> **$name** with shadow size $shadow is available $time at $location (sells for $price bells) during $months $alert'
 fish_no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
+fish_none_found: Did not find any fish searching for "$search".
 fossil_bad: |-
   Did not recognize the following fossils:
   > $items
