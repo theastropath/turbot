@@ -31,7 +31,7 @@ def ingest(writer, hemisphere):
     for row in range(1, len(tab_data)):
         data = [clean(i) for i in tab_data[row]]
         if data:
-            corrected = [hemisphere.name, data[0], *data[2:]]
+            corrected = [hemisphere.name, data[0], *[d.lower() for d in data[2:]]]
             writer.writerow(corrected)
 
 
