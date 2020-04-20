@@ -27,11 +27,34 @@ except ImportError:
 
 matplotlib.use("Agg")
 
-ROOT = dirname(realpath(__file__))
-GRAPHCMD_FILE = "graphcmd.png"
-LASTWEEKCMD_FILE = "lastweek.png"
-STRINGS_DATA_FILE = Path(ROOT) / "data" / "strings.yaml"
-FOSSILS_DATA_FILE = Path(ROOT) / "data" / "fossils.txt"
+PACKAGE_ROOT = Path(dirname(realpath(__file__)))
+RUNTIME_ROOT = Path(".")
+
+# application configuration files
+CONFIG_DIR = RUNTIME_ROOT / "config"
+DEFAULT_CONFIG_TOKEN = CONFIG_DIR / "token.txt"
+DEFAULT_CONFIG_CHANNELS = CONFIG_DIR / "channels.txt"
+
+# static application asset data
+DATA_DIR = PACKAGE_ROOT / "data"
+STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
+FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
+
+# persisted user and application data
+DB_DIR = RUNTIME_ROOT / "db"
+DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
+DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
+
+# temporary application files
+TMP_DIR = RUNTIME_ROOT / "tmp"
+GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
+LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
+
+# ensure application directories exist
+CONFIG_DIR.mkdir(exist_ok=True)
+DATA_DIR.mkdir(exist_ok=True)
+DB_DIR.mkdir(exist_ok=True)
+TMP_DIR.mkdir(exist_ok=True)
 
 with open(STRINGS_DATA_FILE) as f:
     STRINGS = load(f, Loader=Loader)
@@ -786,7 +809,7 @@ class Turbot(discord.Client):
 
 
 def get_token(token_file):
-    """Returns the discord token from your token file."""
+    """Returns the discord token from your token config file."""
     try:
         with open(token_file, "r") as f:
             return f.readline().strip()
@@ -798,7 +821,7 @@ def get_token(token_file):
 
 
 def get_channels(channels_file):
-    """Returns the authorized channels from channels.txt."""
+    """Returns the authorized channels your channels config file."""
     try:
         with open(channels_file, "r") as channels_file:
             return [line.strip() for line in channels_file.readlines()]
@@ -817,7 +840,7 @@ def get_channels(channels_file):
 @click.option(
     "-b",
     "--bot-token-file",
-    default="token.txt",
+    default=DEFAULT_CONFIG_TOKEN,
     help="read your discord bot token from this file",
 )
 @click.option(
@@ -829,14 +852,20 @@ def get_channels(channels_file):
 @click.option(
     "-a",
     "--auth-channels-file",
-    default="channels.txt",
+    default=DEFAULT_CONFIG_CHANNELS,
     help="read authorized channel names from this file",
 )
 @click.option(
-    "-p", "--prices-file", default="prices.csv", help="read price data from this file",
+    "-p",
+    "--prices-file",
+    default=DEFAULT_DB_PRICES,
+    help="read price data from this file",
 )
 @click.option(
-    "-p", "--fossils-file", default="fossils.csv", help="read fossil data from this file",
+    "-p",
+    "--fossils-file",
+    default=DEFAULT_DB_FOSSILS,
+    help="read fossil data from this file",
 )
 def main(
     log_level,
