@@ -292,7 +292,7 @@ class Turbot(discord.Client):
             .tail(1)
             .price
         )
-        return int(last) if last.any() else None
+        return last.iloc[0] if last.any() else None
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -815,19 +815,19 @@ class Turbot(discord.Client):
         if recent_buy.empty:
             return s("cant_find_buy", name=target_name), None
 
-        buy_date = np.datetime64(recent_buy.timestamp.values[0])
-        buy_price = int(recent_buy.price)
+        buy_date = recent_buy.timestamp.iloc[0]
+        buy_price = recent_buy.price.iloc[0]
 
         sells = yours[yours.kind == "sell"]
         groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
         sell_data = {}
         for day, df in groups:
-            days_since_buy = (day.tz_convert(None) - buy_date).days
-            sell_data[days_since_buy] = df.price.values.tolist()[0:2]
+            days_since_buy = (day - buy_date).days
+            sell_data[days_since_buy] = df.price.iloc[0:2]
 
         sequence = [""] * 12
         for day in range(0, 6):
-            if day in sell_data and sell_data[day]:
+            if day in sell_data and sell_data[day].any():
                 sequence[day * 2] = sell_data[day][0]
                 if len(sell_data[day]) > 1:
                     sequence[day * 2 + 1] = sell_data[day][1]
