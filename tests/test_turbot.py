@@ -1119,6 +1119,17 @@ class TestTurbot:
             f'Did not find any fish searching for "Blinky".', None
         )
 
+    async def test_on_message_fish_multiple_users(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        await client.on_message(Message(GUY, channel, f"!hemisphere northern"))
+        await client.on_message(Message(BUDDY, channel, f"!hemisphere northern"))
+        await client.on_message(Message(FRIEND, channel, f"!hemisphere northern"))
+
+        await client.on_message(Message(GUY, channel, f"!fish sea"))
+        await client.on_message(Message(BUDDY, channel, f"!fish sea"))
+        await client.on_message(Message(FRIEND, channel, f"!fish sea"))
+
     async def test_on_message_fish_search_query(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
