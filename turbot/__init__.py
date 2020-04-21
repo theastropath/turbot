@@ -129,19 +129,9 @@ class Turbot(discord.Client):
         self._fossils_data = None  # do not use directly, load it from load_fossils()
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
-        self._prices_column_names = ["author", "kind", "price", "timestamp"]
-        self._prices_column_dtypes = ["int64", "str", "int", "datetime64[ns, UTC]"]
 
     def run(self):
         super().run(self.token)
-
-    def build_prices(self):
-        """Returns an empty DataFrame suitable for storing price data."""
-        return pd.read_csv(
-            StringIO(""),
-            names=self._prices_column_names,
-            dtype=dict(zip(self._prices_column_names, self._prices_column_dtypes)),
-        )
 
     def save_prices(self, data):
         """Saves the given prices data to csv file."""
@@ -162,18 +152,14 @@ class Turbot(discord.Client):
         data.to_csv(filepath, index=False)
 
     def load_prices(self):
-        """Returns a DataFrame of price data or creates an empty one."""
-        if self._prices_data is None:
-            try:
-                return pd.read_csv(
-                    self.prices_file,
-                    names=self._prices_column_names,
-                    dtype=dict(
-                        zip(self._prices_column_names, self._prices_column_dtypes)
-                    ),
-                )
-            except FileNotFoundError:
-                self._prices_data = self.build_prices()
+        """Loads up and returns the application price data as a DataFrame."""
+        if self._prices_data is not None:
+            return self._prices_data
+
+        src = self.prices_file if Path(self.prices_file).exists() else StringIO("")
+        cols = ["author", "kind", "price", "timestamp"]
+        dtypes = ["int64", "str", "int", "datetime64[ns, UTC]"]
+        self._prices_data = pd.read_csv(src, names=cols, dtype=dict(zip(cols, dtypes)))
         return self._prices_data
 
     def save_users(self, data):
@@ -181,17 +167,15 @@ class Turbot(discord.Client):
         data.to_csv(self.users_file, index=False)  # persist to disk
         self._users_data = data  # in-memory optimization
 
-    def build_users(self):
-        """Returns an empty DataFrame suitable for storing user data."""
-        return pd.DataFrame(columns=["author", "hemisphere", "timezone"])
-
     def load_users(self):
         """Returns a DataFrame of user data or creates an empty one."""
         if self._users_data is None:
             try:
                 self._users_data = pd.read_csv(self.users_file)
             except FileNotFoundError:
-                self._users_data = self.build_users()
+                self._users_data = pd.DataFrame(
+                    columns=["author", "hemisphere", "timezone"]
+                )
         return self._users_data
 
     def save_fossils(self, data):
@@ -199,17 +183,13 @@ class Turbot(discord.Client):
         data.to_csv(self.fossils_file, index=False)  # persist to disk
         self._fossils_data = data  # in-memory optimization
 
-    def build_fossils(self):
-        """Returns an empty DataFrame suitable for storing fossil data."""
-        return pd.DataFrame(columns=["author", "name"])
-
     def load_fossils(self):
         """Returns a DataFrame of fossils data or creates an empty one."""
         if self._fossils_data is None:
             try:
                 self._fossils_data = pd.read_csv(self.fossils_file)
             except FileNotFoundError:
-                self._fossils_data = self.build_fossils()
+                self._fossils_data = pd.DataFrame(columns=["author", "name"])
         return self._fossils_data
 
     def generate_graph(self, channel, user, graphname):
