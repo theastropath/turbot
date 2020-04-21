@@ -6,7 +6,7 @@ from os import chdir
 from os.path import dirname, realpath
 from pathlib import Path
 from subprocess import run
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
@@ -24,7 +24,7 @@ UNAUTHORIZED_CHANNEL = "bad channel"
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 
 SRC_ROOT = Path(dirname(realpath(__file__))).parent
-SRC_DIRS = ["tests", "turbot"]
+SRC_DIRS = ["tests", "turbot", "scripts"]
 
 
 class Member:
@@ -43,6 +43,8 @@ GUY = Member("guy", 82988021019836416)
 CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, ADMIN]
 
 PUNK = Member("punk", 119678027792646146)
+
+S_SPY = Mock(wraps=turbot.s)
 
 
 def someone():
@@ -102,14 +104,17 @@ def set_random_seed():
 
 @pytest.fixture
 def client(monkeypatch, freezer, patch_discord, tmp_path):
-    monkeypatch.setattr(turbot, "PRICES_FILE", tmp_path / "prices.csv")
-    monkeypatch.setattr(turbot, "FOSSILS_FILE", tmp_path / "fossils.csv")
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
-    monkeypatch.setattr(turbot, "PRICES_DATA", None)
-    monkeypatch.setattr(turbot, "FOSSILS_DATA", None)
+    monkeypatch.setattr(turbot, "s", S_SPY)
     freezer.move_to(NOW)
-    return turbot.Turbot(CLIENT_TOKEN, [AUTHORIZED_CHANNEL])
+    return turbot.Turbot(
+        token=CLIENT_TOKEN,
+        channels=[AUTHORIZED_CHANNEL],
+        prices_file=tmp_path / "prices.csv",
+        fossils_file=tmp_path / "fossils.csv",
+        users_file=tmp_path / "users.csv",
+    )
 
 
 @pytest.fixture
@@ -131,7 +136,7 @@ def graph(mocker, monkeypatch):
         Path(turbot.GRAPHCMD_FILE).touch()
 
     mock = mocker.Mock(side_effect=create_file)
-    monkeypatch.setattr(turbot, "generate_graph", mock)
+    monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
 
@@ -141,7 +146,7 @@ def lastweek(mocker, monkeypatch):
         Path(turbot.LASTWEEKCMD_FILE).touch()
 
     mock = mocker.Mock(side_effect=create_file)
-    monkeypatch.setattr(turbot, "generate_graph", mock)
+    monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
 
@@ -181,7 +186,7 @@ class TestTurbot:
         message = Message(author, channel, "!h")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did you mean: !help, !history?", None,
+            "Did you mean: !help, !hemisphere, !history?", None,
         )
 
     async def test_on_message_sell_no_price(self, client):
@@ -218,7 +223,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"Logged selling price of {amount} for user {author}.", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{NOW}\n",
         ]
@@ -233,7 +238,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{amount},{NOW}\n"]
 
         # higher price sale
         new_amount = amount + somebells()
@@ -246,7 +251,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{new_amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{new_amount},{NOW}\n"]
 
         # lower price sale
         last_amount = round(amount / 2)
@@ -259,7 +264,7 @@ class TestTurbot:
             ),
             None,
         )
-        assert lines(turbot.PRICES_FILE) == [f"{author.id},sell,{last_amount},{NOW}\n"]
+        assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
 
     async def test_on_message_buy_no_price(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -293,7 +298,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"Logged buying price of {amount} for user {author}.", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,{amount},{NOW}\n",
         ]
@@ -318,7 +323,7 @@ class TestTurbot:
         message = Message(author, channel, "!clear")
         await client.on_message(message)
         channel.sent.assert_called_with(f"**Cleared history for {author}.**", None)
-        assert lines(turbot.PRICES_FILE) == ["author,kind,price,timestamp\n"]
+        assert lines(client.prices_file) == ["author,kind,price,timestamp\n"]
 
     async def test_on_message_bestsell(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -359,7 +364,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"**Deleting last logged price for {author}.**", None
         )
-        assert lines(turbot.PRICES_FILE) == [
+        assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,1,{NOW}\n",
             f"{author.id},sell,2,{NOW}\n",
@@ -491,6 +496,13 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_turnippattern_nonnumeric_prices(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        message = Message(someone(), channel, "!turnippattern something nothing")
+        await client.on_message(message)
+        channel.sent.assert_called_with("Prices must be numbers.", None)
+
     async def test_on_message_graph_without_user(self, client, graph):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
@@ -598,18 +610,27 @@ class TestTurbot:
         await client.on_message(Message(GUY, channel, "!buy 102"))
         await client.on_message(Message(GUY, channel, "!sell 802"))
 
+        old_data = lines(client.prices_file)
+
         # then reset price data
         message = Message(someone(), channel, "!reset")
         await client.on_message(message)
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
-        assert lines(turbot.PRICES_FILE) == [
-            "author,kind,price,timestamp\n",
-            f"{FRIEND.id},buy,102,{later}\n",
-            f"{BUDDY.id},buy,122,{later}\n",
-            f"{GUY.id},buy,102,{later}\n",
-        ]
+        with open(client.prices_file) as f:
+            assert f.readlines() == [
+                "author,kind,price,timestamp\n",
+                f"{FRIEND.id},buy,102,{later}\n",
+                f"{BUDDY.id},buy,122,{later}\n",
+                f"{GUY.id},buy,102,{later}\n",
+            ]
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
-        Path(turbot.LASTWEEKCMD_FILE).exists()
+        assert Path(turbot.LASTWEEKCMD_FILE).exists()
+
+        # ensure the backup is correct
+        backup_file = Path(client.last_backup_filename())
+        assert backup_file.exists()
+        with open(backup_file) as f:
+            assert old_data == f.readlines()
 
     async def test_on_message_collect_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -634,7 +655,7 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert set(lines(turbot.FOSSILS_FILE)) == {
+        assert set(lines(client.fossils_file)) == {
             "author,name\n",
             f"{author.id},amber\n",
             f"{author.id},ankylo skull\n",
@@ -654,7 +675,7 @@ class TestTurbot:
             "> an arm",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == [f"{author.id},plesio body\n"]
+        assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
     async def test_on_message_fossilsearch_no_list(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -694,9 +715,10 @@ class TestTurbot:
         message = Message(PUNK, channel, "!fossilsearch amber, ammonite, unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
+            "__**Fossil Search**__\n"
+            "> No one needs: amber, ammonite\n"
             "Did not recognize the following fossils:\n"
-            "> unicorn bits\n"
-            "> No one needs: amber, ammonite",
+            "> unicorn bits",
             None,
         )
 
@@ -754,7 +776,9 @@ class TestTurbot:
         message = Message(PUNK, channel, "!fossilsearch unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did not recognize the following fossils:\n> unicorn bits", None
+            "__**Fossil Search**__\n"
+            "Did not recognize the following fossils:\n> unicorn bits",
+            None,
         )
 
     async def test_on_message_uncollect_no_list(self, client):
@@ -787,7 +811,7 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert lines(turbot.FOSSILS_FILE) == ["author,name\n", f"{author.id},ammonite\n"]
+        assert lines(client.fossils_file) == ["author,name\n", f"{author.id},ammonite\n"]
 
     async def test_on_message_uncollect_with_only_bad(self, client, lines):
         channel = Channel("text", AUTHORIZED_CHANNEL)
@@ -906,7 +930,8 @@ class TestTurbot:
         message = Message(author, channel, "!collectedfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull",
+            f"__**3 Fossils donated by {author}**__\n"
+            ">>> amber, ammonite, ankylo skull",
             None,
         )
 
@@ -959,6 +984,14 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_predict_no_buy(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+        await client.on_message(Message(author, channel, "!predict"))
+        channel.sent.assert_called_with(
+            f"There is no recent buy price for {author}.", None
+        )
+
     async def test_on_message_predict(self, client, freezer):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
@@ -987,6 +1020,326 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_predict_with_timezone(self, client, freezer):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # user in pacific timezone
+        user_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(Message(author, channel, f"!timezone {user_tz.zone}"))
+
+        # sunday morning buy
+        sunday_morning = datetime(year=2020, month=4, day=21, hour=6, tzinfo=user_tz)
+        freezer.move_to(sunday_morning)
+        await client.on_message(Message(author, channel, "!buy 110"))
+
+        # monday morning sell
+        monday_morning = sunday_morning + timedelta(days=1)
+        freezer.move_to(monday_morning)
+        await client.on_message(Message(author, channel, "!sell 87"))
+
+        # monday evening sell
+        monday_evening = monday_morning + timedelta(hours=14)
+        freezer.move_to(monday_evening)
+        await client.on_message(Message(author, channel, "!sell 72"))
+
+        await client.on_message(Message(author, channel, "!predict"))
+        channel.sent.assert_called_with(
+            f"{author}'s turnip prediction link: "
+            "https://turnipprophet.io/?prices=110.87.72",
+            None,
+        )
+
+    async def test_get_last_price(self, client, freezer):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        # when there's no data for the user
+        assert client.get_last_price(GUY) is None
+
+        # when there's only buy data
+        freezer.move_to(NOW + timedelta(days=1))
+        await client.on_message(Message(GUY, channel, "!buy 102"))
+        assert client.get_last_price(GUY.id) is None
+
+        # when there's sell data for someone else
+        freezer.move_to(NOW + timedelta(days=2))
+        await client.on_message(Message(BUDDY, channel, "!sell 102"))
+        assert client.get_last_price(GUY.id) is None
+
+        # when there's one sell price
+        freezer.move_to(NOW + timedelta(days=3))
+        await client.on_message(Message(GUY, channel, "!sell 82"))
+        assert client.get_last_price(GUY.id) == 82
+
+        # when there's more than one sell price
+        freezer.move_to(NOW + timedelta(days=4))
+        await client.on_message(Message(GUY, channel, "!sell 45"))
+        await client.on_message(Message(GUY, channel, "!sell 98"))
+        assert client.get_last_price(GUY.id) == 98
+
+    async def test_on_message_hemisphere_no_params(self, client, lines):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, "!hemisphere")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Please provide the name of your hemisphere, northern or southern.", None
+        )
+
+    async def test_on_message_hemisphere_bad_hemisphere(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!hemisphere upwards")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            'Please provide either "northern" or "southern" as your hemisphere name.',
+            None,
+        )
+
+    async def test_on_message_hemisphere(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!hemisphere souTherN")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Hemisphere preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},southern,\n",
+            ]
+
+        message = Message(author, channel, f"!hemisphere NoRthErn")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Hemisphere preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},northern,\n",
+            ]
+
+    async def test_on_message_fish_no_hemisphere(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!fish")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Please enter your hemisphere choice first using the !hemisphere command.",
+            None,
+        )
+
+    async def test_on_message_fish_none_found(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish Blinky")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f'Did not find any fish searching for "Blinky".', None
+        )
+
+    async def test_on_message_fish_multiple_users(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+
+        await client.on_message(Message(GUY, channel, f"!hemisphere northern"))
+        await client.on_message(Message(BUDDY, channel, f"!hemisphere northern"))
+        await client.on_message(Message(FRIEND, channel, f"!hemisphere northern"))
+
+        await client.on_message(Message(GUY, channel, f"!fish sea"))
+        await client.on_message(Message(BUDDY, channel, f"!fish sea"))
+        await client.on_message(Message(FRIEND, channel, f"!fish sea"))
+
+    async def test_on_message_fish_search_query(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish ch")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Char** with shadow size 3 is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
+            "> **Cherry salmon** with shadow size 3 is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
+            "> **Loach** with shadow size 2 is available all day at river (sells for 400 bells) during Mar, Apr, May \n"  # noqa: E501
+            "> **Pale chub** with shadow size 1 is available 9 am - 4 pm at river (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Ranchu goldfish** with shadow size 2 is available 9 am - 4 pm at pond (sells for 4500 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec ",  # noqa: E501
+            None,
+        )
+
+    async def test_on_message_fish_search_leaving(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish leaving")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan, Feb, Mar, Apr, Jul, Aug, Sep, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Dab** with shadow size 3 is available all day at sea (sells for 300 bells) during Jan, Feb, Mar, Apr, Oct, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Tuna** with shadow size 6 is available all day at pier (sells for 7000 bells) during Jan, Feb, Mar, Apr, Nov, Dec **GONE NEXT MONTH!**",  # noqa: E501
+            None,
+        )
+
+    async def test_on_message_fish(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = Message(author, channel, f"!hemisphere northern")
+        await client.on_message(message)
+
+        message = Message(author, channel, f"!fish")
+        await client.on_message(message)
+        calls = channel.sent.call_args_list
+
+        call = calls.pop()
+        response, attachment = call[0][0], call[0][1]
+        assert response == (
+            "> **Oarfish** is available all day at sea (sells for 9000 bells) \n"  # noqa: E501
+            "> **Olive flounder** is available all day at sea (sells for 800 bells) \n"  # noqa: E501
+            "> **Pale chub** is available 9 am - 4 pm at river (sells for 200 bells) \n"  # noqa: E501
+            "> **Pop-eyed goldfish** is available 9 am - 4 pm at pond (sells for 1300 bells) \n"  # noqa: E501
+            "> **Ranchu goldfish** is available 9 am - 4 pm at pond (sells for 4500 bells) \n"  # noqa: E501
+            "> **Red snapper** is available all day at sea (sells for 3000 bells) \n"  # noqa: E501
+            "> **Sea bass** is available all day at sea (sells for 400 bells) \n"  # noqa: E501
+            "> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_\n"  # noqa: E501
+            "> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_\n"  # noqa: E501
+            "> **Squid** is available all day at sea (sells for 500 bells) \n"  # noqa: E501
+            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
+            "> **Tadpole** is available all day at pond (sells for 100 bells) \n"  # noqa: E501
+            "> **Tuna** is available all day at pier (sells for 7000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
+        )
+        assert attachment is None
+
+        call = calls.pop()
+        response, attachment = call[0][0], call[0][1]
+        assert response == (
+            "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
+            "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"  # noqa: E501
+            "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"  # noqa: E501
+            "> **Black bass** is available all day at river (sells for 400 bells) \n"  # noqa: E501
+            "> **Blue marlin** is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"  # noqa: E501
+            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
+            "> **Carp** is available all day at pond (sells for 300 bells) \n"  # noqa: E501
+            "> **Char** is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) \n"  # noqa: E501
+            "> **Cherry salmon** is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) \n"  # noqa: E501
+            "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
+            "> **Coelacanth** is available all day at sea (while raining) (sells for 15000 bells) \n"  # noqa: E501
+            "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
+            "> **Crucian carp** is available all day at river (sells for 160 bells) \n"  # noqa: E501
+            "> **Dab** is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"  # noqa: E501
+            "> **Freshwater goby** is available 4 pm - 9 am at river (sells for 400 bells) \n"  # noqa: E501
+            "> **Golden trout** is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) \n"  # noqa: E501
+            "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"  # noqa: E501
+            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_\n"  # noqa: E501
+            "> **Horse mackerel** is available all day at sea (sells for 150 bells) \n"  # noqa: E501
+            "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
+            "> **Koi** is available 4 pm - 9 am at pond (sells for 4000 bells) \n"  # noqa: E501
+            "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
+            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_"  # noqa: E501
+        )
+        assert attachment is None
+
+    async def test_on_message_timezone_no_params(self, client, lines):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, "!timezone")
+        await client.on_message(message)
+        channel.sent.assert_called_with("Please provide the name of your timezone.", None)
+
+    async def test_on_message_timezone_bad_timezone(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!timezone Mars/Noctis_City")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Please provide a valid timezone name, see "
+            "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the "
+            "complete list of TZ names.",
+            None,
+        )
+
+    async def test_on_message_timezone(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!timezone America/Los_Angeles")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Timezone preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},,America/Los_Angeles\n",
+            ]
+
+        message = Message(author, channel, f"!timezone Canada/Saskatchewan")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Timezone preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},,Canada/Saskatchewan\n",
+            ]
+
+    async def test_load_prices_new(self, client):
+        prices = client.load_prices()
+
+        assert prices.empty
+
+        loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
+        assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
+
+    async def test_load_prices_existing(self, client):
+        data = [
+            ["author", "kind", "price", "timestamp",],
+            ["82169952898912256", "buy", "94", "2020-04-12 13:11:22.759958744+00:00"],
+            ["82169952898912256", "sell", "66", "2020-04-13 12:51:41.321097374+00:00"],
+            ["82169952898912256", "sell", "57", "2020-04-13 16:09:53.589281321+00:00"],
+            ["82169952898912256", "sell", "130", "2020-04-14 13:04:16.417927504+00:00"],
+            ["82226367030108160", "sell", "76", "2020-04-15 12:51:36.569223404+00:00"],
+            ["82226367030108160", "sell", "134", "2020-04-15 16:03:58.559760571+00:00"],
+            ["93126903363301376", "buy", "99", "2020-04-12 13:40:10.002708912+00:00"],
+            ["93126903363301376", "sell", "87", "2020-04-13 14:25:10.902356148+00:00"],
+            ["93126903363301376", "sell", "84", "2020-04-13 16:35:31.403252602+00:00"],
+        ]
+        with open(client.prices_file, "w") as f:
+            for line in data:
+                f.write(f"{','.join(line)}\n")
+
+        prices = client.load_prices()
+
+        loaded_data = [[str(i) for i in row.tolist()] for _, row in prices.iterrows()]
+        assert loaded_data == data[1:]
+
+        loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
+        assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
+
 
 class TestCodebase:
     def test_flake8(self):
@@ -1006,3 +1359,20 @@ class TestCodebase:
         chdir(SRC_ROOT)
         proc = run(["isort", "-df", "-rc", "-c", *SRC_DIRS], capture_output=True)
         assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"
+
+
+class TestMeta:
+    # This test will fail in isolation, you must run the full test suite
+    # for it to actually pass. This is because it tracks the usage of
+    # string keys over the entire test session. It can fail for two reasons:
+    #
+    # 1. There's a key in strings.yaml that's not being used at all.
+    # 2. There's a key in strings.yaml that isn't being used in the tests.
+    #
+    # For situation #1 the solution is to remove the key from the config.
+    # As for #2, there should be a new test which utilizes this key.
+    def test_strings(self):
+        """Assues that there are no missing or unused strings data."""
+        used_keys = set(call[0][0] for call in S_SPY.call_args_list)
+        config_keys = set(turbot.STRINGS.keys())
+        assert config_keys - used_keys == set()

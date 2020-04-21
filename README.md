@@ -5,8 +5,8 @@ A Discord bot for tracking _Animal Crossing: New Horizons_ turnip prices and fos
 ## Usage
 
 1. Go to the root directory of this repository.
-2. Create a file named `token.txt` and paste your Discord bot token into it.
-3. Create a file named `channels.txt` and paste a list of channels you would like Turbot to run in. Put each channel name on a new line.
+2. Create a file named `config/token.txt` and paste your Discord bot token into it.
+3. Create a file named `config/channels.txt` and paste a list of channels you would like Turbot to run in. Put each channel name on a new line.
 4. Ensure that you have the proper Python 3 dependencies installed: `pip install -r requirements.txt`.
 5. Install the application: `python setup.py install`.
 6. Run the application: `turbot`.
@@ -55,6 +55,16 @@ The script can be run multiple times without corrupting or duplicating data. Any
 
 Codebase consistency is maintained by the industry standard [black](https://black.readthedocs.io/en/stable/). For linting we use [flake8](https://flake8.pycqa.org/en/latest/) with configuration to work alongside the formatter. Imports are kept in order by [isort](https://timothycrosley.github.io/isort/). The included test suite can run these tools against the codebase and report on any errors:
 
-```bash
+```shell
 tox -- -k codebase
 ```
+
+### Updating fish data
+
+Data on fishes is captured from [the Animal Crossing fandom page](https://animalcrossing.fandom.com/wiki/Fish_(New_Horizons)) and then compiled into a csv file in the package's `data` directory. The script to do this is included in the `scripts` directory. Run it to fetch the latest data:
+
+```shell
+./scripts/update_fish_data.py
+```
+
+Note that you must have development requirements installed to run this script.

@@ -25,6 +25,10 @@ collectedfossils: |-
   __**$count Fossils donated by $name**__
   >>> $items
 did_you_mean: 'Did you mean: $possible?'
+fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
+fish_detail: '> **$name** with shadow size $shadow is available $time at $location (sells for $price bells) during $months $alert'
+fish_no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
+fish_none_found: Did not find any fish searching for "$search".
 fossil_bad: |-
   Did not recognize the following fossils:
   > $items
@@ -39,7 +43,9 @@ fossilsearch_noneed: No one currently needs this.
 fossilsearch_row: '> $name needs: $fossils'
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
-hello: Hello!
+hemisphere: Hemisphere preference registered for $name.
+hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere name.
+hemisphere_no_params: 'Please provide the name of your hemisphere, northern or southern.'
 history_buy: '> Can buy turnips from Daisy Mae for $price bells at $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
@@ -48,8 +54,6 @@ lastweek_none: No graph from last week.
 listfossils: |-
   __**$count Fossils remaining for $name**__
   >>> $items
-lookup: $user_id
-lookup_no_params: Please provide the name of a user to lookup.
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
 reset: '**Resetting data for a new week!**'
@@ -60,6 +64,9 @@ sell_no_params: Please include selling price after command name.
 sell_nonnumeric_price: Selling price must be a number.
 sell_nonpositive_price: Selling price must be greater than zero.
 sell_same_price: Logged selling price of $price for user $name. (Same as last selling price)
+timezone: Timezone preference registered for $name.
+timezone_bad_params: 'Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the complete list of TZ names.'
+timezone_no_params: Please provide the name of your timezone.
 turnippattern_bad_params: |-
   Please provide Daisy Mae's price and your Monday morning price
   eg. !turnippattern <buy price> <Monday morning sell price>
