@@ -156,10 +156,17 @@ class Turbot(discord.Client):
         if self._prices_data is not None:
             return self._prices_data
 
-        src = self.prices_file if Path(self.prices_file).exists() else StringIO("")
         cols = ["author", "kind", "price", "timestamp"]
-        dtypes = ["int64", "str", "int", "datetime64[ns, UTC]"]
-        self._prices_data = pd.read_csv(src, names=cols, dtype=dict(zip(cols, dtypes)))
+        dtypes = ["int64", "object", "int64", "datetime64[ns, UTC]"]
+        if Path(self.prices_file).exists():
+            self._prices_data = pd.read_csv(
+                self.prices_file, names=cols, parse_dates=True, skiprows=1
+            )
+        else:
+            self._prices_data = pd.read_csv(
+                StringIO(""), names=cols, dtype=dict(zip(cols, dtypes))
+            )
+        self._prices_data = self._prices_data.astype(dict(zip(cols, dtypes)))
         return self._prices_data
 
     def save_users(self, data):

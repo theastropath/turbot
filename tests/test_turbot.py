@@ -1307,6 +1307,39 @@ class TestTurbot:
                 f"{author.id},,Canada/Saskatchewan\n",
             ]
 
+    async def test_load_prices_new(self, client):
+        prices = client.load_prices()
+
+        assert prices.empty
+
+        loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
+        assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
+
+    async def test_load_prices_existing(self, client):
+        data = [
+            ["author", "kind", "price", "timestamp",],
+            ["82169952898912256", "buy", "94", "2020-04-12 13:11:22.759958744+00:00"],
+            ["82169952898912256", "sell", "66", "2020-04-13 12:51:41.321097374+00:00"],
+            ["82169952898912256", "sell", "57", "2020-04-13 16:09:53.589281321+00:00"],
+            ["82169952898912256", "sell", "130", "2020-04-14 13:04:16.417927504+00:00"],
+            ["82226367030108160", "sell", "76", "2020-04-15 12:51:36.569223404+00:00"],
+            ["82226367030108160", "sell", "134", "2020-04-15 16:03:58.559760571+00:00"],
+            ["93126903363301376", "buy", "99", "2020-04-12 13:40:10.002708912+00:00"],
+            ["93126903363301376", "sell", "87", "2020-04-13 14:25:10.902356148+00:00"],
+            ["93126903363301376", "sell", "84", "2020-04-13 16:35:31.403252602+00:00"],
+        ]
+        with open(client.prices_file, "w") as f:
+            for line in data:
+                f.write(f"{','.join(line)}\n")
+
+        prices = client.load_prices()
+
+        loaded_data = [[str(i) for i in row.tolist()] for _, row in prices.iterrows()]
+        assert loaded_data == data[1:]
+
+        loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
+        assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
+
 
 class TestCodebase:
     def test_flake8(self):
