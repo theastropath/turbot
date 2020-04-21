@@ -108,7 +108,8 @@ def discord_user_id(channel, name):
     if not name:
         return None
     return getattr(discord_user_from_name(channel, name), "id", None)
-  
+
+
 def is_turbot_admin(channel, user):
     """Checks to see if user has the Turbot Admin role in this server"""
 
@@ -121,6 +122,7 @@ def is_turbot_admin(channel, user):
                 return True
 
     return False
+
 
 class Turbot(discord.Client):
     """Discord turnip bot"""
@@ -309,7 +311,6 @@ class Turbot(discord.Client):
             return {}
         return row.to_dict(orient="records")[0]
 
-      
     def get_user_hemisphere(self, author_id):
         prefs = self._get_user_prefs(author_id)
         if (
@@ -320,7 +321,6 @@ class Turbot(discord.Client):
         ):
             return None
         return prefs["hemisphere"]
-
 
     def get_user_timezone(self, author_id):
         prefs = self._get_user_prefs(author_id)
@@ -517,10 +517,9 @@ class Turbot(discord.Client):
         resets all data for all users.
         """
 
-
-        # Disabled until role is added on our server...
-        if not is_turbot_admin(channel,author):
-            return "User is not a Turbot Admin", None
+        # Only users with the Turbot Admin role can do a reset
+        if not is_turbot_admin(channel, author):
+            return s("not_admin"), None
 
         self.generate_graph(channel, None, LASTWEEKCMD_FILE)
         prices = self.load_prices()
