@@ -869,7 +869,7 @@ class Turbot(discord.Client):
             return s("fish_no_hemisphere"), None
 
         now = datetime.now(pytz.utc)
-        hemisphere = prefs.at[0, "hemisphere"]
+        hemisphere = prefs.hemisphere.iloc[0]
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()
