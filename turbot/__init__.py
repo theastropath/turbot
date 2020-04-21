@@ -174,7 +174,7 @@ class Turbot(discord.Client):
 
     def build_users(self):
         """Returns an empty DataFrame suitable for storing user data."""
-        return pd.DataFrame(columns=["author", "hemisphere"])
+        return pd.DataFrame(columns=["author", "hemisphere", "timezone"])
 
     def load_users(self):
         """Returns a DataFrame of user data or creates an empty one."""
@@ -259,7 +259,7 @@ class Turbot(discord.Client):
         plt.grid(b=True, which="major", color="#666666", linestyle="-")
         ax.yaxis.grid(b=True, which="minor", color="#555555", linestyle=":")
         plt.ylabel("Price")
-        plt.xlabel("Time (Eastern)")
+        plt.xlabel("Time (UTC)")
         plt.title("Selling Prices")
         plt.legend(legendElems, loc="upper left", bbox_to_anchor=(1, 1))
 
@@ -293,6 +293,47 @@ class Turbot(discord.Client):
             .price
         )
         return last.iloc[0] if last.any() else None
+
+    def _get_user_prefs(self, author_id):
+        users = self.load_users()
+        row = users[users.author == author_id].tail(1)
+        if row.empty:
+            return {}
+        return row.to_dict(orient="records")[0]
+
+    def get_user_hemisphere(self, author_id):
+        prefs = self._get_user_prefs(author_id)
+        if (
+            not prefs
+            or "hemisphere" not in prefs
+            or not prefs["hemisphere"]
+            or not isinstance(prefs["hemisphere"], str)
+        ):
+            return None
+        return prefs["hemisphere"]
+
+    def get_user_timezone(self, author_id):
+        prefs = self._get_user_prefs(author_id)
+        if (
+            not prefs
+            or "timezone" not in prefs
+            or not prefs["timezone"]
+            or not isinstance(prefs["timezone"], str)
+        ):
+            return pytz.UTC
+        return pytz.timezone(prefs["timezone"])
+
+    def save_user_pref(self, author, pref, value):
+        users = self.load_users()
+        row = users[users.author == author.id].tail(1)
+        if row.empty:
+            data = pd.DataFrame(columns=users.columns)
+            data["author"] = [author.id]
+            data[pref] = [value]
+            users = users.append(data, ignore_index=True)
+        else:
+            users.at[row.index, pref] = value
+        self.save_users(users)
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -811,6 +852,11 @@ class Turbot(discord.Client):
         yours = prices[(prices.author == target_id) & (prices.timestamp > past)]
         yours = yours.sort_values(by=["timestamp"])
 
+        # convert all timestamps to the target user's timezone
+        target_timezone = self.get_user_timezone(target_id)
+        prices["timestamp"] = pd.to_datetime(prices["timestamp"])  # FIXME: Why needed?
+        yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
+
         recent_buy = yours[yours.kind == "buy"].tail(1)
         if recent_buy.empty:
             return s("cant_find_buy", name=target_name), None
@@ -847,29 +893,33 @@ class Turbot(discord.Client):
         if home not in ["northern", "southern"]:
             return s("hemisphere_bad_params"), None
 
-        users = self.load_users()
-        prefs = users[users.author == author.id]
-        if prefs.empty:
-            users = users.append(
-                pd.DataFrame(columns=users.columns, data=[[author.id, home]]),
-                ignore_index=True,
-            )
-        else:
-            users.at[prefs.index, "hemisphere"] = home
-        self.save_users(users)
+        self.save_user_pref(author, "hemisphere", home)
         return s("hemisphere", name=author), None
+
+    def timezone_command(self, channel, author, params):
+        """
+        Set your timezone. You can find a list of supported TZ names at
+        https://en.wikipedia.org/wiki/List_of_tz_database_time_zones | <zone>
+        """
+        if not params:
+            return s("timezone_no_params"), None
+
+        zone = params[0]
+        if zone not in pytz.all_timezones_set:
+            return s("timezone_bad_params"), None
+
+        self.save_user_pref(author, "timezone", zone)
+        return s("timezone", name=author), None
 
     def fish_command(self, channel, author, params):
         """
         Tell you what fish are available now in your hemisphere. | [name|leaving]
         """
-        users = self.load_users()
-        prefs = users[users.author == author.id]
-        if prefs.empty:
+        hemisphere = self.get_user_hemisphere(author.id)
+        if not hemisphere:
             return s("fish_no_hemisphere"), None
 
         now = datetime.now(pytz.utc)
-        hemisphere = prefs.hemisphere.iloc[0]
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()

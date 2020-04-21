@@ -64,6 +64,9 @@ sell_no_params: Please include selling price after command name.
 sell_nonnumeric_price: Selling price must be a number.
 sell_nonpositive_price: Selling price must be greater than zero.
 sell_same_price: Logged selling price of $price for user $name. (Same as last selling price)
+timezone: Timezone preference registered for $name.
+timezone_bad_params: 'Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the complete list of TZ names.'
+timezone_no_params: Please provide the name of your timezone.
 turnippattern_bad_params: |-
   Please provide Daisy Mae's price and your Monday morning price
   eg. !turnippattern <buy price> <Monday morning sell price>
