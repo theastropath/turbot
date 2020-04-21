@@ -27,22 +27,34 @@ SRC_ROOT = Path(dirname(realpath(__file__))).parent
 SRC_DIRS = ["tests", "turbot", "scripts"]
 
 
+class Role:
+    def __init__(self, name):
+        self.name = name
+
+    def __str__(self):
+        return self.name
+
+
 class Member:
-    def __init__(self, member_name, member_id):
+    def __init__(self, member_name, member_id, role):
         self.name = member_name
         self.id = member_id
+        self.roles = []
+        if role:
+            self.roles.append(Role(role))
 
     def __repr__(self):
         return f"{self.name}#{self.id}"
 
 
-ADMIN = Member(CLIENT_USER, CLIENT_USER_ID)
-FRIEND = Member("friend", 82169952898912256)
-BUDDY = Member("buddy", 82942320688758784)
-GUY = Member("guy", 82988021019836416)
-CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, ADMIN]
+ADMIN = Member(CLIENT_USER, CLIENT_USER_ID, "Turbot Admin")
+FRIEND = Member("friend", 82169952898912256, None)
+BUDDY = Member("buddy", 82942320688758784, "Turbot Admin")
+GUY = Member("guy", 82988021019836416, None)
+DUDE = Member("dude", 82988761019835305, "Turbot Admin")
+CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, DUDE, ADMIN]
 
-PUNK = Member("punk", 119678027792646146)
+PUNK = Member("punk", 119678027792646146, None)
 
 S_SPY = Mock(wraps=turbot.s)
 
@@ -50,6 +62,16 @@ S_SPY = Mock(wraps=turbot.s)
 def someone():
     """Returns some non-admin user"""
     return random.choice(list(filter(lambda member: member != ADMIN, CHANNEL_MEMBERS)))
+
+
+def someturbotadmin():
+    """Returns a random non-admin user with the Turbot Admin role"""
+    return random.choice([BUDDY, DUDE])
+
+
+def somenonturbotadmin():
+    """Returns a random non-admin user without the Turbot Admin role"""
+    return random.choice([FRIEND, GUY])
 
 
 def somebells():
@@ -62,12 +84,24 @@ def is_discord_file(obj):
     return (obj.__class__.__name__) == "File"
 
 
+class Guild:
+    def __init__(self):
+        self.members = CHANNEL_MEMBERS  # All channel members are guild members
+
+    def get_member(self, userid):
+        for member in self.members:
+            if member.id == userid:
+                return member
+        return None
+
+
 class Channel:
     def __init__(self, channel_type, channel_name):
         self.type = channel_type
         self.name = channel_name
         self.sent = MagicMock()
         self.members = CHANNEL_MEMBERS
+        self.guild = Guild()
 
     async def send(self, response, file):
         self.sent(response, file)
@@ -573,7 +607,7 @@ class TestTurbot:
     async def test_on_message_lastweek(self, client, freezer, lastweek):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
-        await client.on_message(Message(someone(), channel, "!reset"))
+        await client.on_message(Message(someturbotadmin(), channel, "!reset"))
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
@@ -583,7 +617,44 @@ class TestTurbot:
             "__**Historical Graph from Last Week**__", Matching(is_discord_file)
         )
 
-    async def test_on_message_reset(self, client, lines, freezer, lastweek):
+    async def test_on_message_reset_not_admin(self, client, lines, freezer, lastweek):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        # first log some buy and sell prices
+        await client.on_message(Message(FRIEND, channel, "!buy 100"))
+        await client.on_message(Message(FRIEND, channel, "!sell 600"))
+        await client.on_message(Message(FRIEND, channel, "!buy 101"))
+        await client.on_message(Message(FRIEND, channel, "!sell 601"))
+        await client.on_message(Message(BUDDY, channel, "!buy 120"))
+        await client.on_message(Message(BUDDY, channel, "!sell 90"))
+        await client.on_message(Message(BUDDY, channel, "!buy 121"))
+        await client.on_message(Message(BUDDY, channel, "!sell 91"))
+        await client.on_message(Message(GUY, channel, "!buy 100"))
+        await client.on_message(Message(GUY, channel, "!sell 800"))
+        await client.on_message(Message(GUY, channel, "!buy 101"))
+        await client.on_message(Message(GUY, channel, "!sell 801"))
+
+        # then jump ahead a week and log some more
+        later = NOW + timedelta(days=7)
+        freezer.move_to(later)
+        await client.on_message(Message(FRIEND, channel, "!buy 102"))
+        await client.on_message(Message(FRIEND, channel, "!sell 602"))
+        await client.on_message(Message(BUDDY, channel, "!buy 122"))
+        await client.on_message(Message(BUDDY, channel, "!sell 92"))
+        await client.on_message(Message(GUY, channel, "!buy 102"))
+        await client.on_message(Message(GUY, channel, "!sell 802"))
+
+        old_data = lines(client.prices_file)
+
+        # then reset price data
+        message = Message(somenonturbotadmin(), channel, "!reset")
+        await client.on_message(message)
+        channel.sent.assert_called_with("User is not a Turbot Admin", None)
+        with open(client.prices_file) as f:
+            assert f.readlines() == old_data
+
+        assert not Path(turbot.LASTWEEKCMD_FILE).exists()
+
+    async def test_on_message_reset_admin(self, client, lines, freezer, lastweek):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
         # first log some buy and sell prices
@@ -613,7 +684,7 @@ class TestTurbot:
         old_data = lines(client.prices_file)
 
         # then reset price data
-        message = Message(someone(), channel, "!reset")
+        message = Message(someturbotadmin(), channel, "!reset")
         await client.on_message(message)
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         with open(client.prices_file) as f:
@@ -1091,7 +1162,7 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!hemisphere upwards")
+        message = Message(author, channel, "!hemisphere upwards")
         await client.on_message(message)
         channel.sent.assert_called_with(
             'Please provide either "northern" or "southern" as your hemisphere name.',
@@ -1102,7 +1173,7 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!hemisphere souTherN")
+        message = Message(author, channel, "!hemisphere souTherN")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Hemisphere preference registered for {author}.", None
@@ -1113,7 +1184,7 @@ class TestTurbot:
                 f"{author.id},southern,\n",
             ]
 
-        message = Message(author, channel, f"!hemisphere NoRthErn")
+        message = Message(author, channel, "!hemisphere NoRthErn")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Hemisphere preference registered for {author}.", None
@@ -1128,10 +1199,10 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!fish")
+        message = Message(author, channel, "!fish")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Please enter your hemisphere choice first using the !hemisphere command.",
+            "Please enter your hemisphere choice first using the !hemisphere command.",
             None,
         )
 
@@ -1140,35 +1211,35 @@ class TestTurbot:
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, f"!hemisphere northern")
+        message = Message(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, f"!fish Blinky")
+        message = Message(author, channel, "!fish Blinky")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f'Did not find any fish searching for "Blinky".', None
+            'Did not find any fish searching for "Blinky".', None
         )
 
     async def test_on_message_fish_multiple_users(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
-        await client.on_message(Message(GUY, channel, f"!hemisphere northern"))
-        await client.on_message(Message(BUDDY, channel, f"!hemisphere northern"))
-        await client.on_message(Message(FRIEND, channel, f"!hemisphere northern"))
+        await client.on_message(Message(GUY, channel, "!hemisphere northern"))
+        await client.on_message(Message(BUDDY, channel, "!hemisphere northern"))
+        await client.on_message(Message(FRIEND, channel, "!hemisphere northern"))
 
-        await client.on_message(Message(GUY, channel, f"!fish sea"))
-        await client.on_message(Message(BUDDY, channel, f"!fish sea"))
-        await client.on_message(Message(FRIEND, channel, f"!fish sea"))
+        await client.on_message(Message(GUY, channel, "!fish sea"))
+        await client.on_message(Message(BUDDY, channel, "!fish sea"))
+        await client.on_message(Message(FRIEND, channel, "!fish sea"))
 
     async def test_on_message_fish_search_query(self, client):
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, f"!hemisphere northern")
+        message = Message(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, f"!fish ch")
+        message = Message(author, channel, "!fish ch")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
@@ -1185,10 +1256,10 @@ class TestTurbot:
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, f"!hemisphere northern")
+        message = Message(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, f"!fish leaving")
+        message = Message(author, channel, "!fish leaving")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan, Feb, Mar, Apr, Jul, Aug, Sep, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
@@ -1202,10 +1273,10 @@ class TestTurbot:
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, f"!hemisphere northern")
+        message = Message(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, f"!fish")
+        message = Message(author, channel, "!fish")
         await client.on_message(message)
         calls = channel.sent.call_args_list
 
@@ -1272,7 +1343,7 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!timezone Mars/Noctis_City")
+        message = Message(author, channel, "!timezone Mars/Noctis_City")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide a valid timezone name, see "
@@ -1285,7 +1356,7 @@ class TestTurbot:
         channel = Channel("text", AUTHORIZED_CHANNEL)
         author = someone()
 
-        message = Message(author, channel, f"!timezone America/Los_Angeles")
+        message = Message(author, channel, "!timezone America/Los_Angeles")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Timezone preference registered for {author}.", None
@@ -1296,7 +1367,7 @@ class TestTurbot:
                 f"{author.id},,America/Los_Angeles\n",
             ]
 
-        message = Message(author, channel, f"!timezone Canada/Saskatchewan")
+        message = Message(author, channel, "!timezone Canada/Saskatchewan")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Timezone preference registered for {author}.", None

@@ -54,6 +54,7 @@ lastweek_none: No graph from last week.
 listfossils: |-
   __**$count Fossils remaining for $name**__
   >>> $items
+not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
 reset: '**Resetting data for a new week!**'
