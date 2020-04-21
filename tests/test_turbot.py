@@ -1020,6 +1020,36 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_predict_with_timezone(self, client, freezer):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        # user in pacific timezone
+        user_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(Message(author, channel, f"!timezone {user_tz.zone}"))
+
+        # sunday morning buy
+        sunday_morning = datetime(year=2020, month=4, day=21, hour=6, tzinfo=user_tz)
+        freezer.move_to(sunday_morning)
+        await client.on_message(Message(author, channel, "!buy 110"))
+
+        # monday morning sell
+        monday_morning = sunday_morning + timedelta(days=1)
+        freezer.move_to(monday_morning)
+        await client.on_message(Message(author, channel, "!sell 87"))
+
+        # monday evening sell
+        monday_evening = monday_morning + timedelta(hours=14)
+        freezer.move_to(monday_evening)
+        await client.on_message(Message(author, channel, "!sell 72"))
+
+        await client.on_message(Message(author, channel, "!predict"))
+        channel.sent.assert_called_with(
+            f"{author}'s turnip prediction link: "
+            "https://turnipprophet.io/?prices=110.87.72",
+            None,
+        )
+
     async def test_get_last_price(self, client, freezer):
         channel = Channel("text", AUTHORIZED_CHANNEL)
 
@@ -1079,8 +1109,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere\n",
-                f"{author.id},southern\n",
+                "author,hemisphere,timezone\n",
+                f"{author.id},southern,\n",
             ]
 
         message = Message(author, channel, f"!hemisphere NoRthErn")
@@ -1090,8 +1120,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere\n",
-                f"{author.id},northern\n",
+                "author,hemisphere,timezone\n",
+                f"{author.id},northern,\n",
             ]
 
     async def test_on_message_fish_no_hemisphere(self, client):
@@ -1229,6 +1259,53 @@ class TestTurbot:
             "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_"  # noqa: E501
         )
         assert attachment is None
+
+    async def test_on_message_timezone_no_params(self, client, lines):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, "!timezone")
+        await client.on_message(message)
+        channel.sent.assert_called_with("Please provide the name of your timezone.", None)
+
+    async def test_on_message_timezone_bad_timezone(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!timezone Mars/Noctis_City")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Please provide a valid timezone name, see "
+            "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the "
+            "complete list of TZ names.",
+            None,
+        )
+
+    async def test_on_message_timezone(self, client):
+        channel = Channel("text", AUTHORIZED_CHANNEL)
+        author = someone()
+
+        message = Message(author, channel, f"!timezone America/Los_Angeles")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Timezone preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},,America/Los_Angeles\n",
+            ]
+
+        message = Message(author, channel, f"!timezone Canada/Saskatchewan")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Timezone preference registered for {author}.", None
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone\n",
+                f"{author.id},,Canada/Saskatchewan\n",
+            ]
 
 
 class TestCodebase:

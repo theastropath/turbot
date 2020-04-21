@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
+from io import StringIO
 from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
@@ -132,12 +133,6 @@ class Turbot(discord.Client):
     def run(self):
         super().run(self.token)
 
-    def build_prices(self):
-        """Returns an empty DataFrame suitable for storing price data."""
-        return pd.DataFrame(columns=["author", "kind", "price", "timestamp"]).astype(
-            {"timestamp": "datetime64[ns, UTC]"}
-        )
-
     def save_prices(self, data):
         """Saves the given prices data to csv file."""
         data.to_csv(self.prices_file, index=False)  # persist to disk
@@ -157,14 +152,14 @@ class Turbot(discord.Client):
         data.to_csv(filepath, index=False)
 
     def load_prices(self):
-        """Returns a DataFrame of price data or creates an empty one."""
-        if self._prices_data is None:
-            try:
-                self._prices_data = pd.read_csv(self.prices_file).astype(
-                    {"timestamp": "datetime64[ns, UTC]"}
-                )
-            except FileNotFoundError:
-                self._prices_data = self.build_prices()
+        """Loads up and returns the application price data as a DataFrame."""
+        if self._prices_data is not None:
+            return self._prices_data
+
+        src = self.prices_file if Path(self.prices_file).exists() else StringIO("")
+        cols = ["author", "kind", "price", "timestamp"]
+        dtypes = ["int64", "str", "int", "datetime64[ns, UTC]"]
+        self._prices_data = pd.read_csv(src, names=cols, dtype=dict(zip(cols, dtypes)))
         return self._prices_data
 
     def save_users(self, data):
@@ -172,17 +167,15 @@ class Turbot(discord.Client):
         data.to_csv(self.users_file, index=False)  # persist to disk
         self._users_data = data  # in-memory optimization
 
-    def build_users(self):
-        """Returns an empty DataFrame suitable for storing user data."""
-        return pd.DataFrame(columns=["author", "hemisphere"])
-
     def load_users(self):
         """Returns a DataFrame of user data or creates an empty one."""
         if self._users_data is None:
             try:
                 self._users_data = pd.read_csv(self.users_file)
             except FileNotFoundError:
-                self._users_data = self.build_users()
+                self._users_data = pd.DataFrame(
+                    columns=["author", "hemisphere", "timezone"]
+                )
         return self._users_data
 
     def save_fossils(self, data):
@@ -190,17 +183,13 @@ class Turbot(discord.Client):
         data.to_csv(self.fossils_file, index=False)  # persist to disk
         self._fossils_data = data  # in-memory optimization
 
-    def build_fossils(self):
-        """Returns an empty DataFrame suitable for storing fossil data."""
-        return pd.DataFrame(columns=["author", "name"])
-
     def load_fossils(self):
         """Returns a DataFrame of fossils data or creates an empty one."""
         if self._fossils_data is None:
             try:
                 self._fossils_data = pd.read_csv(self.fossils_file)
             except FileNotFoundError:
-                self._fossils_data = self.build_fossils()
+                self._fossils_data = pd.DataFrame(columns=["author", "name"])
         return self._fossils_data
 
     def generate_graph(self, channel, user, graphname):
@@ -259,7 +248,7 @@ class Turbot(discord.Client):
         plt.grid(b=True, which="major", color="#666666", linestyle="-")
         ax.yaxis.grid(b=True, which="minor", color="#555555", linestyle=":")
         plt.ylabel("Price")
-        plt.xlabel("Time (Eastern)")
+        plt.xlabel("Time (UTC)")
         plt.title("Selling Prices")
         plt.legend(legendElems, loc="upper left", bbox_to_anchor=(1, 1))
 
@@ -293,6 +282,47 @@ class Turbot(discord.Client):
             .price
         )
         return last.iloc[0] if last.any() else None
+
+    def _get_user_prefs(self, author_id):
+        users = self.load_users()
+        row = users[users.author == author_id].tail(1)
+        if row.empty:
+            return {}
+        return row.to_dict(orient="records")[0]
+
+    def get_user_hemisphere(self, author_id):
+        prefs = self._get_user_prefs(author_id)
+        if (
+            not prefs
+            or "hemisphere" not in prefs
+            or not prefs["hemisphere"]
+            or not isinstance(prefs["hemisphere"], str)
+        ):
+            return None
+        return prefs["hemisphere"]
+
+    def get_user_timezone(self, author_id):
+        prefs = self._get_user_prefs(author_id)
+        if (
+            not prefs
+            or "timezone" not in prefs
+            or not prefs["timezone"]
+            or not isinstance(prefs["timezone"], str)
+        ):
+            return pytz.UTC
+        return pytz.timezone(prefs["timezone"])
+
+    def save_user_pref(self, author, pref, value):
+        users = self.load_users()
+        row = users[users.author == author.id].tail(1)
+        if row.empty:
+            data = pd.DataFrame(columns=users.columns)
+            data["author"] = [author.id]
+            data[pref] = [value]
+            users = users.append(data, ignore_index=True)
+        else:
+            users.at[row.index, pref] = value
+        self.save_users(users)
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -811,6 +841,10 @@ class Turbot(discord.Client):
         yours = prices[(prices.author == target_id) & (prices.timestamp > past)]
         yours = yours.sort_values(by=["timestamp"])
 
+        # convert all timestamps to the target user's timezone
+        target_timezone = self.get_user_timezone(target_id)
+        yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
+
         recent_buy = yours[yours.kind == "buy"].tail(1)
         if recent_buy.empty:
             return s("cant_find_buy", name=target_name), None
@@ -847,29 +881,33 @@ class Turbot(discord.Client):
         if home not in ["northern", "southern"]:
             return s("hemisphere_bad_params"), None
 
-        users = self.load_users()
-        prefs = users[users.author == author.id]
-        if prefs.empty:
-            users = users.append(
-                pd.DataFrame(columns=users.columns, data=[[author.id, home]]),
-                ignore_index=True,
-            )
-        else:
-            users.at[prefs.index, "hemisphere"] = home
-        self.save_users(users)
+        self.save_user_pref(author, "hemisphere", home)
         return s("hemisphere", name=author), None
+
+    def timezone_command(self, channel, author, params):
+        """
+        Set your timezone. You can find a list of supported TZ names at
+        https://en.wikipedia.org/wiki/List_of_tz_database_time_zones | <zone>
+        """
+        if not params:
+            return s("timezone_no_params"), None
+
+        zone = params[0]
+        if zone not in pytz.all_timezones_set:
+            return s("timezone_bad_params"), None
+
+        self.save_user_pref(author, "timezone", zone)
+        return s("timezone", name=author), None
 
     def fish_command(self, channel, author, params):
         """
         Tell you what fish are available now in your hemisphere. | [name|leaving]
         """
-        users = self.load_users()
-        prefs = users[users.author == author.id]
-        if prefs.empty:
+        hemisphere = self.get_user_hemisphere(author.id)
+        if not hemisphere:
             return s("fish_no_hemisphere"), None
 
         now = datetime.now(pytz.utc)
-        hemisphere = prefs.hemisphere.iloc[0]
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()
