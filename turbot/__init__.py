@@ -6,6 +6,7 @@ import sys
 from collections import defaultdict
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
+from io import StringIO
 from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
@@ -128,14 +129,18 @@ class Turbot(discord.Client):
         self._fossils_data = None  # do not use directly, load it from load_fossils()
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
+        self._prices_column_names = ["author", "kind", "price", "timestamp"]
+        self._prices_column_dtypes = ["int64", "str", "int", "datetime64[ns, UTC]"]
 
     def run(self):
         super().run(self.token)
 
     def build_prices(self):
         """Returns an empty DataFrame suitable for storing price data."""
-        return pd.DataFrame(columns=["author", "kind", "price", "timestamp"]).astype(
-            {"timestamp": "datetime64[ns, UTC]"}
+        return pd.read_csv(
+            StringIO(""),
+            names=self._prices_column_names,
+            dtype=dict(zip(self._prices_column_names, self._prices_column_dtypes)),
         )
 
     def save_prices(self, data):
@@ -160,8 +165,12 @@ class Turbot(discord.Client):
         """Returns a DataFrame of price data or creates an empty one."""
         if self._prices_data is None:
             try:
-                self._prices_data = pd.read_csv(self.prices_file).astype(
-                    {"timestamp": "datetime64[ns, UTC]"}
+                return pd.read_csv(
+                    self.prices_file,
+                    names=self._prices_column_names,
+                    dtype=dict(
+                        zip(self._prices_column_names, self._prices_column_dtypes)
+                    ),
                 )
             except FileNotFoundError:
                 self._prices_data = self.build_prices()
@@ -854,7 +863,6 @@ class Turbot(discord.Client):
 
         # convert all timestamps to the target user's timezone
         target_timezone = self.get_user_timezone(target_id)
-        prices["timestamp"] = pd.to_datetime(prices["timestamp"])  # FIXME: Why needed?
         yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
 
         recent_buy = yours[yours.kind == "buy"].tail(1)
