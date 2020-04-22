@@ -14,6 +14,63 @@ from callee import Matching, String
 
 import turbot
 
+##############################
+# Discord.py Mocks
+##############################
+
+
+class MockMember:
+    def __init__(self, member_name, member_id, roles=[]):
+        self.name = member_name
+        self.id = member_id
+        self.roles = roles
+
+    def __repr__(self):
+        return f"{self.name}#{self.id}"
+
+
+class MockRole:
+    def __init__(self, name):
+        self.name = name
+
+
+class MockGuild:
+    def __init__(self, members):
+        self.members = members
+
+
+class MockChannel:
+    def __init__(self, channel_type, channel_name, members):
+        self.type = channel_type
+        self.name = channel_name
+        self.sent = MagicMock()
+        self.members = members
+        self.guild = MockGuild(members)
+
+    async def send(self, response, file):
+        self.sent(response, file)
+
+    @asynccontextmanager
+    async def typing(self):
+        yield
+
+
+class MockMessage:
+    def __init__(self, author, channel, content):
+        self.author = author
+        self.channel = channel
+        self.content = content
+
+
+class MockClient:
+    def __init__(self):
+        self.user = ADMIN
+
+
+##############################
+# Test Suite Constants
+##############################
+
 CLIENT_TOKEN = "my-token"
 CLIENT_USER = "ADMIN"
 CLIENT_USER_ID = 82226367030108160
@@ -26,37 +83,23 @@ NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 SRC_ROOT = Path(dirname(realpath(__file__))).parent
 SRC_DIRS = ["tests", "turbot", "scripts"]
 
+ADMIN_ROLE = MockRole("Turbot Admin")
+PLAYER_ROLE = MockRole("ACNH Player")
 
-class Role:
-    def __init__(self, name):
-        self.name = name
+ADMIN = MockMember(CLIENT_USER, CLIENT_USER_ID, roles=[ADMIN_ROLE])
+FRIEND = MockMember("friend", 82169952898912256, roles=[PLAYER_ROLE])
+BUDDY = MockMember("buddy", 82942320688758784, roles=[ADMIN_ROLE, PLAYER_ROLE])
+GUY = MockMember("guy", 82988021019836416)
+DUDE = MockMember("dude", 82988761019835305, roles=[ADMIN_ROLE])
+PUNK = MockMember("punk", 119678027792646146)  # for a memeber that's not in our channel
 
-    def __str__(self):
-        return self.name
-
-
-class Member:
-    def __init__(self, member_name, member_id, role):
-        self.name = member_name
-        self.id = member_id
-        self.roles = []
-        if role:
-            self.roles.append(Role(role))
-
-    def __repr__(self):
-        return f"{self.name}#{self.id}"
-
-
-ADMIN = Member(CLIENT_USER, CLIENT_USER_ID, "Turbot Admin")
-FRIEND = Member("friend", 82169952898912256, None)
-BUDDY = Member("buddy", 82942320688758784, "Turbot Admin")
-GUY = Member("guy", 82988021019836416, None)
-DUDE = Member("dude", 82988761019835305, "Turbot Admin")
 CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, DUDE, ADMIN]
 
-PUNK = Member("punk", 119678027792646146, None)
-
 S_SPY = Mock(wraps=turbot.s)
+
+##############################
+# Test Suite Utilities
+##############################
 
 
 def someone():
@@ -66,12 +109,14 @@ def someone():
 
 def someturbotadmin():
     """Returns a random non-admin user with the Turbot Admin role"""
-    return random.choice([BUDDY, DUDE])
+    cond = lambda member: member != ADMIN and ADMIN_ROLE in member.roles
+    return random.choice(list(filter(cond, CHANNEL_MEMBERS)))
 
 
 def somenonturbotadmin():
     """Returns a random non-admin user without the Turbot Admin role"""
-    return random.choice([FRIEND, GUY])
+    cond = lambda member: member != ADMIN and ADMIN_ROLE not in member.roles
+    return random.choice(list(filter(cond, CHANNEL_MEMBERS)))
 
 
 def somebells():
@@ -84,43 +129,9 @@ def is_discord_file(obj):
     return (obj.__class__.__name__) == "File"
 
 
-class Guild:
-    def __init__(self):
-        self.members = CHANNEL_MEMBERS  # All channel members are guild members
-
-    def get_member(self, userid):
-        for member in self.members:
-            if member.id == userid:
-                return member
-        return None
-
-
-class Channel:
-    def __init__(self, channel_type, channel_name):
-        self.type = channel_type
-        self.name = channel_name
-        self.sent = MagicMock()
-        self.members = CHANNEL_MEMBERS
-        self.guild = Guild()
-
-    async def send(self, response, file):
-        self.sent(response, file)
-
-    @asynccontextmanager
-    async def typing(self):
-        yield
-
-
-class Message:
-    def __init__(self, author, channel, content):
-        self.author = author
-        self.channel = channel
-        self.content = content
-
-
-class MockClient:
-    def __init__(self):
-        self.user = ADMIN
+##############################
+# Test Fixtures
+##############################
 
 
 @pytest.fixture
@@ -184,6 +195,16 @@ def lastweek(mocker, monkeypatch):
     return mock
 
 
+@pytest.fixture
+def channel():
+    return MockChannel("text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+
+
+##############################
+# Test Suites
+##############################
+
+
 @pytest.mark.asyncio
 class TestTurbot:
     async def test_init(self, client):
@@ -193,66 +214,62 @@ class TestTurbot:
     async def test_on_ready(self, client):
         await client.on_ready()
 
-    async def test_on_message_non_text(self, client):
+    async def test_on_message_non_text(self, client, channel):
         invalid_channel_type = "voice"
-        channel = Channel(invalid_channel_type, AUTHORIZED_CHANNEL)
+        channel = MockChannel(
+            invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
+        )
         author = someone()
-        message = Message(author, channel, "!help")
+        message = MockMessage(author, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
 
-    async def test_on_message_from_admin(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(ADMIN, channel, "!help")
+    async def test_on_message_from_admin(self, client, channel):
+        message = MockMessage(ADMIN, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
 
     async def test_on_message_in_unauthorized_channel(self, client):
-        channel = Channel("text", UNAUTHORIZED_CHANNEL)
+        channel = MockChannel("text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
         author = someone()
-        message = Message(author, channel, "!help")
+        message = MockMessage(author, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_not_called()
 
-    async def test_on_message_ambiguous_request(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_ambiguous_request(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!h")
+        message = MockMessage(author, channel, "!h")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Did you mean: !help, !hemisphere, !history?", None,
         )
 
-    async def test_on_message_sell_no_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_sell_no_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!sell")
+        message = MockMessage(author, channel, "!sell")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please include selling price after command name.", None
         )
 
-    async def test_on_message_sell_nonnumeric_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_sell_nonnumeric_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!sell foot")
+        message = MockMessage(author, channel, "!sell foot")
         await client.on_message(message)
         channel.sent.assert_called_with("Selling price must be a number.", None)
 
-    async def test_on_message_sell_nonpositive_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_sell_nonpositive_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!sell 0")
+        message = MockMessage(author, channel, "!sell 0")
         await client.on_message(message)
         channel.sent.assert_called_with("Selling price must be greater than zero.", None)
 
-    async def test_on_message_sell(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_sell(self, client, lines, channel):
         author = someone()
 
         # initial sale
         amount = somebells()
-        message = Message(author, channel, f"!sell {amount}")
+        message = MockMessage(author, channel, f"!sell {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Logged selling price of {amount} for user {author}.", None
@@ -263,7 +280,7 @@ class TestTurbot:
         ]
 
         # same price sale
-        message = Message(author, channel, f"!sell {amount}")
+        message = MockMessage(author, channel, f"!sell {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -276,7 +293,7 @@ class TestTurbot:
 
         # higher price sale
         new_amount = amount + somebells()
-        message = Message(author, channel, f"!sell {new_amount}")
+        message = MockMessage(author, channel, f"!sell {new_amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -289,7 +306,7 @@ class TestTurbot:
 
         # lower price sale
         last_amount = round(amount / 2)
-        message = Message(author, channel, f"!sell {last_amount}")
+        message = MockMessage(author, channel, f"!sell {last_amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -300,34 +317,30 @@ class TestTurbot:
         )
         assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
 
-    async def test_on_message_buy_no_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_buy_no_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!buy")
+        message = MockMessage(author, channel, "!buy")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please include buying price after command name.", None
         )
 
-    async def test_on_message_buy_nonnumeric_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_buy_nonnumeric_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!buy foot")
+        message = MockMessage(author, channel, "!buy foot")
         await client.on_message(message)
         channel.sent.assert_called_with("Buying price must be a number.", None)
 
-    async def test_on_message_buy_nonpositive_price(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_buy_nonpositive_price(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!buy 0")
+        message = MockMessage(author, channel, "!buy 0")
         await client.on_message(message)
         channel.sent.assert_called_with("Buying price must be greater than zero.", None)
 
-    async def test_on_message_buy(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_buy(self, client, lines, channel):
         author = someone()
         amount = somebells()
-        message = Message(author, channel, f"!buy {amount}")
+        message = MockMessage(author, channel, f"!buy {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Logged buying price of {amount} for user {author}.", None
@@ -337,42 +350,38 @@ class TestTurbot:
             f"{author.id},buy,{amount},{NOW}\n",
         ]
 
-    async def test_on_message_help(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_help(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!help")
+        message = MockMessage(author, channel, "!help")
         await client.on_message(message)
         channel.sent.assert_called_with(String(), None)  # TODO: Verify help response?
 
-    async def test_on_message_clear(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_clear(self, client, lines, channel):
         author = someone()
 
         # first log some buy and sell prices
-        await client.on_message(Message(author, channel, f"!buy {somebells()}"))
-        await client.on_message(Message(author, channel, f"!sell {somebells()}"))
-        await client.on_message(Message(author, channel, f"!sell {somebells()}"))
+        await client.on_message(MockMessage(author, channel, f"!buy {somebells()}"))
+        await client.on_message(MockMessage(author, channel, f"!sell {somebells()}"))
+        await client.on_message(MockMessage(author, channel, f"!sell {somebells()}"))
 
         # then ensure we can clear them all out
-        message = Message(author, channel, "!clear")
+        message = MockMessage(author, channel, "!clear")
         await client.on_message(message)
         channel.sent.assert_called_with(f"**Cleared history for {author}.**", None)
         assert lines(client.prices_file) == ["author,kind,price,timestamp\n"]
 
-    async def test_on_message_bestsell(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_bestsell(self, client, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 200"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!sell 600"))
-        await client.on_message(Message(GUY, channel, "!buy 800"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 200"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 600"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 800"))
 
         # then ensure we can find the best sell
         author = someone()
-        message = Message(author, channel, "!bestsell")
+        message = MockMessage(author, channel, "!bestsell")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -383,17 +392,16 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_oops(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_oops(self, client, lines, channel):
         author = someone()
 
         # first log some buy and sell prices
-        await client.on_message(Message(author, channel, "!buy 1"))
-        await client.on_message(Message(author, channel, "!sell 2"))
-        await client.on_message(Message(author, channel, "!buy 3"))
+        await client.on_message(MockMessage(author, channel, "!buy 1"))
+        await client.on_message(MockMessage(author, channel, "!sell 2"))
+        await client.on_message(MockMessage(author, channel, "!buy 3"))
 
         # then ensure we can remove the last entered price
-        message = Message(author, channel, "!oops")
+        message = MockMessage(author, channel, "!oops")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"**Deleting last logged price for {author}.**", None
@@ -404,33 +412,31 @@ class TestTurbot:
             f"{author.id},sell,2,{NOW}\n",
         ]
 
-    async def test_on_message_history_bad_name(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_history_bad_name(self, client, channel):
         author = someone()
 
         # first log some buy and sell prices
-        await client.on_message(Message(author, channel, "!buy 1"))
-        await client.on_message(Message(author, channel, "!sell 2"))
-        await client.on_message(Message(author, channel, "!buy 3"))
+        await client.on_message(MockMessage(author, channel, "!buy 1"))
+        await client.on_message(MockMessage(author, channel, "!sell 2"))
+        await client.on_message(MockMessage(author, channel, "!buy 3"))
 
         # then try to get history for a user that isn't there
-        message = Message(author, channel, f"!history {PUNK.name}")
+        message = MockMessage(author, channel, f"!history {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel.", None
         )
 
-    async def test_on_message_history_without_name(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_history_without_name(self, client, channel):
         author = someone()
 
         # first log some buy and sell prices
-        await client.on_message(Message(author, channel, "!buy 1"))
-        await client.on_message(Message(author, channel, "!sell 2"))
-        await client.on_message(Message(author, channel, "!buy 3"))
+        await client.on_message(MockMessage(author, channel, "!buy 1"))
+        await client.on_message(MockMessage(author, channel, "!sell 2"))
+        await client.on_message(MockMessage(author, channel, "!buy 3"))
 
         # then ensure we can the get history
-        message = Message(author, channel, "!history")
+        message = MockMessage(author, channel, "!history")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -442,16 +448,14 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_history_with_name(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_history_with_name(self, client, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(BUDDY, channel, "!buy 1"))
-        await client.on_message(Message(BUDDY, channel, "!sell 2"))
-        await client.on_message(Message(BUDDY, channel, "!buy 3"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 1"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 2"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 3"))
 
         # then ensure we can the get history
-        message = Message(GUY, channel, f"!history {BUDDY.name}")
+        message = MockMessage(GUY, channel, f"!history {BUDDY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -463,20 +467,18 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_bestbuy(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_bestbuy(self, client, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(BUDDY, channel, "!buy 60"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!sell 200"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
         # then ensure we can find the best buy
         author = someone()
-        message = Message(author, channel, "!bestbuy")
+        message = MockMessage(author, channel, "!bestbuy")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
@@ -487,34 +489,30 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_turnippattern_happy_paths(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        message = Message(someone(), channel, "!turnippattern 100 86")
+    async def test_on_message_turnippattern_happy_paths(self, client, channel):
+        message = MockMessage(someone(), channel, "!turnippattern 100 86")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Based on your prices, you will see one of the following patterns this week:\n> **Decreasing**: Prices will continuously fall.\n> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
-        message = Message(someone(), channel, "!turnippattern 100 99")
+        message = MockMessage(someone(), channel, "!turnippattern 100 99")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Based on your prices, you will see one of the following patterns this week:\n> **Random**: Prices are completely random. Sell when it goes over your buying price.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
-        message = Message(someone(), channel, "!turnippattern 100 22")
+        message = MockMessage(someone(), channel, "!turnippattern 100 22")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Based on your prices, you will see one of the following patterns this week:\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
-    async def test_on_message_turnippattern_invalid_params(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        message = Message(someone(), channel, "!turnippattern 100")
+    async def test_on_message_turnippattern_invalid_params(self, client, channel):
+        message = MockMessage(someone(), channel, "!turnippattern 100")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide Daisy Mae's price and your Monday morning price\n"
@@ -522,7 +520,7 @@ class TestTurbot:
             None,
         )
 
-        message = Message(someone(), channel, "!turnippattern 1 2 3")
+        message = MockMessage(someone(), channel, "!turnippattern 1 2 3")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide Daisy Mae's price and your Monday morning price\n"
@@ -530,26 +528,22 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_turnippattern_nonnumeric_prices(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        message = Message(someone(), channel, "!turnippattern something nothing")
+    async def test_on_message_turnippattern_nonnumeric_prices(self, client, channel):
+        message = MockMessage(someone(), channel, "!turnippattern something nothing")
         await client.on_message(message)
         channel.sent.assert_called_with("Prices must be numbers.", None)
 
-    async def test_on_message_graph_without_user(self, client, graph):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_graph_without_user(self, client, graph, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!sell 200"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
         author = someone()
-        message = Message(author, channel, "!graph")
+        message = MockMessage(author, channel, "!graph")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Historical Graph for All Users**__", Matching(is_discord_file)
@@ -557,19 +551,17 @@ class TestTurbot:
         graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
 
-    async def test_on_message_graph_with_user(self, client, graph):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_graph_with_user(self, client, graph, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!sell 200"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
         author = someone()
-        message = Message(author, channel, f"!graph {BUDDY.name}")
+        message = MockMessage(author, channel, f"!graph {BUDDY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**Historical Graph for {BUDDY}**__", Matching(is_discord_file)
@@ -577,19 +569,17 @@ class TestTurbot:
         graph.assert_called_with(channel, f"{BUDDY}", turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
 
-    async def test_on_message_graph_with_bad_name(self, client, graph):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_graph_with_bad_name(self, client, graph, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!sell 200"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
         author = someone()
-        message = Message(author, channel, f"!graph {PUNK.name}")
+        message = MockMessage(author, channel, f"!graph {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel.", None
@@ -597,56 +587,52 @@ class TestTurbot:
         graph.assert_not_called()
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
-    async def test_on_message_lastweek_none(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_lastweek_none(self, client, channel):
         author = someone()
-        message = Message(author, channel, "!lastweek")
+        message = MockMessage(author, channel, "!lastweek")
         await client.on_message(message)
         channel.sent.assert_called_with("No graph from last week.", None)
 
-    async def test_on_message_lastweek(self, client, freezer, lastweek):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        await client.on_message(Message(someturbotadmin(), channel, "!reset"))
+    async def test_on_message_lastweek(self, client, freezer, lastweek, channel):
+        await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
 
-        await client.on_message(Message(someone(), channel, "!lastweek"))
+        await client.on_message(MockMessage(someone(), channel, "!lastweek"))
         channel.sent.assert_called_with(
             "__**Historical Graph from Last Week**__", Matching(is_discord_file)
         )
 
-    async def test_on_message_reset_not_admin(self, client, lines, freezer, lastweek):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_reset_not_admin(self, client, lines, freezer, channel):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(FRIEND, channel, "!buy 101"))
-        await client.on_message(Message(FRIEND, channel, "!sell 601"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!buy 121"))
-        await client.on_message(Message(BUDDY, channel, "!sell 91"))
-        await client.on_message(Message(GUY, channel, "!buy 100"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
-        await client.on_message(Message(GUY, channel, "!buy 101"))
-        await client.on_message(Message(GUY, channel, "!sell 801"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 101"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 601"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 121"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 91"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 100"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 101"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 801"))
 
         # then jump ahead a week and log some more
         later = NOW + timedelta(days=7)
         freezer.move_to(later)
-        await client.on_message(Message(FRIEND, channel, "!buy 102"))
-        await client.on_message(Message(FRIEND, channel, "!sell 602"))
-        await client.on_message(Message(BUDDY, channel, "!buy 122"))
-        await client.on_message(Message(BUDDY, channel, "!sell 92"))
-        await client.on_message(Message(GUY, channel, "!buy 102"))
-        await client.on_message(Message(GUY, channel, "!sell 802"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 102"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 602"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 122"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 92"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 102"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
         old_data = lines(client.prices_file)
 
         # then reset price data
-        message = Message(somenonturbotadmin(), channel, "!reset")
+        message = MockMessage(somenonturbotadmin(), channel, "!reset")
         await client.on_message(message)
         channel.sent.assert_called_with("User is not a Turbot Admin", None)
         with open(client.prices_file) as f:
@@ -654,37 +640,37 @@ class TestTurbot:
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
 
-    async def test_on_message_reset_admin(self, client, lines, freezer, lastweek):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_reset_admin(
+        self, client, lines, freezer, lastweek, channel
+    ):
         # first log some buy and sell prices
-        await client.on_message(Message(FRIEND, channel, "!buy 100"))
-        await client.on_message(Message(FRIEND, channel, "!sell 600"))
-        await client.on_message(Message(FRIEND, channel, "!buy 101"))
-        await client.on_message(Message(FRIEND, channel, "!sell 601"))
-        await client.on_message(Message(BUDDY, channel, "!buy 120"))
-        await client.on_message(Message(BUDDY, channel, "!sell 90"))
-        await client.on_message(Message(BUDDY, channel, "!buy 121"))
-        await client.on_message(Message(BUDDY, channel, "!sell 91"))
-        await client.on_message(Message(GUY, channel, "!buy 100"))
-        await client.on_message(Message(GUY, channel, "!sell 800"))
-        await client.on_message(Message(GUY, channel, "!buy 101"))
-        await client.on_message(Message(GUY, channel, "!sell 801"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 101"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 601"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 121"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 91"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 100"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 101"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 801"))
 
         # then jump ahead a week and log some more
         later = NOW + timedelta(days=7)
         freezer.move_to(later)
-        await client.on_message(Message(FRIEND, channel, "!buy 102"))
-        await client.on_message(Message(FRIEND, channel, "!sell 602"))
-        await client.on_message(Message(BUDDY, channel, "!buy 122"))
-        await client.on_message(Message(BUDDY, channel, "!sell 92"))
-        await client.on_message(Message(GUY, channel, "!buy 102"))
-        await client.on_message(Message(GUY, channel, "!sell 802"))
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 102"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 602"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 122"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 92"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 102"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
         old_data = lines(client.prices_file)
 
         # then reset price data
-        message = Message(someturbotadmin(), channel, "!reset")
+        message = MockMessage(someturbotadmin(), channel, "!reset")
         await client.on_message(message)
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
         with open(client.prices_file) as f:
@@ -703,21 +689,19 @@ class TestTurbot:
         with open(backup_file) as f:
             assert old_data == f.readlines()
 
-    async def test_on_message_collect_no_list(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, "!collect")
+    async def test_on_message_collect_no_list(self, client, channel):
+        message = MockMessage(someone(), channel, "!collect")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide the name of a fossil to mark as collected.", None
         )
 
-    async def test_on_message_collect(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_collect(self, client, lines, channel):
         author = someone()
 
         # first collect some valid fossils
         fossils = "amber, ammonite  ,ankylo skull,amber, a foot"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Marked the following fossils as collected:\n"
@@ -735,7 +719,7 @@ class TestTurbot:
 
         # then collect some more with dupes
         fossils = "amber,an arm,plesio body"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Marked the following fossils as collected:\n"
@@ -748,42 +732,39 @@ class TestTurbot:
         )
         assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
-    async def test_on_message_fossilsearch_no_list(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, "!fossilsearch")
+    async def test_on_message_fossilsearch_no_list(self, client, channel):
+        message = MockMessage(someone(), channel, "!fossilsearch")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide the name of a fossil to lookup users that don't have it.",
             None,
         )
 
-    async def test_on_message_fossilsearch_no_need(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_fossilsearch_no_need(self, client, channel):
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collect amber, ammonite"))
         await client.on_message(
-            Message(GUY, channel, "!collect amber, ammonite, coprolite")
+            MockMessage(GUY, channel, "!collect amber, ammonite, coprolite")
         )
 
         # then search for things that no one needs
-        message = Message(PUNK, channel, "!fossilsearch amber, ammonite")
+        message = MockMessage(PUNK, channel, "!fossilsearch amber, ammonite")
         await client.on_message(message)
         channel.sent.assert_called_with("No one currently needs this.", None)
 
-    async def test_on_message_fossilsearch_no_need_with_bad(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_fossilsearch_no_need_with_bad(self, client, channel):
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collect amber, ammonite"))
         await client.on_message(
-            Message(GUY, channel, "!collect amber, ammonite, coprolite")
+            MockMessage(GUY, channel, "!collect amber, ammonite, coprolite")
         )
 
         # then search for things that no one needs
-        message = Message(PUNK, channel, "!fossilsearch amber, ammonite, unicorn bits")
+        message = MockMessage(
+            PUNK, channel, "!fossilsearch amber, ammonite, unicorn bits"
+        )
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Fossil Search**__\n"
@@ -793,16 +774,16 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_fossilsearch(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_fossilsearch(self, client, channel):
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, "!collect amber"))
-        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
+        await client.on_message(MockMessage(GUY, channel, "!collect amber, ammonite"))
 
         # then search for some things
-        message = Message(PUNK, channel, "!fossilsearch amber, ammonite, ankylo skull")
+        message = MockMessage(
+            PUNK, channel, "!fossilsearch amber, ammonite, ankylo skull"
+        )
         await client.on_message(message)
         last_call = channel.sent.call_args_list[-1][0]
         response, attachment = last_call[0], last_call[1]
@@ -815,16 +796,14 @@ class TestTurbot:
         }
         assert not attachment
 
-    async def test_on_message_fossilsearch_with_bad(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_fossilsearch_with_bad(self, client, channel):
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, "!collect amber"))
-        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
+        await client.on_message(MockMessage(GUY, channel, "!collect amber, ammonite"))
 
         # then search for some things
-        message = Message(
+        message = MockMessage(
             PUNK, channel, "!fossilsearch amber, ammonite, ankylo skull, unicorn bits"
         )
         await client.on_message(message)
@@ -841,10 +820,8 @@ class TestTurbot:
         }
         assert not attachment
 
-    async def test_on_message_fossilsearch_with_only_bad(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
-        message = Message(PUNK, channel, "!fossilsearch unicorn bits")
+    async def test_on_message_fossilsearch_with_only_bad(self, client, channel):
+        message = MockMessage(PUNK, channel, "!fossilsearch unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Fossil Search**__\n"
@@ -852,26 +829,24 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_uncollect_no_list(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, "!uncollect")
+    async def test_on_message_uncollect_no_list(self, client, channel):
+        message = MockMessage(someone(), channel, "!uncollect")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide the name of a fossil to mark as uncollected.", None
         )
 
-    async def test_on_message_uncollect(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_uncollect(self, client, lines, channel):
         author = someone()
 
         # first collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then delete some of them
         fossils = "amber, a foot, coprolite, ankylo skull"
-        message = Message(author, channel, f"!uncollect {fossils}")
+        message = MockMessage(author, channel, f"!uncollect {fossils}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Unmarked the following fossils as collected:\n"
@@ -884,20 +859,18 @@ class TestTurbot:
         )
         assert lines(client.fossils_file) == ["author,name\n", f"{author.id},ammonite\n"]
 
-    async def test_on_message_uncollect_with_only_bad(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_uncollect_with_only_bad(self, client, lines, channel):
         author = someone()
 
         fossils = "a foot, unicorn bits"
-        message = Message(author, channel, f"!uncollect {fossils}")
+        message = MockMessage(author, channel, f"!uncollect {fossils}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Did not recognize the following fossils:\n> a foot, unicorn bits", None
         )
 
-    async def test_on_message_allfossils(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-        message = Message(someone(), channel, "!allfossils")
+    async def test_on_message_allfossils(self, client, channel):
+        message = MockMessage(someone(), channel, "!allfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**All Possible Fossils**__\n"
@@ -905,33 +878,31 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_listfossils_bad_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_listfossils_bad_name(self, client, lines, channel):
         author = someone()
 
         # first collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then list them
-        message = Message(author, channel, f"!listfossils {PUNK.name}")
+        message = MockMessage(author, channel, f"!listfossils {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel.", None
         )
 
-    async def test_on_message_listfossils_no_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_listfossils_no_name(self, client, lines, channel):
         author = someone()
 
         # first collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then list them
-        message = Message(author, channel, "!listfossils")
+        message = MockMessage(author, channel, "!listfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**70 Fossils remaining for {author}**__\n"
@@ -955,16 +926,14 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_listfossils_with_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_listfossils_with_name(self, client, lines, channel):
         # first have someone collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(GUY, channel, f"!collect {fossils}")
+        message = MockMessage(GUY, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then have someone else list them
-        message = Message(BUDDY, channel, f"!listfossils {GUY.name}")
+        message = MockMessage(BUDDY, channel, f"!listfossils {GUY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**70 Fossils remaining for {GUY}**__\n"
@@ -988,17 +957,16 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_collectedfossils_no_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_collectedfossils_no_name(self, client, lines, channel):
         author = someone()
 
         # first collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(author, channel, f"!collect {fossils}")
+        message = MockMessage(author, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then list them
-        message = Message(author, channel, "!collectedfossils")
+        message = MockMessage(author, channel, "!collectedfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**3 Fossils donated by {author}**__\n"
@@ -1006,44 +974,40 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_collectedfossils_with_name(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_on_message_collectedfossils_with_name(self, client, lines, channel):
         # first have someone collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = Message(GUY, channel, f"!collect {fossils}")
+        message = MockMessage(GUY, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then have someone else list them
-        message = Message(BUDDY, channel, f"!collectedfossils {GUY.name}")
+        message = MockMessage(BUDDY, channel, f"!collectedfossils {GUY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull",
             None,
         )
 
-    async def test_on_message_fossilcount_no_params(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fossilcount_no_params(self, client, lines, channel):
         author = someone()
 
-        message = Message(author, channel, "!fossilcount")
+        message = MockMessage(author, channel, "!fossilcount")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide at least one user name to search for a fossil count.", None
         )
 
-    async def test_on_message_fossilcount(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fossilcount(self, client, lines, channel):
         author = someone()
 
         # first collect some valid fossils
-        await client.on_message(Message(FRIEND, channel, "!collect amber, ammonite"))
-        await client.on_message(Message(BUDDY, channel, "!collect amber"))
-        await client.on_message(Message(GUY, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
+        await client.on_message(MockMessage(GUY, channel, "!collect amber, ammonite"))
 
         # then get fossil counts
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
-        message = Message(author, channel, f"!fossilcount {users}")
+        message = MockMessage(author, channel, f"!fossilcount {users}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Fossil Count**__\n"
@@ -1055,35 +1019,33 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_predict_no_buy(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_predict_no_buy(self, client, channel):
         author = someone()
-        await client.on_message(Message(author, channel, "!predict"))
+        await client.on_message(MockMessage(author, channel, "!predict"))
         channel.sent.assert_called_with(
             f"There is no recent buy price for {author}.", None
         )
 
-    async def test_on_message_predict(self, client, freezer):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_predict(self, client, freezer, channel):
         author = someone()
 
-        await client.on_message(Message(author, channel, "!buy 110"))
+        await client.on_message(MockMessage(author, channel, "!buy 110"))
 
         freezer.move_to(NOW + timedelta(days=1))
-        await client.on_message(Message(author, channel, "!sell 100"))
-        await client.on_message(Message(author, channel, "!sell 95"))
+        await client.on_message(MockMessage(author, channel, "!sell 100"))
+        await client.on_message(MockMessage(author, channel, "!sell 95"))
 
         freezer.move_to(NOW + timedelta(days=2))
-        await client.on_message(Message(author, channel, "!sell 90"))
-        await client.on_message(Message(author, channel, "!sell 85"))
+        await client.on_message(MockMessage(author, channel, "!sell 90"))
+        await client.on_message(MockMessage(author, channel, "!sell 85"))
 
         freezer.move_to(NOW + timedelta(days=4))
-        await client.on_message(Message(author, channel, "!sell 90"))
+        await client.on_message(MockMessage(author, channel, "!sell 90"))
 
         freezer.move_to(NOW + timedelta(days=5))
-        await client.on_message(Message(author, channel, "!sell 120"))
+        await client.on_message(MockMessage(author, channel, "!sell 120"))
 
-        message = Message(author, channel, "!predict")
+        message = MockMessage(author, channel, "!predict")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"{author}'s turnip prediction link: "
@@ -1091,89 +1053,83 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_predict_with_timezone(self, client, freezer):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_predict_with_timezone(self, client, freezer, channel):
         author = someone()
 
         # user in pacific timezone
         user_tz = pytz.timezone("America/Los_Angeles")
-        await client.on_message(Message(author, channel, f"!timezone {user_tz.zone}"))
+        await client.on_message(MockMessage(author, channel, f"!timezone {user_tz.zone}"))
 
         # sunday morning buy
         sunday_morning = datetime(year=2020, month=4, day=21, hour=6, tzinfo=user_tz)
         freezer.move_to(sunday_morning)
-        await client.on_message(Message(author, channel, "!buy 110"))
+        await client.on_message(MockMessage(author, channel, "!buy 110"))
 
         # monday morning sell
         monday_morning = sunday_morning + timedelta(days=1)
         freezer.move_to(monday_morning)
-        await client.on_message(Message(author, channel, "!sell 87"))
+        await client.on_message(MockMessage(author, channel, "!sell 87"))
 
         # monday evening sell
         monday_evening = monday_morning + timedelta(hours=14)
         freezer.move_to(monday_evening)
-        await client.on_message(Message(author, channel, "!sell 72"))
+        await client.on_message(MockMessage(author, channel, "!sell 72"))
 
-        await client.on_message(Message(author, channel, "!predict"))
+        await client.on_message(MockMessage(author, channel, "!predict"))
         channel.sent.assert_called_with(
             f"{author}'s turnip prediction link: "
             "https://turnipprophet.io/?prices=110.87.72",
             None,
         )
 
-    async def test_get_last_price(self, client, freezer):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
-
+    async def test_get_last_price(self, client, freezer, channel):
         # when there's no data for the user
         assert client.get_last_price(GUY) is None
 
         # when there's only buy data
         freezer.move_to(NOW + timedelta(days=1))
-        await client.on_message(Message(GUY, channel, "!buy 102"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         assert client.get_last_price(GUY.id) is None
 
         # when there's sell data for someone else
         freezer.move_to(NOW + timedelta(days=2))
-        await client.on_message(Message(BUDDY, channel, "!sell 102"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 102"))
         assert client.get_last_price(GUY.id) is None
 
         # when there's one sell price
         freezer.move_to(NOW + timedelta(days=3))
-        await client.on_message(Message(GUY, channel, "!sell 82"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 82"))
         assert client.get_last_price(GUY.id) == 82
 
         # when there's more than one sell price
         freezer.move_to(NOW + timedelta(days=4))
-        await client.on_message(Message(GUY, channel, "!sell 45"))
-        await client.on_message(Message(GUY, channel, "!sell 98"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 45"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 98"))
         assert client.get_last_price(GUY.id) == 98
 
-    async def test_on_message_hemisphere_no_params(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_hemisphere_no_params(self, client, lines, channel):
         author = someone()
 
-        message = Message(author, channel, "!hemisphere")
+        message = MockMessage(author, channel, "!hemisphere")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide the name of your hemisphere, northern or southern.", None
         )
 
-    async def test_on_message_hemisphere_bad_hemisphere(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_hemisphere_bad_hemisphere(self, client, channel):
         author = someone()
 
-        message = Message(author, channel, "!hemisphere upwards")
+        message = MockMessage(author, channel, "!hemisphere upwards")
         await client.on_message(message)
         channel.sent.assert_called_with(
             'Please provide either "northern" or "southern" as your hemisphere name.',
             None,
         )
 
-    async def test_on_message_hemisphere(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_hemisphere(self, client, channel):
         author = someone()
 
-        message = Message(author, channel, "!hemisphere souTherN")
+        message = MockMessage(author, channel, "!hemisphere souTherN")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Hemisphere preference registered for {author}.", None
@@ -1184,7 +1140,7 @@ class TestTurbot:
                 f"{author.id},southern,\n",
             ]
 
-        message = Message(author, channel, "!hemisphere NoRthErn")
+        message = MockMessage(author, channel, "!hemisphere NoRthErn")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Hemisphere preference registered for {author}.", None
@@ -1195,51 +1151,46 @@ class TestTurbot:
                 f"{author.id},northern,\n",
             ]
 
-    async def test_on_message_fish_no_hemisphere(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish_no_hemisphere(self, client, channel):
         author = someone()
 
-        message = Message(author, channel, "!fish")
+        message = MockMessage(author, channel, "!fish")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please enter your hemisphere choice first using the !hemisphere command.",
             None,
         )
 
-    async def test_on_message_fish_none_found(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish_none_found(self, client, channel):
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, "!hemisphere northern")
+        message = MockMessage(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, "!fish Blinky")
+        message = MockMessage(author, channel, "!fish Blinky")
         await client.on_message(message)
         channel.sent.assert_called_with(
             'Did not find any fish searching for "Blinky".', None
         )
 
-    async def test_on_message_fish_multiple_users(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish_multiple_users(self, client, channel):
+        await client.on_message(MockMessage(GUY, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(FRIEND, channel, "!hemisphere northern"))
 
-        await client.on_message(Message(GUY, channel, "!hemisphere northern"))
-        await client.on_message(Message(BUDDY, channel, "!hemisphere northern"))
-        await client.on_message(Message(FRIEND, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(GUY, channel, "!fish sea"))
+        await client.on_message(MockMessage(BUDDY, channel, "!fish sea"))
+        await client.on_message(MockMessage(FRIEND, channel, "!fish sea"))
 
-        await client.on_message(Message(GUY, channel, "!fish sea"))
-        await client.on_message(Message(BUDDY, channel, "!fish sea"))
-        await client.on_message(Message(FRIEND, channel, "!fish sea"))
-
-    async def test_on_message_fish_search_query(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish_search_query(self, client, channel):
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, "!hemisphere northern")
+        message = MockMessage(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, "!fish ch")
+        message = MockMessage(author, channel, "!fish ch")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
@@ -1251,15 +1202,14 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_fish_search_leaving(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish_search_leaving(self, client, channel):
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, "!hemisphere northern")
+        message = MockMessage(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, "!fish leaving")
+        message = MockMessage(author, channel, "!fish leaving")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan, Feb, Mar, Apr, Jul, Aug, Sep, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
@@ -1268,15 +1218,14 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_fish(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_fish(self, client, channel):
         author = someone()
 
         # give our author a hemisphere first
-        message = Message(author, channel, "!hemisphere northern")
+        message = MockMessage(author, channel, "!hemisphere northern")
         await client.on_message(message)
 
-        message = Message(author, channel, "!fish")
+        message = MockMessage(author, channel, "!fish")
         await client.on_message(message)
         calls = channel.sent.call_args_list
 
@@ -1331,19 +1280,17 @@ class TestTurbot:
         )
         assert attachment is None
 
-    async def test_on_message_timezone_no_params(self, client, lines):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_timezone_no_params(self, client, lines, channel):
         author = someone()
 
-        message = Message(author, channel, "!timezone")
+        message = MockMessage(author, channel, "!timezone")
         await client.on_message(message)
         channel.sent.assert_called_with("Please provide the name of your timezone.", None)
 
-    async def test_on_message_timezone_bad_timezone(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_timezone_bad_timezone(self, client, channel):
         author = someone()
 
-        message = Message(author, channel, "!timezone Mars/Noctis_City")
+        message = MockMessage(author, channel, "!timezone Mars/Noctis_City")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide a valid timezone name, see "
@@ -1352,11 +1299,10 @@ class TestTurbot:
             None,
         )
 
-    async def test_on_message_timezone(self, client):
-        channel = Channel("text", AUTHORIZED_CHANNEL)
+    async def test_on_message_timezone(self, client, channel):
         author = someone()
 
-        message = Message(author, channel, "!timezone America/Los_Angeles")
+        message = MockMessage(author, channel, "!timezone America/Los_Angeles")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Timezone preference registered for {author}.", None
@@ -1367,7 +1313,7 @@ class TestTurbot:
                 f"{author.id},,America/Los_Angeles\n",
             ]
 
-        message = Message(author, channel, "!timezone Canada/Saskatchewan")
+        message = MockMessage(author, channel, "!timezone Canada/Saskatchewan")
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Timezone preference registered for {author}.", None
