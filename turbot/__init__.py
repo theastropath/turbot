@@ -110,18 +110,9 @@ def discord_user_id(channel, name):
     return getattr(discord_user_from_name(channel, name), "id", None)
 
 
-def is_turbot_admin(channel, user):
-    """Checks to see if user has the Turbot Admin role in this server"""
-
-    # Is there a way to go from User to Member to roles?
-    # member.roles
-    member = channel.guild.get_member(user.id)
-    if member:  # Since the user sent a message, they should be a member
-        for role in member.roles:
-            if str(role) == "Turbot Admin":
-                return True
-
-    return False
+def is_turbot_admin(user):
+    """Checks to see if user has the Turbot Admin role in this server."""
+    return any(role.name == "Turbot Admin" for role in user.roles)
 
 
 class Turbot(discord.Client):
@@ -513,12 +504,10 @@ class Turbot(discord.Client):
 
     def reset_command(self, channel, author, params):
         """
-        DO NOT USE UNLESS ASKED. Generates a final graph for use with !lastweek and
-        resets all data for all users.
+        Only Turbot Admin members can run this command. Generates a final graph for use
+        with !lastweek and resets all data for all users.
         """
-
-        # Only users with the Turbot Admin role can do a reset
-        if not is_turbot_admin(channel, author):
+        if not is_turbot_admin(author):
             return s("not_admin"), None
 
         self.generate_graph(channel, None, LASTWEEKCMD_FILE)
