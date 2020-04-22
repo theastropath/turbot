@@ -366,6 +366,8 @@ class Turbot(discord.Client):
         """Process a command message."""
         tokens = message.content.split(" ")
         request, params = tokens[0].lstrip("!"), tokens[1:]
+        if not request:
+            return
         members = inspect.getmembers(self, predicate=inspect.ismethod)
         commands = [member[0] for member in members if member[0].endswith("_command")]
         matching = [command for command in commands if command.startswith(request)]
