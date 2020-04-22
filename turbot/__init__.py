@@ -448,7 +448,7 @@ class Turbot(discord.Client):
             doc = command.__doc__.split("|")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
             use = inspect.cleandoc(use)
-            use = use.replace("\n", "")
+            use = use.replace("\n", " ")
 
             title = f"!{command.__name__.replace('_command', '')}"
             if params:
@@ -910,7 +910,7 @@ class Turbot(discord.Client):
     def timezone_command(self, channel, author, params):
         """
         Set your timezone. You can find a list of supported TZ names at
-        https://en.wikipedia.org/wiki/List_of_tz_database_time_zones | <zone>
+        <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> | <zone>
         """
         if not params:
             return s("timezone_no_params"), None
