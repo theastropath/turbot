@@ -62,7 +62,7 @@ class MockMessage:
         self.content = content
 
 
-class MockClient:
+class MockDiscordClient:
     def __init__(self):
         self.user = ADMIN
 
@@ -137,7 +137,7 @@ def is_discord_file(obj):
 @pytest.fixture
 def patch_discord():
     orig = turbot.Turbot.__bases__
-    turbot.Turbot.__bases__ = (MockClient,)
+    turbot.Turbot.__bases__ = (MockDiscordClient,)
     yield
     turbot.Turbot.__bases__ = orig
 
@@ -1684,6 +1684,119 @@ class TestTurbot:
             "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) "  # noqa: E501
         )
         assert attachment is None
+
+    async def test_get_graph_bad_user(self, client, channel):
+        client.get_graph(channel, PUNK.name, turbot.GRAPHCMD_FILE)
+        assert not Path(turbot.GRAPHCMD_FILE).exists()
+
+    async def test_get_graph_no_users(self, client, channel):
+        client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
+        assert not Path(turbot.GRAPHCMD_FILE).exists()
+
+    async def test_get_graph_invalid_users(self, client, channel):
+        with open(client.prices_file, "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    f"{PUNK.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                ]
+            )
+        client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
+        assert not Path(turbot.GRAPHCMD_FILE).exists()
+
+
+class TestFigures:
+    @pytest.mark.mpl_image_compare
+    def test_get_graph_all(self, client, channel):
+        with open(client.prices_file, "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    f"{FRIEND.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                    f"{FRIEND.id},sell,87,1982-04-24 01:00:00+00:00\n",
+                    f"{FRIEND.id},buy,110,1982-04-24 02:00:00+00:00\n",
+                    f"{FRIEND.id},sell,105,1982-04-24 02:00:00+00:00\n",
+                    f"{BUDDY.id},buy,115,1982-04-24 03:00:00+00:00\n",
+                    f"{BUDDY.id},sell,82,1982-04-24 03:00:00+00:00\n",
+                    f"{BUDDY.id},buy,60,1982-04-24 04:00:00+00:00\n",
+                    f"{BUDDY.id},sell,111,1982-04-24 04:00:00+00:00\n",
+                    f"{GUY.id},buy,65,1982-04-24 05:00:00+00:00\n",
+                    f"{GUY.id},sell,120,1982-04-24 05:00:00+00:00\n",
+                    f"{GUY.id},buy,121,1982-04-24 06:00:00+00:00\n",
+                    f"{GUY.id},sell,61,1982-04-24 06:00:00+00:00\n",
+                    f"{FRIEND.id},buy,106,1982-04-24 07:00:00+00:00\n",
+                    f"{FRIEND.id},sell,72,1982-04-24 07:00:00+00:00\n",
+                    f"{BUDDY.id},buy,86,1982-04-24 08:00:00+00:00\n",
+                    f"{BUDDY.id},sell,112,1982-04-24 08:00:00+00:00\n",
+                    f"{GUY.id},buy,94,1982-04-24 09:00:00+00:00\n",
+                    f"{GUY.id},sell,96,1982-04-24 09:00:00+00:00\n",
+                    f"{FRIEND.id},buy,100,1982-04-26 01:00:00+00:00\n",
+                    f"{FRIEND.id},sell,87,1982-04-26 01:00:00+00:00\n",
+                    f"{FRIEND.id},buy,110,1982-04-26 02:00:00+00:00\n",
+                    f"{FRIEND.id},sell,105,1982-04-26 02:00:00+00:00\n",
+                    f"{BUDDY.id},buy,115,1982-04-26 03:00:00+00:00\n",
+                    f"{BUDDY.id},sell,82,1982-04-26 03:00:00+00:00\n",
+                    f"{BUDDY.id},buy,60,1982-04-26 04:00:00+00:00\n",
+                    f"{BUDDY.id},sell,111,1982-04-26 04:00:00+00:00\n",
+                    f"{GUY.id},buy,65,1982-04-26 05:00:00+00:00\n",
+                    f"{GUY.id},sell,120,1982-04-26 05:00:00+00:00\n",
+                    f"{GUY.id},buy,121,1982-04-26 06:00:00+00:00\n",
+                    f"{GUY.id},sell,61,1982-04-26 06:00:00+00:00\n",
+                    f"{FRIEND.id},buy,106,1982-04-26 07:00:00+00:00\n",
+                    f"{FRIEND.id},sell,72,1982-04-26 07:00:00+00:00\n",
+                    f"{BUDDY.id},buy,86,1982-04-26 08:00:00+00:00\n",
+                    f"{BUDDY.id},sell,112,1982-04-26 08:00:00+00:00\n",
+                    f"{GUY.id},buy,94,1982-04-26 09:00:00+00:00\n",
+                    f"{GUY.id},sell,96,1982-04-26 09:00:00+00:00\n",
+                ]
+            )
+        return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
+
+    @pytest.mark.mpl_image_compare
+    def test_get_graph_single(self, client, channel):
+        with open(client.prices_file, "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    f"{FRIEND.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                    f"{FRIEND.id},sell,87,1982-04-24 01:00:00+00:00\n",
+                    f"{FRIEND.id},buy,110,1982-04-24 02:00:00+00:00\n",
+                    f"{FRIEND.id},sell,105,1982-04-24 02:00:00+00:00\n",
+                    f"{BUDDY.id},buy,115,1982-04-24 03:00:00+00:00\n",
+                    f"{BUDDY.id},sell,82,1982-04-24 03:00:00+00:00\n",
+                    f"{BUDDY.id},buy,60,1982-04-24 04:00:00+00:00\n",
+                    f"{BUDDY.id},sell,111,1982-04-24 04:00:00+00:00\n",
+                    f"{GUY.id},buy,65,1982-04-24 05:00:00+00:00\n",
+                    f"{GUY.id},sell,120,1982-04-24 05:00:00+00:00\n",
+                    f"{GUY.id},buy,121,1982-04-24 06:00:00+00:00\n",
+                    f"{GUY.id},sell,61,1982-04-24 06:00:00+00:00\n",
+                    f"{FRIEND.id},buy,106,1982-04-24 07:00:00+00:00\n",
+                    f"{FRIEND.id},sell,72,1982-04-24 07:00:00+00:00\n",
+                    f"{BUDDY.id},buy,86,1982-04-24 08:00:00+00:00\n",
+                    f"{BUDDY.id},sell,112,1982-04-24 08:00:00+00:00\n",
+                    f"{GUY.id},buy,94,1982-04-24 09:00:00+00:00\n",
+                    f"{GUY.id},sell,96,1982-04-24 09:00:00+00:00\n",
+                    f"{FRIEND.id},buy,100,1982-04-26 01:00:00+00:00\n",
+                    f"{FRIEND.id},sell,87,1982-04-26 01:00:00+00:00\n",
+                    f"{FRIEND.id},buy,110,1982-04-26 02:00:00+00:00\n",
+                    f"{FRIEND.id},sell,105,1982-04-26 02:00:00+00:00\n",
+                    f"{BUDDY.id},buy,115,1982-04-26 03:00:00+00:00\n",
+                    f"{BUDDY.id},sell,82,1982-04-26 03:00:00+00:00\n",
+                    f"{BUDDY.id},buy,60,1982-04-26 04:00:00+00:00\n",
+                    f"{BUDDY.id},sell,111,1982-04-26 04:00:00+00:00\n",
+                    f"{GUY.id},buy,65,1982-04-26 05:00:00+00:00\n",
+                    f"{GUY.id},sell,120,1982-04-26 05:00:00+00:00\n",
+                    f"{GUY.id},buy,121,1982-04-26 06:00:00+00:00\n",
+                    f"{GUY.id},sell,61,1982-04-26 06:00:00+00:00\n",
+                    f"{FRIEND.id},buy,106,1982-04-26 07:00:00+00:00\n",
+                    f"{FRIEND.id},sell,72,1982-04-26 07:00:00+00:00\n",
+                    f"{BUDDY.id},buy,86,1982-04-26 08:00:00+00:00\n",
+                    f"{BUDDY.id},sell,112,1982-04-26 08:00:00+00:00\n",
+                    f"{GUY.id},buy,94,1982-04-26 09:00:00+00:00\n",
+                    f"{GUY.id},sell,96,1982-04-26 09:00:00+00:00\n",
+                ]
+            )
+        return client.get_graph(channel, FRIEND.name, turbot.GRAPHCMD_FILE)
 
 
 class TestCodebase:

@@ -73,6 +73,15 @@ Data on fish and bugs comes directly from [the Animal Crossing fandom page][wiki
 
 Note that you must have development requirements installed to run these scripts.
 
+### Updating baseline figures
+
+We use [pytest-mpl](https://github.com/matplotlib/pytest-mpl) to verify generated graphs in our test suite. Generating the baseline images is a bit of a process. From the root of this repository do:
+
+```shell
+python setup.py develop # or `python setup.py install --force` if you have it installed locally
+pytest -k figures --mpl-generate-path=tests/baseline
+```
+
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
 [build-badge]:      https://github.com/theastropath/turbot/workflows/Turbot/badge.svg

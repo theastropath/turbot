@@ -210,8 +210,14 @@ class Turbot(discord.Client):
                 self._fossils_data = pd.DataFrame(columns=["author", "name"])
         return self._fossils_data
 
-    def generate_graph(self, channel, user, graphname):
+    def generate_graph(self, channel, user, graphname):  # pragma: no cover
         """Generates a nice looking graph of user data."""
+        plt = self.get_graph(channel, user, graphname)
+        if plt:
+            plt.close("all")
+
+    def get_graph(self, channel, user, graphname):
+        """Returns a graph of user data; the call site is responsible for closing."""
         HOURS = mdates.HourLocator()
         HOURS_FMT = mdates.DateFormatter("%b %d %H:%M")
         TWELVEHOUR = mdates.HourLocator(interval=12)
@@ -233,7 +239,7 @@ class Turbot(discord.Client):
             userId = discord_user_id(channel, user)
             userName = discord_user_name(channel, userId)
             if not userId or not userName:
-                return False
+                return None
             legendElems.append(userName)
             yours = priceList.loc[priceList.author == userId]
             for _, row in yours.iterrows():
@@ -259,7 +265,7 @@ class Turbot(discord.Client):
                 if dates:
                     plt.plot(dates, prices, linestyle="-", marker="o", label=user_name)
             if not found_at_least_one_user:
-                return False
+                return None
 
         plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
         plt.subplots_adjust(left=0.05, bottom=0.2, right=0.85)
@@ -274,9 +280,7 @@ class Turbot(discord.Client):
         figure.set_size_inches(18, 9)
 
         plt.savefig(graphname, dpi=100)
-        plt.close("all")
-
-        return True
+        return plt
 
     def append_price(self, author, kind, price):
         """Adds a price to the prices data file for the given author and kind."""
