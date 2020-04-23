@@ -333,7 +333,12 @@ class Turbot(discord.Client):
         return pytz.timezone(prefs["timezone"])
 
     def to_usertime(self, author_id, dt):
-        return dt.tz_convert(self.get_user_timezone(author_id))
+        if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
+            return dt.tz_convert(self.get_user_timezone(author_id))
+        elif hasattr(dt, "astimezone"):  # python-datetime-like objects
+            return dt.astimezone(self.get_user_timezone(author_id))
+        print(f"warning: can't convert tz on {dt} for user {author_id}", file=sys.stderr)
+        return dt
 
     def save_user_pref(self, author, pref, value):
         users = self.load_users()
@@ -947,7 +952,7 @@ class Turbot(discord.Client):
         if not hemisphere:
             return s("no_hemisphere"), None
 
-        now = datetime.now(pytz.utc)
+        now = self.to_usertime(author.id, datetime.now(pytz.utc))
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()
@@ -1010,7 +1015,7 @@ class Turbot(discord.Client):
         if not hemisphere:
             return s("no_hemisphere"), None
 
-        now = datetime.now(pytz.utc)
+        now = self.to_usertime(author.id, datetime.now(pytz.utc))
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()
