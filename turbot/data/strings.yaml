@@ -31,6 +31,7 @@ collect_no_params: Please provide the name of a fossil to mark as collected.
 collectedfossils: |-
   __**$count Fossils donated by $name**__
   >>> $items
+congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_detail: '> **$name** with shadow size $shadow is available $time at $location (sells for $price bells) during $months $alert'
@@ -57,9 +58,8 @@ history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
-listfossils: |-
-  __**$count Fossils remaining for $name**__
-  >>> $items
+listfossils_count: __**$count Fossils remaining for $name**__
+listfossils_remaining: '>>> $items'
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
