@@ -253,6 +253,12 @@ class TestTurbot:
             "Did you mean: !help, !hemisphere, !history?", None,
         )
 
+    async def test_on_message_invalid_request(self, client, channel):
+        author = someone()
+        message = MockMessage(author, channel, "!xenomorph")
+        await client.on_message(message)
+        channel.sent.assert_not_called()
+
     async def test_on_message_sell_no_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!sell")
@@ -468,6 +474,14 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel.", None
+        )
+
+    async def test_on_message_command_with_blank_name(self, client, channel):
+        author = someone()
+        message = MockMessage(author, channel, f"!listfossils   ")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Can not find the user named  in this channel.", None
         )
 
     async def test_on_message_history_without_name(self, client, channel):
@@ -1091,6 +1105,13 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_collectedfossils_bad_name(self, client, lines, channel):
+        message = MockMessage(BUDDY, channel, f"!collectedfossils {PUNK.name}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"Can not find the user named {PUNK.name} in this channel.", None
+        )
+
     async def test_on_message_fossilcount_no_params(self, client, lines, channel):
         author = someone()
 
@@ -1127,6 +1148,13 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!predict"))
         channel.sent.assert_called_with(
             f"There is no recent buy price for {author}.", None
+        )
+
+    async def test_on_message_predict_bad_user(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, f"!predict {PUNK.name}"))
+        channel.sent.assert_called_with(
+            f"Can not find the user named {PUNK.name} in this channel.", None
         )
 
     async def test_on_message_predict(self, client, freezer, channel):

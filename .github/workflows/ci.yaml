@@ -1,4 +1,4 @@
-name: Python package
+name: Turbot
 
 on: [push, pull_request]
 
@@ -14,3 +14,5 @@ jobs:
       run: pip install tox
     - name: Run tox
       run: python -m tox
+    - name: Codecov
+      uses: codecov/codecov-action@v1

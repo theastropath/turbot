@@ -24,7 +24,7 @@ from yaml import load
 
 try:
     from yaml import CLoader as Loader
-except ImportError:
+except ImportError:  # pragma: no cover
     from yaml import Loader
 
 matplotlib.use("Agg")
@@ -80,8 +80,6 @@ def s(key, **kwargs):
 
 def discord_user_from_name(channel, name):
     """Returns the discord user from the given channel and name."""
-    if not name:
-        return None
     lname = name.lower()
     members = channel.members
     return next(filter(lambda member: lname in str(member).lower(), members), None)
@@ -129,7 +127,7 @@ class Turbot(discord.Client):
     def __init__(
         self, token, channels, prices_file, fossils_file, users_file, log_level=None
     ):
-        if log_level:
+        if log_level:  # pragma: no cover
             logging.basicConfig(level=log_level)
         super().__init__()
         self.token = token
@@ -143,7 +141,7 @@ class Turbot(discord.Client):
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
 
-    def run(self):
+    def run(self):  # pragma: no cover
         super().run(self.token)
 
     def save_prices(self, data):
@@ -337,8 +335,9 @@ class Turbot(discord.Client):
             return dt.tz_convert(self.get_user_timezone(author_id))
         elif hasattr(dt, "astimezone"):  # python-datetime-like objects
             return dt.astimezone(self.get_user_timezone(author_id))
-        print(f"warning: can't convert tz on {dt} for user {author_id}", file=sys.stderr)
-        return dt
+        else:  # pragma: no cover
+            logging.warning(f"can't convert tz on {dt} for user {author_id}")
+            return dt
 
     def save_user_pref(self, author, pref, value):
         users = self.load_users()
@@ -1078,7 +1077,7 @@ class Turbot(discord.Client):
         return "\n".join(add_header(lines)), None
 
 
-def get_token(token_file):
+def get_token(token_file):  # pragma: no cover
     """Returns the discord token from your token config file."""
     try:
         with open(token_file, "r") as f:
@@ -1090,7 +1089,7 @@ def get_token(token_file):
         sys.exit(1)
 
 
-def get_channels(channels_file):
+def get_channels(channels_file):  # pragma: no cover
     """Returns the authorized channels your channels config file."""
     try:
         with open(channels_file, "r") as channels_file:
@@ -1152,7 +1151,7 @@ def main(
     prices_file,
     fossils_file,
     users_file,
-):
+):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
         print("error: you must provide at least one authorized channel", file=sys.stderr)
