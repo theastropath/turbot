@@ -691,6 +691,7 @@ class Turbot(discord.Client):
         new_data = [[author.id, name] for name in new_names]
         new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
         fossils = fossils.append(new_fossils, ignore_index=True)
+        yours = fossils[fossils.author == author.id]  # re-fetch for congrats
         self.save_fossils(fossils)
 
         lines = []
@@ -700,6 +701,8 @@ class Turbot(discord.Client):
             lines.append(s("collect_dupe", items=", ".join(sorted(dupes))))
         if invalid:
             lines.append(s("collect_bad", items=", ".join(sorted(invalid))))
+        if len(FOSSILS) == len(yours.index):
+            lines.append(s("congrats_all_fossils"))
         return "\n".join(lines), None
 
     def uncollect_command(self, channel, author, params):
@@ -796,15 +799,14 @@ class Turbot(discord.Client):
         yours = fossils[fossils.author == target_id]
         collected = set(yours.name.unique())
         remaining = FOSSILS - collected
-        return (
-            s(
-                "listfossils",
-                name=target_name,
-                count=len(remaining),
-                items=", ".join(sorted(remaining)),
-            ),
-            None,
-        )
+
+        lines = []
+        if remaining:
+            lines.append(s("listfossils_count", count=len(remaining), name=target_name))
+            lines.append(s("listfossils_remaining", items=", ".join(sorted(remaining))))
+        else:
+            lines.append(s("congrats_all_fossils"))
+        return "\n".join(lines), None
 
     def collectedfossils_command(self, channel, author, params):
         """

@@ -835,6 +835,22 @@ class TestTurbot:
         )
         assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
+    async def test_on_message_collect_congrats(self, client, channel):
+        author = someone()
+
+        # collect all the fossils
+        everything = ", ".join(sorted(turbot.FOSSILS))
+        message = MockMessage(author, channel, f"!collect {everything}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            (
+                "Marked the following fossils as collected:\n"
+                f"> {everything}\n"
+                "**Congratulations, you've collected all fossils!**"
+            ),
+            None,
+        )
+
     async def test_on_message_fossilsearch_no_list(self, client, channel):
         message = MockMessage(someone(), channel, "!fossilsearch")
         await client.on_message(message)
@@ -994,6 +1010,21 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel.", None
+        )
+
+    async def test_on_message_listfossils_congrats(self, client, lines, channel):
+        author = someone()
+
+        # collect all the fossils
+        everything = ", ".join(sorted(turbot.FOSSILS))
+        message = MockMessage(author, channel, f"!collect {everything}")
+        await client.on_message(message)
+
+        # then list them
+        message = MockMessage(author, channel, "!listfossils")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "**Congratulations, you've collected all fossils!**", None
         )
 
     async def test_on_message_listfossils_no_name(self, client, lines, channel):
