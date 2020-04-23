@@ -476,6 +476,32 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_history_timezone(self, client, channel):
+        author = someone()
+
+        await client.on_message(
+            MockMessage(author, channel, "!timezone America/Los_Angeles")
+        )
+        their_now = NOW.astimezone(pytz.timezone("America/Los_Angeles"))
+
+        # first log some buy and sell prices
+        await client.on_message(MockMessage(author, channel, "!buy 1"))
+        await client.on_message(MockMessage(author, channel, "!sell 2"))
+        await client.on_message(MockMessage(author, channel, "!buy 3"))
+
+        # then ensure we can the get history
+        message = MockMessage(author, channel, "!history")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            (
+                f"__**Historical info for {author}**__\n"
+                f"> Can buy turnips from Daisy Mae for 1 bells at {their_now}\n"
+                f"> Can sell turnips to Timmy & Tommy for 2 bells at {their_now}\n"
+                f"> Can buy turnips from Daisy Mae for 3 bells at {their_now}"
+            ),
+            None,
+        )
+
     async def test_on_message_bestbuy(self, client, channel):
         # first log some buy and sell prices
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))

@@ -329,6 +329,9 @@ class Turbot(discord.Client):
             return pytz.UTC
         return pytz.timezone(prefs["timezone"])
 
+    def to_usertime(self, author_id, dt):
+        return dt.tz_convert(self.get_user_timezone(author_id))
+
     def save_user_pref(self, author, pref, value):
         users = self.load_users()
         row = users[users.author == author.id].tail(1)
@@ -605,7 +608,11 @@ class Turbot(discord.Client):
         lines = [s("history_header", name=target_name)]
         for _, row in yours.iterrows():
             lines.append(
-                s(f"history_{row.kind}", price=row.price, timestamp=row.timestamp)
+                s(
+                    f"history_{row.kind}",
+                    price=row.price,
+                    timestamp=self.to_usertime(target_id, row.timestamp),
+                )
             )
         return "\n".join(lines), None
 
