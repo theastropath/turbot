@@ -1366,6 +1366,157 @@ class TestTurbot:
         loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
         assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
 
+    async def test_on_message_bug_no_hemisphere(self, client, channel):
+        author = someone()
+
+        message = MockMessage(author, channel, "!bugs")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Please enter your hemisphere choice first using the !hemisphere command.",
+            None,
+        )
+
+    async def test_on_message_bug_none_found(self, client, channel):
+        author = someone()
+
+        # give our author a hemisphere first
+        message = MockMessage(author, channel, "!hemisphere northern")
+        await client.on_message(message)
+
+        message = MockMessage(author, channel, "!bugs Shelob")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            'Did not find any bugs searching for "Shelob".', None
+        )
+
+    async def test_on_message_bug_multiple_users(self, client, channel):
+        await client.on_message(MockMessage(GUY, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(FRIEND, channel, "!hemisphere northern"))
+
+        await client.on_message(MockMessage(GUY, channel, "!bugs butt"))
+        await client.on_message(MockMessage(BUDDY, channel, "!bugs butt"))
+        await client.on_message(MockMessage(FRIEND, channel, "!bugs butt"))
+
+    async def test_on_message_bug_search_query(self, client, channel, monkeypatch):
+        monkeypatch.setattr(random, "randint", lambda l, h: 0)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = MockMessage(author, channel, "!hemisphere northern")
+        await client.on_message(message)
+
+        message = MockMessage(author, channel, "!bugs butt")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr, May, Jun, Jul, Aug, Sep _New this month_\n"  # noqa: E501
+            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan, Feb, Mar, Apr, May, Jun, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar, Apr, May, Jun \n"  # noqa: E501
+            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar, Apr, May, Jun, Jul, Aug, Sep \n"  # noqa: E501
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar, Apr, May, Jun, Sep, Oct ",  # noqa: E501
+            None,
+        )
+
+    async def test_on_message_bug_header(self, client, channel, monkeypatch):
+        monkeypatch.setattr(random, "randint", lambda l, h: 100)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = MockMessage(author, channel, "!hemisphere northern")
+        await client.on_message(message)
+
+        message = MockMessage(author, channel, "!bugs butt")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "```diff\n"
+            "-Eeek! What wretched things. Alas, I am obliged to respond...\n"
+            "```\n"
+            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr, May, Jun, Jul, Aug, Sep _New this month_\n"  # noqa: E501
+            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan, Feb, Mar, Apr, May, Jun, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
+            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar, Apr, May, Jun \n"  # noqa: E501
+            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar, Apr, May, Jun, Jul, Aug, Sep \n"  # noqa: E501
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar, Apr, May, Jun, Sep, Oct ",  # noqa: E501
+            None,
+        )
+
+    async def test_on_message_bug_search_leaving(self, client, channel, monkeypatch):
+        monkeypatch.setattr(random, "randint", lambda l, h: 0)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = MockMessage(author, channel, "!hemisphere northern")
+        await client.on_message(message)
+
+        message = MockMessage(author, channel, "!bugs leaving")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 "
+            "bells) during Jan, Feb, Mar, Apr, Nov, Dec **GONE NEXT MONTH!**",
+            None,
+        )
+
+    async def test_on_message_bug(self, client, channel, monkeypatch):
+        monkeypatch.setattr(random, "randint", lambda l, h: 0)
+        author = someone()
+
+        # give our author a hemisphere first
+        message = MockMessage(author, channel, "!hemisphere northern")
+        await client.on_message(message)
+
+        message = MockMessage(author, channel, "!bugs")
+        await client.on_message(message)
+        calls = channel.sent.call_args_list
+
+        call = calls.pop()
+        response, attachment = call[0][0], call[0][1]
+        assert response == (
+            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) \n"  # noqa: E501
+            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
+            "> **Pill bug** is available 11 pm - 4 pm, hitting rocks (sells for 250 bells) \n"  # noqa: E501
+            "> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
+            "> **Snail** is available all day, on rocks (rain) (sells for 250 bells) \n"  # noqa: E501
+            "> **Spider** is available 7 pm - 8 am, shaking trees (sells for 600 bells) \n"  # noqa: E501
+            "> **Stinkbug** is available all day, on flowers (sells for 120 bells) \n"  # noqa: E501
+            "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Tiger beetle** is available all day, on the ground (sells for 1500 bells) \n"  # noqa: E501
+            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) \n"  # noqa: E501
+            "> **Wasp** is available all day, shaking trees (sells for 2500 bells) \n"  # noqa: E501
+            "> **Wharf roach** is available all day, on beach rocks (sells for 200 bells) \n"  # noqa: E501
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) "  # noqa: E501
+        )
+        assert attachment is None
+
+        call = calls.pop()
+        response, attachment = call[0][0], call[0][1]
+        assert response == (
+            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
+            "> **Ant** is available all day, on rotten food (sells for 80 bells) \n"  # noqa: E501
+            "> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_\n"  # noqa: E501
+            "> **Bagworm** is available all day, shaking trees (sells for 600 bells) \n"  # noqa: E501
+            "> **Centipede** is available 4 pm - 11 pm, hitting rocks (sells for 300 bells) \n"  # noqa: E501
+            "> **Citrus long-horned beetle** is available all day, on tree stumps (sells for 350 bells) \n"  # noqa: E501
+            "> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_\n"  # noqa: E501
+            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) \n"  # noqa: E501
+            "> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_\n"  # noqa: E501
+            "> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_\n"  # noqa: E501
+            "> **Fly** is available all day, on trash items (sells for 60 bells) \n"  # noqa: E501
+            "> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_\n"  # noqa: E501
+            "> **Hermit crab** is available 7 pm - 8 am, beach disguised as shells (sells for 1000 bells) \n"  # noqa: E501
+            "> **Honeybee** is available 8 am - 5 pm, flying (sells for 200 bells) \n"  # noqa: E501
+            "> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_\n"  # noqa: E501
+            "> **Ladybug** is available 8 am - 5 pm, on flowers (sells for 200 bells) \n"  # noqa: E501
+            "> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_\n"  # noqa: E501
+            "> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
+            "> **Man-faced stink bug** is available 7 pm - 8 am, on flowers (sells for 1000 bells) \n"  # noqa: E501
+            "> **Mantis** is available 8 am - 5 pm, on flowers (sells for 430 bells) \n"  # noqa: E501
+            "> **Mole cricket** is available all day, underground (sells for 500 bells) \n"  # noqa: E501
+            "> **Moth** is available 7 pm - 4 am, flying by light (sells for 130 bells) \n"  # noqa: E501
+            "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) "  # noqa: E501
+        )
+        assert attachment is None
+
 
 class TestCodebase:
     def test_flake8(self):
