@@ -649,7 +649,14 @@ class Turbot(discord.Client):
         lines = [s(f"best{kind}_header")]
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
-            lines.append(s("best", name=name, price=row.price, timestamp=row.timestamp))
+            lines.append(
+                s(
+                    "best",
+                    name=name,
+                    price=row.price,
+                    timestamp=self.to_usertime(row.author, row.timestamp),
+                )
+            )
         return "\n".join(lines), None
 
     def bestbuy_command(self, channel, author, params):

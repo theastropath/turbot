@@ -401,6 +401,40 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_bestsell_timezone(self, client, channel):
+        friend_tz = "America/Los_Angeles"
+        await client.on_message(MockMessage(FRIEND, channel, f"!timezone {friend_tz}"))
+        friend_now = NOW.astimezone(pytz.timezone("America/Los_Angeles"))
+
+        buddy_tz = "Canada/Saskatchewan"
+        await client.on_message(MockMessage(BUDDY, channel, f"!timezone {buddy_tz}"))
+        buddy_now = NOW.astimezone(pytz.timezone(buddy_tz))
+
+        guy_tz = "Africa/Abidjan"
+        await client.on_message(MockMessage(GUY, channel, f"!timezone {guy_tz}"))
+        # guy_now = NOW.astimezone(pytz.timezone(guy_tz))
+
+        # first log some buy and sell prices
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 200"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 600"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 800"))
+
+        # then ensure we can find the best sell
+        author = someone()
+        message = MockMessage(author, channel, "!bestsell")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            (
+                "__**Best Selling Prices in the Last 12 Hours**__\n"
+                f"> {BUDDY}: 600 bells at {buddy_now}\n"
+                f"> {FRIEND}: 200 bells at {friend_now}"
+            ),
+            None,
+        )
+
     async def test_on_message_oops(self, client, lines, channel):
         author = someone()
 
@@ -520,6 +554,40 @@ class TestTurbot:
                 "__**Best Buying Prices in the Last 12 Hours**__\n"
                 f"> {BUDDY}: 60 bells at {NOW}\n"
                 f"> {FRIEND}: 100 bells at {NOW}"
+            ),
+            None,
+        )
+
+    async def test_on_message_bestbuy_timezone(self, client, channel):
+        friend_tz = "America/Los_Angeles"
+        await client.on_message(MockMessage(FRIEND, channel, f"!timezone {friend_tz}"))
+        friend_now = NOW.astimezone(pytz.timezone("America/Los_Angeles"))
+
+        buddy_tz = "Canada/Saskatchewan"
+        await client.on_message(MockMessage(BUDDY, channel, f"!timezone {buddy_tz}"))
+        buddy_now = NOW.astimezone(pytz.timezone(buddy_tz))
+
+        guy_tz = "Africa/Abidjan"
+        await client.on_message(MockMessage(GUY, channel, f"!timezone {guy_tz}"))
+        # guy_now = NOW.astimezone(pytz.timezone(guy_tz))
+
+        # first log some buy and sell prices
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
+
+        # then ensure we can find the best buy
+        author = someone()
+        message = MockMessage(author, channel, "!bestbuy")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            (
+                "__**Best Buying Prices in the Last 12 Hours**__\n"
+                f"> {BUDDY}: 60 bells at {buddy_now}\n"
+                f"> {FRIEND}: 100 bells at {friend_now}"
             ),
             None,
         )
