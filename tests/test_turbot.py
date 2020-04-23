@@ -836,16 +836,31 @@ class TestTurbot:
         assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
     async def test_on_message_collect_congrats(self, client, channel):
-        author = someone()
+        everything = sorted(list(turbot.FOSSILS))
+        some, rest = everything[:10], everything[10:]
 
-        # collect all the fossils
-        everything = ", ".join(sorted(turbot.FOSSILS))
-        message = MockMessage(author, channel, f"!collect {everything}")
+        # someone else collects some
+        fossils = "amber, ammonite, ankylo skull"
+        message = MockMessage(GUY, channel, f"!collect {fossils}")
+        await client.on_message(message)
+
+        # you collect some
+        message = MockMessage(BUDDY, channel, f"!collect {', '.join(some)}")
+        await client.on_message(message)
+
+        # someone else again collects some
+        fossils = "plesio body, ankylo skull"
+        message = MockMessage(FRIEND, channel, f"!collect {fossils}")
+        await client.on_message(message)
+
+        # then you collect all the rest
+        rest_str = ", ".join(rest)
+        message = MockMessage(BUDDY, channel, f"!collect {rest_str}")
         await client.on_message(message)
         channel.sent.assert_called_with(
             (
                 "Marked the following fossils as collected:\n"
-                f"> {everything}\n"
+                f"> {rest_str}\n"
                 "**Congratulations, you've collected all fossils!**"
             ),
             None,
