@@ -1,5 +1,10 @@
 # Turbot
 
+[![build][build-badge]][build]
+[![codecov][codcov-badge]][codecov]
+[![black][black-badge]][black]
+[![mit][mit-badge]][mit]
+
 A Discord bot for tracking _Animal Crossing: New Horizons_ turnip prices and fossil collections.
 
 ## Usage
@@ -53,7 +58,7 @@ The script can be run multiple times without corrupting or duplicating data. Any
 
 ### Formatting and linting
 
-Codebase consistency is maintained by the industry standard [black](https://black.readthedocs.io/en/stable/). For linting we use [flake8](https://flake8.pycqa.org/en/latest/) with configuration to work alongside the formatter. Imports are kept in order by [isort](https://timothycrosley.github.io/isort/). The included test suite can run these tools against the codebase and report on any errors:
+Codebase consistency is maintained by the industry standard [black][black]. For linting we use [flake8](https://flake8.pycqa.org/en/latest/) with configuration to work alongside the formatter. Imports are kept in order by [isort](https://timothycrosley.github.io/isort/). The included test suite can run these tools against the codebase and report on any errors:
 
 ```shell
 tox -- -k codebase
@@ -68,3 +73,12 @@ Data on fishes is captured from [the Animal Crossing fandom page](https://animal
 ```
 
 Note that you must have development requirements installed to run this script.
+
+[black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
+[black]:            https://github.com/psf/black
+[build-badge]:      https://github.com/theastropath/turbot/workflows/build/badge.svg
+[build]:            https://github.com/theastropath/turbot/actions
+[codecov-badge]:    https://codecov.io/gh/theastropath/turbot/branch/master/graph/badge.svg
+[codecov]:          https://codecov.io/gh/theastropath/turbot
+[mit-badge]:        https://img.shields.io/badge/License-MIT-yellow.svg
+[mit]:              https://opensource.org/licenses/MIT

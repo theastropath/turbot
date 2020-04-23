@@ -5,6 +5,7 @@ beautifulsoup4==4.9.0
 black==19.10b0
 callee==0.3.1
 certifi==2020.4.5.1
+coverage==5.1
 distlib==0.3.0
 entrypoints==0.3
 filelock==3.0.12
