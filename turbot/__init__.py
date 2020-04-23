@@ -329,6 +329,9 @@ class Turbot(discord.Client):
             return pytz.UTC
         return pytz.timezone(prefs["timezone"])
 
+    def to_usertime(self, author_id, dt):
+        return dt.tz_convert(self.get_user_timezone(author_id))
+
     def save_user_pref(self, author, pref, value):
         users = self.load_users()
         row = users[users.author == author.id].tail(1)
@@ -639,7 +642,14 @@ class Turbot(discord.Client):
         lines = [s(f"best{kind}_header")]
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
-            lines.append(s("best", name=name, price=row.price, timestamp=row.timestamp))
+            lines.append(
+                s(
+                    "best",
+                    name=name,
+                    price=row.price,
+                    timestamp=self.to_usertime(row.author, row.timestamp),
+                )
+            )
         return "\n".join(lines), None
 
     def bestbuy_command(self, channel, author, params):
