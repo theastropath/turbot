@@ -1,0 +1,161 @@
+hemisphere,name,price,location,time,jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+northern,common butterfly,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,yellow butterfly,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
+northern,tiger butterfly,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
+northern,peacock butterfly,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
+northern,common bluebottle,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
+northern,paper kite butterfly,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
+northern,great purple emperor,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
+northern,monarch butterfly,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
+northern,emperor butterfly,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
+northern,agrias butterfly,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
+northern,rajah brooke's birdwing,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
+northern,queen alexandra's birdwing,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,moth,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,atlas moth,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
+northern,madagascan sunset moth,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
+northern,long locust,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
+northern,migratory locust,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+northern,rice grasshopper,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+northern,grasshopper,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
+northern,cricket,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
+northern,bell cricket,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
+northern,mantis,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+northern,orchid mantis,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+northern,honeybee,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
+northern,wasp,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,brown cicada,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,robust cicada,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giant cicada,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,walker cicada,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
+northern,evening cicada,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,cicada shell,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,red dragonfly,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
+northern,darner dragonfly,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
+northern,banded dragonfly,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
+northern,damselfly,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
+northern,firefly,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
+northern,mole cricket,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
+northern,pondskater,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,diving beetle,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,giant water bug,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
+northern,stinkbug,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
+northern,man-faced stink bug,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
+northern,ladybug,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
+northern,tiger beetle,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
+northern,jewel beetle,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
+northern,violin beetle,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
+northern,citrus long-horned beetle,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,rosalia batesi beetle,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
+northern,blue weevil beetle,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,dung beetle,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
+northern,earth-boring dung beetle,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
+northern,scarab beetle,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,drone beetle,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
+northern,goliath beetle,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,saw stag,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,miyama stag,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giant stag,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,rainbow stag,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,cyclommatus stag,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,golden stag,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giraffe stag,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned dynastid,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned atlas,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned elephant,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned hercules,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,walking stick,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
+northern,walking leaf,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
+northern,bagworm,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,ant,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,hermit crab,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,wharf roach,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,fly,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,mosquito,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,flea,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
+northern,snail,250,on rocks (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,pill bug,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,centipede,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,spider,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,tarantula,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
+northern,scorpion,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0
+southern,common butterfly,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,yellow butterfly,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
+southern,tiger butterfly,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
+southern,peacock butterfly,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
+southern,common bluebottle,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
+southern,paper kite butterfly,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
+southern,great purple emperor,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
+southern,monarch butterfly,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
+southern,emperor butterfly,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
+southern,agrias butterfly,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
+southern,rajah brooke's birdwing,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
+southern,queen alexandra's birdwing,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,moth,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,atlas moth,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
+southern,madagascan sunset moth,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
+southern,long locust,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
+southern,migratory locust,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+southern,rice grasshopper,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+southern,grasshopper,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
+southern,cricket,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
+southern,bell cricket,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
+southern,mantis,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+southern,orchid mantis,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+southern,honeybee,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
+southern,wasp,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,brown cicada,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,robust cicada,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giant cicada,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,walker cicada,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
+southern,evening cicada,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,cicada shell,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,red dragonfly,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
+southern,darner dragonfly,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
+southern,banded dragonfly,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
+southern,damselfly,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
+southern,firefly,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
+southern,mole cricket,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
+southern,pondskater,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,diving beetle,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,giant water bug,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
+southern,stinkbug,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
+southern,man-faced stink bug,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
+southern,ladybug,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
+southern,tiger beetle,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
+southern,jewel beetle,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
+southern,violin beetle,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
+southern,citrus long-horned beetle,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,rosalia batesi beetle,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
+southern,blue weevil beetle,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,dung beetle,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
+southern,earth-boring dung beetle,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
+southern,scarab beetle,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,drone beetle,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
+southern,goliath beetle,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,saw stag,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,miyama stag,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giant stag,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,rainbow stag,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,cyclommatus stag,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,golden stag,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giraffe stag,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned dynastid,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned atlas,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned elephant,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned hercules,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,walking stick,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
+southern,walking leaf,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
+southern,bagworm,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,ant,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,hermit crab,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,wharf roach,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,fly,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,mosquito,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,flea,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
+southern,snail,250,on rocks (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,pill bug,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,centipede,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,spider,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,tarantula,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
+southern,scorpion,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0

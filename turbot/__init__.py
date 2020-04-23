@@ -2,6 +2,7 @@
 
 import inspect
 import logging
+import random
 import sys
 from collections import defaultdict
 from contextlib import redirect_stdout
@@ -41,6 +42,7 @@ DATA_DIR = PACKAGE_ROOT / "data"
 STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
 FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
 FISH_DATA_FILE = DATA_DIR / "fish.csv"
+BUGS_DATA_FILE = DATA_DIR / "bugs.csv"
 
 # persisted user and application data
 DB_DIR = RUNTIME_ROOT / "db"
@@ -67,6 +69,7 @@ with open(FOSSILS_DATA_FILE) as f:
     FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
 
 FISH = pd.read_csv(FISH_DATA_FILE)
+BUGS = pd.read_csv(BUGS_DATA_FILE)
 
 
 def s(key, **kwargs):
@@ -928,7 +931,7 @@ class Turbot(discord.Client):
         """
         hemisphere = self.get_user_hemisphere(author.id)
         if not hemisphere:
-            return s("fish_no_hemisphere"), None
+            return s("no_hemisphere"), None
 
         now = datetime.now(pytz.utc)
         this_month = now.strftime("%b").lower()
@@ -984,6 +987,76 @@ class Turbot(discord.Client):
 
         lines = [s("fish", **details(row)) for _, row in available.iterrows()]
         return "\n".join(sorted(lines)), None
+
+    def bugs_command(self, channel, author, params):
+        """
+        Tell you what bugs are available now in your hemisphere. | [name|leaving]
+        """
+        hemisphere = self.get_user_hemisphere(author.id)
+        if not hemisphere:
+            return s("no_hemisphere"), None
+
+        now = datetime.now(pytz.utc)
+        this_month = now.strftime("%b").lower()
+        next_month = (now + timedelta(days=33)).strftime("%b").lower()
+        last_month = (now - timedelta(days=33)).strftime("%b").lower()
+        available = BUGS[(BUGS.hemisphere == hemisphere) & (BUGS[this_month] == 1)]
+
+        def details(row):
+            alert = (
+                "**GONE NEXT MONTH!**"
+                if not row[next_month]
+                else "_New this month_"
+                if not row[last_month]
+                else ""
+            )
+            months = ", ".join(
+                filter(
+                    None,
+                    [
+                        "Jan" if row["jan"] else None,
+                        "Feb" if row["feb"] else None,
+                        "Mar" if row["mar"] else None,
+                        "Apr" if row["apr"] else None,
+                        "May" if row["may"] else None,
+                        "Jun" if row["jun"] else None,
+                        "Jul" if row["jul"] else None,
+                        "Aug" if row["aug"] else None,
+                        "Sep" if row["sep"] else None,
+                        "Oct" if row["oct"] else None,
+                        "Nov" if row["nov"] else None,
+                        "Dec" if row["dec"] else None,
+                    ],
+                )
+            )
+            return {
+                **row,
+                "name": row["name"].capitalize(),
+                "months": months,
+                "alert": alert,
+            }
+
+        def add_header(lines):
+            if random.randint(0, 100) > 70:
+                lines.insert(0, s("bugs_header"))
+            return lines
+
+        if params:
+            search = params[0]
+            if search == "leaving":
+                found = available[available[next_month] == 0]
+            else:
+                found = available[available.name.str.contains(search)]
+            if found.empty:
+                return s("bugs_none_found", search=search), None
+            else:
+                lines = sorted(
+                    [s("bugs_detail", **details(row)) for _, row in found.iterrows()]
+                )
+                return "\n".join(add_header(lines)), None
+
+        lines = sorted([s("bugs", **details(row)) for _, row in available.iterrows()])
+        return "\n".join(add_header(lines)), None
 
 
 def get_token(token_file):
