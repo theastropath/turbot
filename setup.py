@@ -7,9 +7,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     long_description=open("README.md", "r").read(),
-    entry_points={
-        "console_scripts": ["turbot=turbot:main", "migrate=turbot.migrate:main"]
-    },
+    entry_points={"console_scripts": ["turbot=turbot:main"]},
     url="https://github.com/theastropath/turbot",
     include_package_data=True,
     author_email="theastropath@gmail.com",
