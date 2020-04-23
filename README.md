@@ -24,11 +24,19 @@ To install development dependencies (which also includes the production dependen
 
 ### Running tests
 
-Run the tests with [tox](https://tox.readthedocs.io/en/latest/):
+Run all these tests with [tox](https://tox.readthedocs.io/en/latest/):
 
 ```shell
 tox
 ```
+
+or a specific set of tests, like all tests pertaining to fossils for example:
+
+```shell
+tox -- -k fossil
+```
+
+After running the _full test suite_ you can view code coverage reports in the newly created `htmlcov` directory.
 
 ### Installing the application
 
@@ -40,21 +48,11 @@ python setup.py develop
 
 ### Running the application
 
-Make sure that you have created the required "token.txt" and "channels.txt" files as described above in the usage section. Setuptools will have installed an entry point for you, so run it:
+Make sure that you have created the required "token.txt" and "channels.txt" files as described above in the usage section. Setuptools will have installed an entry point for you, so run it to get usage help:
 
 ```shell
-turbot
+turbot --help
 ```
-
-### Migration
-
-The older file format for turbot data was individual files per user stored in the `prices` and `fossils` directories. If you have existing data in this format and wish to automatically migrate it to the newest format, use the provided migration script:
-
-```shell
-migrate
-```
-
-The script can be run multiple times without corrupting or duplicating data. Any existing new format data will be merged with the old format data and saved.
 
 ### Formatting and linting
 
@@ -64,15 +62,16 @@ Codebase consistency is maintained by the industry standard [black][black]. For 
 tox -- -k codebase
 ```
 
-### Updating fish data
+### Updating fish and bugs data
 
-Data on fishes is captured from [the Animal Crossing fandom page](https://animalcrossing.fandom.com/wiki/Fish_(New_Horizons)) and then compiled into a csv file in the package's `data` directory. The script to do this is included in the `scripts` directory. Run it to fetch the latest data:
+Data on fish and bugs comes directly from [the Animal Crossing fandom page][wiki] and then compiled into a csv file in the package's `data` directory. The scripts to do this are included in the `scripts` directory. Run them to fetch the latest data:
 
 ```shell
+./scripts/update_bugs_data.py
 ./scripts/update_fish_data.py
 ```
 
-Note that you must have development requirements installed to run this script.
+Note that you must have development requirements installed to run these scripts.
 
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
@@ -82,3 +81,4 @@ Note that you must have development requirements installed to run this script.
 [codecov]:          https://codecov.io/gh/theastropath/turbot
 [mit-badge]:        https://img.shields.io/badge/License-MIT-yellow.svg
 [mit]:              https://opensource.org/licenses/MIT
+[wiki]:             https://animalcrossing.fandom.com/

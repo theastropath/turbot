@@ -4,7 +4,6 @@ source = turbot
 omit =
     scripts/*
     setup.py
-    turbot/migrate.py
 
 [report]
 exclude_lines =
