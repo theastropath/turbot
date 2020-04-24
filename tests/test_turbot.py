@@ -610,21 +610,27 @@ class TestTurbot:
         message = MockMessage(someone(), channel, "!turnippattern 100 86")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Decreasing**: Prices will continuously fall.\n> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
+            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
+            "> **Decreasing**: Prices will continuously fall.\n"  # noqa: E501
+            "> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n"  # noqa: E501
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
         message = MockMessage(someone(), channel, "!turnippattern 100 99")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Random**: Prices are completely random. Sell when it goes over your buying price.\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
+            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
+            "> **Random**: Prices are completely random. Sell when it goes over your buying price.\n"  # noqa: E501
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
         message = MockMessage(someone(), channel, "!turnippattern 100 22")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
+            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
             None,
         )
 
@@ -834,6 +840,17 @@ class TestTurbot:
             f"{author.id},ammonite\n",
         }
 
+        # collect them again
+        message = MockMessage(author, channel, f"!collect {fossils}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "The following fossils had already been collected:\n"
+            "> amber, ammonite, ankylo skull\n"
+            "Did not recognize the following fossils:\n"
+            "> a foot",
+            None,
+        )
+
         # then collect some more with dupes
         fossils = "amber,an arm,plesio body"
         message = MockMessage(author, channel, f"!collect {fossils}")
@@ -1005,7 +1022,17 @@ class TestTurbot:
             "> a foot",
             None,
         )
-        assert lines(client.fossils_file) == ["author,name\n", f"{author.id},ammonite\n"]
+        with open(client.fossils_file) as f:
+            assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
+
+        # and delete one more
+        message = MockMessage(author, channel, f"!uncollect ammonite")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "Unmarked the following fossils as collected:\n> ammonite", None
+        )
+        with open(client.fossils_file) as f:
+            assert f.readlines() == ["author,name\n"]
 
     async def test_on_message_uncollect_with_only_bad(self, client, lines, channel):
         author = someone()
@@ -1120,6 +1147,26 @@ class TestTurbot:
             None,
         )
 
+    async def test_on_message_neededfossils(self, client, channel):
+        everything = sorted(list(turbot.FOSSILS))
+
+        fossils = ",".join(everything[3:])
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {fossils}"))
+
+        fossils = ",".join(everything[0:-3])
+        await client.on_message(MockMessage(GUY, channel, f"!collect {fossils}"))
+
+        fossils = ",".join(everything)
+        await client.on_message(MockMessage(FRIEND, channel, f"!collect {fossils}"))
+
+        await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
+        channel.sent.assert_called_with(
+            f"> **{BUDDY}** needs acanthostega, amber, ammonite\n"
+            f"> **{DUDE}** needs _more than 10 fossils..._\n"
+            f"> **{GUY}** needs tricera tail, tricera torso, trilobite",
+            None,
+        )
+
     async def test_on_message_collectedfossils_no_name(self, client, lines, channel):
         author = someone()
 
@@ -1165,6 +1212,26 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide at least one user name to search for a fossil count.", None
+        )
+
+    async def test_on_message_fossilcount_bad_name(self, client, lines, channel):
+        author = someone()
+
+        message = MockMessage(author, channel, f"!fossilcount {PUNK.name}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            f"__**Did not recognize the following names**__\n> {PUNK.name}", None
+        )
+
+    async def test_on_message_fossilcount_no_fossils(self, client, lines, channel):
+        author = someone()
+
+        message = MockMessage(author, channel, f"!fossilcount {BUDDY.name}")
+        await client.on_message(message)
+        channel.sent.assert_called_with(
+            "__**Fossil Count**__\n"
+            f"> **{BUDDY}** has {len(turbot.FOSSILS)} fossils remaining.",
+            None,
         )
 
     async def test_on_message_fossilcount(self, client, lines, channel):
@@ -1797,6 +1864,21 @@ class TestFigures:
                 ]
             )
         return client.get_graph(channel, FRIEND.name, turbot.GRAPHCMD_FILE)
+
+    @pytest.mark.mpl_image_compare
+    def test_get_graph_single_no_data(self, client, channel):
+        return client.get_graph(channel, FRIEND.name, turbot.GRAPHCMD_FILE)
+
+    @pytest.mark.mpl_image_compare
+    def test_get_graph_all_no_data(self, client, channel):
+        with open(client.prices_file, "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    f"{FRIEND.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                ]
+            )
+        return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
 
 
 class TestCodebase:

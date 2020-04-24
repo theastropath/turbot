@@ -60,6 +60,7 @@ lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
 listfossils_count: __**$count Fossils remaining for $name**__
 listfossils_remaining: '>>> $items'
+neededfossils: '> **$name** needs $items'
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
