@@ -1153,7 +1153,7 @@ class TestTurbot:
         fossils = ",".join(everything[3:])
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {fossils}"))
 
-        fossils = ",".join(everything[0:-3])
+        fossils = ",".join(everything[20:])
         await client.on_message(MockMessage(GUY, channel, f"!collect {fossils}"))
 
         fossils = ",".join(everything)
@@ -1162,8 +1162,7 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
         channel.sent.assert_called_with(
             f"> **{BUDDY}** needs acanthostega, amber, ammonite\n"
-            f"> **{DUDE}** needs _more than 10 fossils..._\n"
-            f"> **{GUY}** needs tricera tail, tricera torso, trilobite",
+            f"> **{GUY}** needs _more than 10 fossils..._",
             None,
         )
 
