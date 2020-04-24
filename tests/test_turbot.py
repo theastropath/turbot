@@ -80,7 +80,9 @@ UNAUTHORIZED_CHANNEL = "bad channel"
 
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 
-SRC_ROOT = Path(dirname(realpath(__file__))).parent
+TST_ROOT = dirname(realpath(__file__))
+DAT_ROOT = Path(TST_ROOT) / "data"
+SRC_ROOT = Path(TST_ROOT).parent
 SRC_DIRS = ["tests", "turbot", "scripts"]
 
 ADMIN_ROLE = MockRole("Turbot Admin")
@@ -1519,7 +1521,7 @@ class TestTurbot:
             "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
             "> **Koi** is available 4 pm - 9 am at pond (sells for 4000 bells) \n"  # noqa: E501
             "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
-            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_"  # noqa: E501
+            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_\n"  # noqa: E501
         )
         assert attachment is None
 
@@ -1747,7 +1749,7 @@ class TestTurbot:
             "> **Mantis** is available 8 am - 5 pm, on flowers (sells for 430 bells) \n"  # noqa: E501
             "> **Mole cricket** is available all day, underground (sells for 500 bells) \n"  # noqa: E501
             "> **Moth** is available 7 pm - 4 am, flying by light (sells for 130 bells) \n"  # noqa: E501
-            "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) "  # noqa: E501
+            "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) \n"  # noqa: E501
         )
         assert attachment is None
 
@@ -1769,6 +1771,27 @@ class TestTurbot:
             )
         client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
+
+    async def test_paginate(self, client):
+        def subject(text):
+            return [page for page in client.paginate(text)]
+
+        assert subject("") == [""]
+        assert subject("four") == ["four"]
+
+        with open(Path(DAT_ROOT) / "ipsum_2011.txt") as f:
+            text = f.read()
+            pages = subject(text)
+            assert len(pages) == 2
+            assert all(len(page) <= 2000 for page in pages)
+            assert pages == [text[0:1937], text[1937:]]
+
+        with open(Path(DAT_ROOT) / "aaa_2001.txt") as f:
+            text = f.read()
+            pages = subject(text)
+            assert len(pages) == 2
+            assert all(len(page) <= 2000 for page in pages)
+            assert pages == [text[0:2000], text[2000:]]
 
 
 class TestFigures:
