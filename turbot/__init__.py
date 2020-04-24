@@ -377,7 +377,7 @@ class Turbot(discord.Client):
                 # the breakpoint should actually be bumped back a bit
                 breakpoint = lastnlindex
 
-            yield remaining[0:breakpoint]
+            yield remaining[0 : breakpoint + 1]
             remaining = remaining[breakpoint + 1 :]
 
         yield remaining
