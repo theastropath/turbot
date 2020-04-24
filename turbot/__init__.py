@@ -8,6 +8,7 @@ from collections import defaultdict
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
 from io import StringIO
+from itertools import product
 from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
@@ -599,8 +600,7 @@ class Turbot(discord.Client):
             lines.append(s("turnippattern_pattern2"))
         if 3 in patterns:
             lines.append(s("turnippattern_pattern3"))
-        if 4 in patterns:
-            lines.append(s("turnippattern_pattern4"))
+        lines.append(s("turnippattern_pattern4"))  # pattern 4 is always possible
         return "\n".join(lines), None
 
     def history_command(self, channel, author, params):
@@ -815,6 +815,27 @@ class Turbot(discord.Client):
         else:
             lines.append(s("congrats_all_fossils"))
         return "\n".join(lines), None
+
+    def neededfossils_command(self, channel, author, params):
+        """
+        Lists all the needed fossils for all the channel members.
+        """
+        fossils = self.load_fossils()
+        authors = [member.id for member in channel.members if member.id != self.user.id]
+        total = pd.DataFrame(list(product(authors, FOSSILS)), columns=["author", "name"])
+        merged = total.merge(fossils, indicator=True, how="outer")
+        needed = merged[merged["_merge"] == "left_only"]
+
+        lines = []
+        for user, df in needed.groupby(by="author"):
+            name = discord_user_name(channel, user)
+            items_list = sorted([row["name"] for _, row in df.iterrows()])
+            if len(items_list) > 10:
+                items_str = "_more than 10 fossils..._"
+            else:
+                items_str = ", ".join(items_list)
+            lines.append(s("neededfossils", name=name, items=items_str))
+        return "\n".join(sorted(lines)), None
 
     def collectedfossils_command(self, channel, author, params):
         """
