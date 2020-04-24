@@ -830,7 +830,9 @@ class Turbot(discord.Client):
         for user, df in needed.groupby(by="author"):
             name = discord_user_name(channel, user)
             items_list = sorted([row["name"] for _, row in df.iterrows()])
-            if len(items_list) > 10:
+            if len(items_list) == len(FOSSILS):
+                continue
+            elif len(items_list) > 10:
                 items_str = "_more than 10 fossils..._"
             else:
                 items_str = ", ".join(items_list)
