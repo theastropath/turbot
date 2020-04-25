@@ -6,7 +6,7 @@ from os import chdir
 from os.path import dirname, realpath
 from pathlib import Path
 from subprocess import run
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, call
 
 import pytest
 import pytz
@@ -47,8 +47,11 @@ class MockChannel:
         self.members = members
         self.guild = MockGuild(members)
 
-    async def send(self, response, file):
-        self.sent(response, file)
+    async def send(self, content=None, *args, **kwargs):
+        self.sent(
+            content,
+            **{param: value for param, value in kwargs.items() if value is not None},
+        )
 
     @asynccontextmanager
     async def typing(self):
@@ -251,37 +254,33 @@ class TestTurbot:
         author = someone()
         message = MockMessage(author, channel, "!h")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Did you mean: !help, !hemisphere, !history?", None,
-        )
+        channel.sent.assert_called_with("Did you mean: !help, !hemisphere, !history?")
 
     async def test_on_message_invalid_request(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!xenomorph")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            'Sorry, there is no command named "xenomorph"', None,
-        )
+        channel.sent.assert_called_with('Sorry, there is no command named "xenomorph"')
 
     async def test_on_message_sell_no_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!sell")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please include selling price after command name.", None
+            "Please include selling price after command name."
         )
 
     async def test_on_message_sell_nonnumeric_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!sell foot")
         await client.on_message(message)
-        channel.sent.assert_called_with("Selling price must be a number.", None)
+        channel.sent.assert_called_with("Selling price must be a number.")
 
     async def test_on_message_sell_nonpositive_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!sell 0")
         await client.on_message(message)
-        channel.sent.assert_called_with("Selling price must be greater than zero.", None)
+        channel.sent.assert_called_with("Selling price must be greater than zero.")
 
     async def test_on_message_sell(self, client, lines, channel):
         author = someone()
@@ -291,7 +290,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!sell {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Logged selling price of {amount} for user {author}.", None
+            f"Logged selling price of {amount} for user {author}."
         )
         assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
@@ -302,11 +301,8 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!sell {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"Logged selling price of {amount} for user {author}. "
-                f"(Same as last selling price)"
-            ),
-            None,
+            f"Logged selling price of {amount} for user {author}. "
+            f"(Same as last selling price)"
         )
         assert lines(client.prices_file) == [f"{author.id},sell,{amount},{NOW}\n"]
 
@@ -315,11 +311,8 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!sell {new_amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"Logged selling price of {new_amount} for user {author}. "
-                f"(Higher than last selling price of {amount} bells)"
-            ),
-            None,
+            f"Logged selling price of {new_amount} for user {author}. "
+            f"(Higher than last selling price of {amount} bells)"
         )
         assert lines(client.prices_file) == [f"{author.id},sell,{new_amount},{NOW}\n"]
 
@@ -328,11 +321,8 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!sell {last_amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"Logged selling price of {last_amount} for user {author}. "
-                f"(Lower than last selling price of {new_amount} bells)"
-            ),
-            None,
+            f"Logged selling price of {last_amount} for user {author}. "
+            f"(Lower than last selling price of {new_amount} bells)"
         )
         assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
 
@@ -340,21 +330,19 @@ class TestTurbot:
         author = someone()
         message = MockMessage(author, channel, "!buy")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Please include buying price after command name.", None
-        )
+        channel.sent.assert_called_with("Please include buying price after command name.")
 
     async def test_on_message_buy_nonnumeric_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!buy foot")
         await client.on_message(message)
-        channel.sent.assert_called_with("Buying price must be a number.", None)
+        channel.sent.assert_called_with("Buying price must be a number.")
 
     async def test_on_message_buy_nonpositive_price(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!buy 0")
         await client.on_message(message)
-        channel.sent.assert_called_with("Buying price must be greater than zero.", None)
+        channel.sent.assert_called_with("Buying price must be greater than zero.")
 
     async def test_on_message_buy(self, client, lines, channel):
         author = someone()
@@ -362,7 +350,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!buy {amount}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Logged buying price of {amount} for user {author}.", None
+            f"Logged buying price of {amount} for user {author}."
         )
         assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
@@ -373,7 +361,7 @@ class TestTurbot:
         author = someone()
         message = MockMessage(author, channel, "!help")
         await client.on_message(message)
-        channel.sent.assert_called_with(String(), None)  # TODO: Verify help response?
+        channel.sent.assert_called_with(String())  # TODO: Verify help response?
 
     async def test_on_message_clear(self, client, lines, channel):
         author = someone()
@@ -386,7 +374,7 @@ class TestTurbot:
         # then ensure we can clear them all out
         message = MockMessage(author, channel, "!clear")
         await client.on_message(message)
-        channel.sent.assert_called_with(f"**Cleared history for {author}.**", None)
+        channel.sent.assert_called_with(f"**Cleared history for {author}.**")
         assert lines(client.prices_file) == ["author,kind,price,timestamp\n"]
 
     async def test_on_message_bestsell(self, client, channel):
@@ -403,12 +391,9 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bestsell")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                "__**Best Selling Prices in the Last 12 Hours**__\n"
-                f"> {BUDDY}: 600 bells at {NOW}\n"
-                f"> {FRIEND}: 200 bells at {NOW}"
-            ),
-            None,
+            "__**Best Selling Prices in the Last 12 Hours**__\n"
+            f"> {BUDDY}: 600 bells at {NOW}\n"
+            f"> {FRIEND}: 200 bells at {NOW}"
         )
 
     async def test_on_message_bestsell_timezone(self, client, channel):
@@ -437,12 +422,9 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bestsell")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                "__**Best Selling Prices in the Last 12 Hours**__\n"
-                f"> {BUDDY}: 600 bells at {buddy_now}\n"
-                f"> {FRIEND}: 200 bells at {friend_now}"
-            ),
-            None,
+            "__**Best Selling Prices in the Last 12 Hours**__\n"
+            f"> {BUDDY}: 600 bells at {buddy_now}\n"
+            f"> {FRIEND}: 200 bells at {friend_now}"
         )
 
     async def test_on_message_oops(self, client, lines, channel):
@@ -456,9 +438,7 @@ class TestTurbot:
         # then ensure we can remove the last entered price
         message = MockMessage(author, channel, "!oops")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"**Deleting last logged price for {author}.**", None
-        )
+        channel.sent.assert_called_with(f"**Deleting last logged price for {author}.**")
         assert lines(client.prices_file) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,1,{NOW}\n",
@@ -477,16 +457,14 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!history {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
+            f"Can not find the user named {PUNK.name} in this channel."
         )
 
     async def test_on_message_command_with_blank_name(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, f"!listfossils   ")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Can not find the user named  in this channel.", None
-        )
+        channel.sent.assert_called_with("Can not find the user named  in this channel.")
 
     async def test_on_message_history_without_name(self, client, channel):
         author = someone()
@@ -500,13 +478,10 @@ class TestTurbot:
         message = MockMessage(author, channel, "!history")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"__**Historical info for {author}**__\n"
-                f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
-                f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
-                f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
-            ),
-            None,
+            f"__**Historical info for {author}**__\n"
+            f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
         )
 
     async def test_on_message_history_with_name(self, client, channel):
@@ -519,13 +494,10 @@ class TestTurbot:
         message = MockMessage(GUY, channel, f"!history {BUDDY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"__**Historical info for {BUDDY}**__\n"
-                f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
-                f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
-                f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
-            ),
-            None,
+            f"__**Historical info for {BUDDY}**__\n"
+            f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
         )
 
     async def test_on_message_history_timezone(self, client, channel):
@@ -545,13 +517,10 @@ class TestTurbot:
         message = MockMessage(author, channel, "!history")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                f"__**Historical info for {author}**__\n"
-                f"> Can buy turnips from Daisy Mae for 1 bells at {their_now}\n"
-                f"> Can sell turnips to Timmy & Tommy for 2 bells at {their_now}\n"
-                f"> Can buy turnips from Daisy Mae for 3 bells at {their_now}"
-            ),
-            None,
+            f"__**Historical info for {author}**__\n"
+            f"> Can buy turnips from Daisy Mae for 1 bells at {their_now}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells at {their_now}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells at {their_now}"
         )
 
     async def test_on_message_bestbuy(self, client, channel):
@@ -568,12 +537,9 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bestbuy")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                "__**Best Buying Prices in the Last 12 Hours**__\n"
-                f"> {BUDDY}: 60 bells at {NOW}\n"
-                f"> {FRIEND}: 100 bells at {NOW}"
-            ),
-            None,
+            "__**Best Buying Prices in the Last 12 Hours**__\n"
+            f"> {BUDDY}: 60 bells at {NOW}\n"
+            f"> {FRIEND}: 100 bells at {NOW}"
         )
 
     async def test_on_message_bestbuy_timezone(self, client, channel):
@@ -602,12 +568,9 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bestbuy")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                "__**Best Buying Prices in the Last 12 Hours**__\n"
-                f"> {BUDDY}: 60 bells at {buddy_now}\n"
-                f"> {FRIEND}: 100 bells at {friend_now}"
-            ),
-            None,
+            "__**Best Buying Prices in the Last 12 Hours**__\n"
+            f"> {BUDDY}: 60 bells at {buddy_now}\n"
+            f"> {FRIEND}: 100 bells at {friend_now}"
         )
 
     async def test_on_message_turnippattern_happy_paths(self, client, channel):
@@ -617,8 +580,7 @@ class TestTurbot:
             "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
             "> **Decreasing**: Prices will continuously fall.\n"  # noqa: E501
             "> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
-            None,
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
         )
 
         message = MockMessage(someone(), channel, "!turnippattern 100 99")
@@ -626,16 +588,14 @@ class TestTurbot:
         channel.sent.assert_called_with(
             "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
             "> **Random**: Prices are completely random. Sell when it goes over your buying price.\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
-            None,
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
         )
 
         message = MockMessage(someone(), channel, "!turnippattern 100 22")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.",  # noqa: E501
-            None,
+            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
         )
 
     async def test_on_message_turnippattern_invalid_params(self, client, channel):
@@ -643,22 +603,20 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>",
-            None,
+            "eg. !turnippattern <buy price> <Monday morning sell price>"
         )
 
         message = MockMessage(someone(), channel, "!turnippattern 1 2 3")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>",
-            None,
+            "eg. !turnippattern <buy price> <Monday morning sell price>"
         )
 
     async def test_on_message_turnippattern_nonnumeric_prices(self, client, channel):
         message = MockMessage(someone(), channel, "!turnippattern something nothing")
         await client.on_message(message)
-        channel.sent.assert_called_with("Prices must be numbers.", None)
+        channel.sent.assert_called_with("Prices must be numbers.")
 
     async def test_on_message_graph_without_user(self, client, graph, channel):
         # first log some buy and sell prices
@@ -673,7 +631,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!graph")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "__**Historical Graph for All Users**__", Matching(is_discord_file)
+            "__**Historical Graph for All Users**__", file=Matching(is_discord_file)
         )
         graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
@@ -691,7 +649,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!graph {BUDDY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**Historical Graph for {BUDDY}**__", Matching(is_discord_file)
+            f"__**Historical Graph for {BUDDY}**__", file=Matching(is_discord_file)
         )
         graph.assert_called_with(channel, f"{BUDDY}", turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
@@ -709,7 +667,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!graph {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
+            f"Can not find the user named {PUNK.name} in this channel."
         )
         graph.assert_not_called()
         assert not Path(turbot.GRAPHCMD_FILE).exists()
@@ -718,23 +676,23 @@ class TestTurbot:
         author = someone()
         message = MockMessage(author, channel, "!lastweek")
         await client.on_message(message)
-        channel.sent.assert_called_with("No graph from last week.", None)
+        channel.sent.assert_called_with("No graph from last week.")
 
     async def test_on_message_lastweek_capitalized(self, client, channel):
         author = someone()
         message = MockMessage(author, channel, "!LASTWEEK")
         await client.on_message(message)
-        channel.sent.assert_called_with("No graph from last week.", None)
+        channel.sent.assert_called_with("No graph from last week.")
 
     async def test_on_message_lastweek(self, client, freezer, lastweek, channel):
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
-        channel.sent.assert_called_with("**Resetting data for a new week!**", None)
+        channel.sent.assert_called_with("**Resetting data for a new week!**")
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
 
         await client.on_message(MockMessage(someone(), channel, "!lastweek"))
         channel.sent.assert_called_with(
-            "__**Historical Graph from Last Week**__", Matching(is_discord_file)
+            "__**Historical Graph from Last Week**__", file=Matching(is_discord_file)
         )
 
     async def test_on_message_reset_not_admin(self, client, lines, freezer, channel):
@@ -767,7 +725,7 @@ class TestTurbot:
         # then reset price data
         message = MockMessage(somenonturbotadmin(), channel, "!reset")
         await client.on_message(message)
-        channel.sent.assert_called_with("User is not a Turbot Admin", None)
+        channel.sent.assert_called_with("User is not a Turbot Admin")
         with open(client.prices_file) as f:
             assert f.readlines() == old_data
 
@@ -805,7 +763,7 @@ class TestTurbot:
         # then reset price data
         message = MockMessage(someturbotadmin(), channel, "!reset")
         await client.on_message(message)
-        channel.sent.assert_called_with("**Resetting data for a new week!**", None)
+        channel.sent.assert_called_with("**Resetting data for a new week!**")
         with open(client.prices_file) as f:
             assert f.readlines() == [
                 "author,kind,price,timestamp\n",
@@ -826,7 +784,7 @@ class TestTurbot:
         message = MockMessage(someone(), channel, "!collect")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please provide the name of a fossil to mark as collected.", None
+            "Please provide the name of a fossil to mark as collected."
         )
 
     async def test_on_message_collect(self, client, lines, channel):
@@ -840,8 +798,7 @@ class TestTurbot:
             "Marked the following fossils as collected:\n"
             "> amber, ammonite, ankylo skull\n"
             "Did not recognize the following fossils:\n"
-            "> a foot",
-            None,
+            "> a foot"
         )
         assert set(lines(client.fossils_file)) == {
             "author,name\n",
@@ -857,8 +814,7 @@ class TestTurbot:
             "The following fossils had already been collected:\n"
             "> amber, ammonite, ankylo skull\n"
             "Did not recognize the following fossils:\n"
-            "> a foot",
-            None,
+            "> a foot"
         )
 
         # then collect some more with dupes
@@ -871,8 +827,7 @@ class TestTurbot:
             "The following fossils had already been collected:\n"
             "> amber\n"
             "Did not recognize the following fossils:\n"
-            "> an arm",
-            None,
+            "> an arm"
         )
         assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
 
@@ -899,20 +854,16 @@ class TestTurbot:
         message = MockMessage(BUDDY, channel, f"!collect {rest_str}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            (
-                "Marked the following fossils as collected:\n"
-                f"> {rest_str}\n"
-                "**Congratulations, you've collected all fossils!**"
-            ),
-            None,
+            "Marked the following fossils as collected:\n"
+            f"> {rest_str}\n"
+            "**Congratulations, you've collected all fossils!**"
         )
 
     async def test_on_message_fossilsearch_no_list(self, client, channel):
         message = MockMessage(someone(), channel, "!fossilsearch")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please provide the name of a fossil to lookup users that don't have it.",
-            None,
+            "Please provide the name of a fossil to lookup users that don't have it."
         )
 
     async def test_on_message_fossilsearch_no_need(self, client, channel):
@@ -926,7 +877,7 @@ class TestTurbot:
         # then search for things that no one needs
         message = MockMessage(PUNK, channel, "!fossilsearch amber, ammonite")
         await client.on_message(message)
-        channel.sent.assert_called_with("No one currently needs this.", None)
+        channel.sent.assert_called_with("No one currently needs this.")
 
     async def test_on_message_fossilsearch_no_need_with_bad(self, client, channel):
         # first collect some valid fossils
@@ -945,8 +896,7 @@ class TestTurbot:
             "__**Fossil Search**__\n"
             "> No one needs: amber, ammonite\n"
             "Did not recognize the following fossils:\n"
-            "> unicorn bits",
-            None,
+            "> unicorn bits"
         )
 
     async def test_on_message_fossilsearch(self, client, channel):
@@ -961,7 +911,7 @@ class TestTurbot:
         )
         await client.on_message(message)
         last_call = channel.sent.call_args_list[-1][0]
-        response, attachment = last_call[0], last_call[1]
+        response = last_call[0]
         lines = response.split("\n")
         assert lines[0] == "__**Fossil Search**__"
         assert set(lines[1:]) == {
@@ -969,7 +919,6 @@ class TestTurbot:
             f"> {BUDDY} needs: ammonite, ankylo skull",
             f"> {GUY} needs: ankylo skull",
         }
-        assert not attachment
 
     async def test_on_message_fossilsearch_with_bad(self, client, channel):
         # first collect some valid fossils
@@ -983,7 +932,7 @@ class TestTurbot:
         )
         await client.on_message(message)
         last_call = channel.sent.call_args_list[-1][0]
-        response, attachment = last_call[0], last_call[1]
+        response = last_call[0]
         lines = response.split("\n")
         assert lines[0] == "__**Fossil Search**__"
         assert set(lines[1:]) == {
@@ -993,22 +942,20 @@ class TestTurbot:
             f"> {BUDDY} needs: ammonite, ankylo skull",
             f"> {GUY} needs: ankylo skull",
         }
-        assert not attachment
 
     async def test_on_message_fossilsearch_with_only_bad(self, client, channel):
         message = MockMessage(PUNK, channel, "!fossilsearch unicorn bits")
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Fossil Search**__\n"
-            "Did not recognize the following fossils:\n> unicorn bits",
-            None,
+            "Did not recognize the following fossils:\n> unicorn bits"
         )
 
     async def test_on_message_uncollect_no_list(self, client, channel):
         message = MockMessage(someone(), channel, "!uncollect")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please provide the name of a fossil to mark as uncollected.", None
+            "Please provide the name of a fossil to mark as uncollected."
         )
 
     async def test_on_message_uncollect(self, client, lines, channel):
@@ -1029,8 +976,7 @@ class TestTurbot:
             "The following fossils were already marked as not collected:\n"
             "> coprolite\n"
             "Did not recognize the following fossils:\n"
-            "> a foot",
-            None,
+            "> a foot"
         )
         with open(client.fossils_file) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
@@ -1039,7 +985,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!uncollect ammonite")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Unmarked the following fossils as collected:\n> ammonite", None
+            "Unmarked the following fossils as collected:\n> ammonite"
         )
         with open(client.fossils_file) as f:
             assert f.readlines() == ["author,name\n"]
@@ -1051,7 +997,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!uncollect {fossils}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Did not recognize the following fossils:\n> a foot, unicorn bits", None
+            "Did not recognize the following fossils:\n> a foot, unicorn bits"
         )
 
     async def test_on_message_allfossils(self, client, channel):
@@ -1074,8 +1020,7 @@ class TestTurbot:
             ", right quetzal wing, sabertooth skull, sabertooth tail"
             ", shark-tooth pattern, spino skull, spino tail, spino torso, stego skull"
             ", stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso"
-            ", tricera skull, tricera tail, tricera torso, trilobite",
-            None,
+            ", tricera skull, tricera tail, tricera torso, trilobite"
         )
 
     async def test_on_message_listfossils_bad_name(self, client, lines, channel):
@@ -1090,7 +1035,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!listfossils {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
+            f"Can not find the user named {PUNK.name} in this channel."
         )
 
     async def test_on_message_listfossils_congrats(self, client, lines, channel):
@@ -1105,7 +1050,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!listfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "**Congratulations, you've collected all fossils!**", None
+            "**Congratulations, you've collected all fossils!**"
         )
 
     async def test_on_message_listfossils_no_name(self, client, lines, channel):
@@ -1137,8 +1082,7 @@ class TestTurbot:
             "sabertooth tail, shark-tooth pattern, spino skull, spino tail, "
             "spino torso, stego skull, stego tail, stego torso, t. rex skull, "
             "t. rex tail, t. rex torso, tricera skull, tricera tail, tricera "
-            "torso, trilobite",
-            None,
+            "torso, trilobite"
         )
 
     async def test_on_message_listfossils_with_name(self, client, lines, channel):
@@ -1168,8 +1112,7 @@ class TestTurbot:
             "sabertooth tail, shark-tooth pattern, spino skull, spino tail, "
             "spino torso, stego skull, stego tail, stego torso, t. rex skull, "
             "t. rex tail, t. rex torso, tricera skull, tricera tail, tricera "
-            "torso, trilobite",
-            None,
+            "torso, trilobite"
         )
 
     async def test_on_message_neededfossils(self, client, channel):
@@ -1187,8 +1130,7 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
         channel.sent.assert_called_with(
             f"> **{BUDDY}** needs acanthostega, amber, ammonite\n"
-            f"> **{GUY}** needs _more than 10 fossils..._",
-            None,
+            f"> **{GUY}** needs _more than 10 fossils..._"
         )
 
     async def test_on_message_collectedfossils_no_name(self, client, lines, channel):
@@ -1203,9 +1145,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!collectedfossils")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**3 Fossils donated by {author}**__\n"
-            ">>> amber, ammonite, ankylo skull",
-            None,
+            f"__**3 Fossils donated by {author}**__\n" ">>> amber, ammonite, ankylo skull"
         )
 
     async def test_on_message_collectedfossils_with_name(self, client, lines, channel):
@@ -1218,15 +1158,14 @@ class TestTurbot:
         message = MockMessage(BUDDY, channel, f"!collectedfossils {GUY.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull",
-            None,
+            f"__**3 Fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull"
         )
 
     async def test_on_message_collectedfossils_bad_name(self, client, lines, channel):
         message = MockMessage(BUDDY, channel, f"!collectedfossils {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
+            f"Can not find the user named {PUNK.name} in this channel."
         )
 
     async def test_on_message_fossilcount_no_params(self, client, lines, channel):
@@ -1235,7 +1174,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!fossilcount")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please provide at least one user name to search for a fossil count.", None
+            "Please provide at least one user name to search for a fossil count."
         )
 
     async def test_on_message_fossilcount_bad_name(self, client, lines, channel):
@@ -1244,7 +1183,7 @@ class TestTurbot:
         message = MockMessage(author, channel, f"!fossilcount {PUNK.name}")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            f"__**Did not recognize the following names**__\n> {PUNK.name}", None
+            f"__**Did not recognize the following names**__\n> {PUNK.name}"
         )
 
     async def test_on_message_fossilcount_no_fossils(self, client, lines, channel):
@@ -1254,8 +1193,7 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**Fossil Count**__\n"
-            f"> **{BUDDY}** has {len(turbot.FOSSILS)} fossils remaining.",
-            None,
+            f"> **{BUDDY}** has {len(turbot.FOSSILS)} fossils remaining."
         )
 
     async def test_on_message_fossilcount(self, client, lines, channel):
@@ -1276,22 +1214,19 @@ class TestTurbot:
             f"> **{FRIEND}** has 71 fossils remaining.\n"
             f"> **{GUY}** has 71 fossils remaining.\n"
             "__**Did not recognize the following names**__\n"
-            f"> {PUNK.name}",
-            None,
+            f"> {PUNK.name}"
         )
 
     async def test_on_message_predict_no_buy(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!predict"))
-        channel.sent.assert_called_with(
-            f"There is no recent buy price for {author}.", None
-        )
+        channel.sent.assert_called_with(f"There is no recent buy price for {author}.")
 
     async def test_on_message_predict_bad_user(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, f"!predict {PUNK.name}"))
         channel.sent.assert_called_with(
-            f"Can not find the user named {PUNK.name} in this channel.", None
+            f"Can not find the user named {PUNK.name} in this channel."
         )
 
     async def test_on_message_predict(self, client, freezer, channel):
@@ -1317,8 +1252,7 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110...100.95.90.85...90..120",
-            None,
+            "https://turnipprophet.io/?prices=110...100.95.90.85...90..120"
         )
 
     async def test_on_message_predict_with_timezone(self, client, freezer, channel):
@@ -1346,8 +1280,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!predict"))
         channel.sent.assert_called_with(
             f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110.87.72",
-            None,
+            "https://turnipprophet.io/?prices=110.87.72"
         )
 
     async def test_get_last_price(self, client, freezer, channel):
@@ -1381,7 +1314,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!hemisphere")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please provide the name of your hemisphere, northern or southern.", None
+            "Please provide the name of your hemisphere, northern or southern."
         )
 
     async def test_on_message_hemisphere_bad_hemisphere(self, client, channel):
@@ -1390,8 +1323,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!hemisphere upwards")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            'Please provide either "northern" or "southern" as your hemisphere name.',
-            None,
+            'Please provide either "northern" or "southern" as your hemisphere name.'
         )
 
     async def test_on_message_hemisphere(self, client, channel):
@@ -1399,9 +1331,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!hemisphere souTherN")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"Hemisphere preference registered for {author}.", None
-        )
+        channel.sent.assert_called_with(f"Hemisphere preference registered for {author}.")
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone\n",
@@ -1410,9 +1340,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!hemisphere NoRthErn")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"Hemisphere preference registered for {author}.", None
-        )
+        channel.sent.assert_called_with(f"Hemisphere preference registered for {author}.")
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone\n",
@@ -1425,8 +1353,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!fish")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please enter your hemisphere choice first using the !hemisphere command.",
-            None,
+            "Please enter your hemisphere choice first using the !hemisphere command."
         )
 
     async def test_on_message_fish_none_found(self, client, channel):
@@ -1438,9 +1365,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!fish Blinky")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            'Did not find any fish searching for "Blinky".', None
-        )
+        channel.sent.assert_called_with('Did not find any fish searching for "Blinky".')
 
     async def test_on_message_fish_multiple_users(self, client, channel):
         await client.on_message(MockMessage(GUY, channel, "!hemisphere northern"))
@@ -1460,15 +1385,78 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!fish ch")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during the entire year \n"  # noqa: E501
-            "> **Char** with shadow size 3 is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) during Mar - Jun, Sep - Nov \n"  # noqa: E501
-            "> **Cherry salmon** with shadow size 3 is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) during Mar - Jun, Sep - Nov \n"  # noqa: E501
-            "> **Loach** with shadow size 2 is available all day at river (sells for 400 bells) during Mar - May \n"  # noqa: E501
-            "> **Pale chub** with shadow size 1 is available 9 am - 4 pm at river (sells for 200 bells) during the entire year \n"  # noqa: E501
-            "> **Ranchu goldfish** with shadow size 2 is available 9 am - 4 pm at pond (sells for 4500 bells) during the entire year ",  # noqa: E501
-            None,
-        )
+        calls = channel.sent.call_args_list
+        assert calls[0] == call(f"Hemisphere preference registered for {author}.")
+        assert calls[1][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "200"},
+                {"inline": True, "name": "location", "value": "river"},
+                {"inline": True, "name": "shadow size", "value": "1"},
+                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2c/NH-Icon-palechub.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Pale chub",
+            "type": "rich",
+        }
+        assert calls[2][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "4500"},
+                {"inline": True, "name": "location", "value": "pond"},
+                {"inline": True, "name": "shadow size", "value": "2"},
+                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/f/f9/NH-Icon-ranchugoldfish.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Ranchu goldfish",
+            "type": "rich",
+        }
+        assert calls[3][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "400"},
+                {"inline": True, "name": "location", "value": "river"},
+                {"inline": True, "name": "shadow size", "value": "2"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Mar - May"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/7/77/NH-Icon-loach.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Loach",
+            "type": "rich",
+        }
+        assert calls[4][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "800"},
+                {"inline": True, "name": "location", "value": "river (clifftop)"},
+                {"inline": True, "name": "shadow size", "value": "3"},
+                {"inline": True, "name": "available", "value": "4 pm - 9 am"},
+                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Nov"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/5f/NH-Icon-cherrysalmon.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Cherry salmon",
+            "type": "rich",
+        }
+        assert calls[5][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "3800"},
+                {"inline": True, "name": "location", "value": "river (clifftop)  pond"},
+                {"inline": True, "name": "shadow size", "value": "3"},
+                {"inline": True, "name": "available", "value": "4 pm - 9 am"},
+                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Nov"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/1/15/NH-Icon-char.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Char",
+            "type": "rich",
+        }
 
     async def test_on_message_fish_search_leaving(self, client, channel):
         author = someone()
@@ -1479,12 +1467,64 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!fish leaving")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan - Apr, Jul - Sep, Nov - Dec **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dab** with shadow size 3 is available all day at sea (sells for 300 bells) during Jan - Apr, Oct - Dec **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Tuna** with shadow size 6 is available all day at pier (sells for 7000 bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**",  # noqa: E501
-            None,
-        )
+        # calls = channel.sent.call_args_list
+        # assert calls == [
+        #     call(f"Hemisphere preference registered for {author}."),
+        #     call(None, embed=Matching(is_discord_embed)),
+        #     call(None, embed=Matching(is_discord_embed)),
+        #     call(None, embed=Matching(is_discord_embed)),
+        # ]
+        calls = channel.sent.call_args_list
+        assert calls[0] == call(f"Hemisphere preference registered for {author}.")
+        assert calls[1][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "300"},
+                {"inline": True, "name": "location", "value": "sea"},
+                {"inline": True, "name": "shadow size", "value": "3"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Jan - Apr, Oct - Dec"},
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/c/c6/NH-Icon-dab.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Dab",
+            "type": "rich",
+        }
+        assert calls[2][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "7000"},
+                {"inline": True, "name": "location", "value": "pier"},
+                {"inline": True, "name": "shadow size", "value": "6"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/50/NH-Icon-tuna.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Tuna",
+            "type": "rich",
+        }
+        assert calls[3][1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "10000"},
+                {"inline": True, "name": "location", "value": "pier"},
+                {"inline": True, "name": "shadow size", "value": "6"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {
+                    "inline": True,
+                    "name": "during",
+                    "value": "Jan - Apr, Jul - Sep, Nov - Dec",
+                },
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2f/NH-Icon-bluemarlin.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Blue marlin",
+            "type": "rich",
+        }
 
     async def test_on_message_fish(self, client, channel):
         author = someone()
@@ -1498,7 +1538,7 @@ class TestTurbot:
         calls = channel.sent.call_args_list
 
         call = calls.pop()
-        response, attachment = call[0][0], call[0][1]
+        response = call[0][0]
         assert response == (
             "> **Oarfish** is available all day at sea (sells for 9000 bells) \n"  # noqa: E501
             "> **Olive flounder** is available all day at sea (sells for 800 bells) \n"  # noqa: E501
@@ -1515,15 +1555,14 @@ class TestTurbot:
             "> **Tuna** is available all day at pier (sells for 7000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
             "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
         )
-        assert attachment is None
 
         call = calls.pop()
-        response, attachment = call[0][0], call[0][1]
+        response = call[0][0]
         assert response == (
             "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
             "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"  # noqa: E501
             "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"  # noqa: E501
-            "> **Black bass** is available all day at river (sells for 320 bells) \n"  # noqa: E501
+            "> **Black bass** is available all day at river (sells for 400 bells) \n"  # noqa: E501
             "> **Blue marlin** is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
             "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"  # noqa: E501
             "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
@@ -1535,7 +1574,7 @@ class TestTurbot:
             "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
             "> **Crucian carp** is available all day at river (sells for 160 bells) \n"  # noqa: E501
             "> **Dab** is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dace** is available 4 pm - 9 am at river (sells for 192 bells) \n"  # noqa: E501
+            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"  # noqa: E501
             "> **Freshwater goby** is available 4 pm - 9 am at river (sells for 400 bells) \n"  # noqa: E501
             "> **Golden trout** is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) \n"  # noqa: E501
             "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"  # noqa: E501
@@ -1546,14 +1585,13 @@ class TestTurbot:
             "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
             "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_\n"  # noqa: E501
         )
-        assert attachment is None
 
     async def test_on_message_timezone_no_params(self, client, lines, channel):
         author = someone()
 
         message = MockMessage(author, channel, "!timezone")
         await client.on_message(message)
-        channel.sent.assert_called_with("Please provide the name of your timezone.", None)
+        channel.sent.assert_called_with("Please provide the name of your timezone.")
 
     async def test_on_message_timezone_bad_timezone(self, client, channel):
         author = someone()
@@ -1563,8 +1601,7 @@ class TestTurbot:
         channel.sent.assert_called_with(
             "Please provide a valid timezone name, see "
             "https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the "
-            "complete list of TZ names.",
-            None,
+            "complete list of TZ names."
         )
 
     async def test_on_message_timezone(self, client, channel):
@@ -1572,9 +1609,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!timezone America/Los_Angeles")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"Timezone preference registered for {author}.", None
-        )
+        channel.sent.assert_called_with(f"Timezone preference registered for {author}.")
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone\n",
@@ -1583,9 +1618,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!timezone Canada/Saskatchewan")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"Timezone preference registered for {author}.", None
-        )
+        channel.sent.assert_called_with(f"Timezone preference registered for {author}.")
         with open(client.users_file) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone\n",
@@ -1631,8 +1664,7 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bugs")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "Please enter your hemisphere choice first using the !hemisphere command.",
-            None,
+            "Please enter your hemisphere choice first using the !hemisphere command."
         )
 
     async def test_on_message_bug_none_found(self, client, channel):
@@ -1644,9 +1676,7 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!bugs Shelob")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            'Did not find any bugs searching for "Shelob".', None
-        )
+        channel.sent.assert_called_with('Did not find any bugs searching for "Shelob".')
 
     async def test_on_message_bug_multiple_users(self, client, channel):
         await client.on_message(MockMessage(GUY, channel, "!hemisphere northern"))
@@ -1673,8 +1703,7 @@ class TestTurbot:
             "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
             "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
             "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct ",  # noqa: E501
-            None,
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct "  # noqa: E501
         )
 
     async def test_on_message_bug_header(self, client, channel, monkeypatch):
@@ -1696,8 +1725,7 @@ class TestTurbot:
             "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
             "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
             "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct ",  # noqa: E501
-            None,
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct "  # noqa: E501
         )
 
     async def test_on_message_bug_search_leaving(self, client, channel, monkeypatch):
@@ -1712,8 +1740,7 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 "
-            "bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**",
-            None,
+            "bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**"
         )
 
     async def test_on_message_bug(self, client, channel, monkeypatch):
@@ -1729,7 +1756,7 @@ class TestTurbot:
         calls = channel.sent.call_args_list
 
         call = calls.pop()
-        response, attachment = call[0][0], call[0][1]
+        response = call[0][0]
         assert response == (
             "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) \n"  # noqa: E501
             "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
@@ -1745,10 +1772,9 @@ class TestTurbot:
             "> **Wharf roach** is available all day, on beach rocks (sells for 200 bells) \n"  # noqa: E501
             "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) "  # noqa: E501
         )
-        assert attachment is None
 
         call = calls.pop()
-        response, attachment = call[0][0], call[0][1]
+        response = call[0][0]
         assert response == (
             "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
             "> **Ant** is available all day, on rotten food (sells for 80 bells) \n"  # noqa: E501
@@ -1774,7 +1800,6 @@ class TestTurbot:
             "> **Moth** is available 7 pm - 4 am, flying by light (sells for 130 bells) \n"  # noqa: E501
             "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) \n"  # noqa: E501
         )
-        assert attachment is None
 
     async def test_get_graph_bad_user(self, client, channel):
         client.get_graph(channel, PUNK.name, turbot.GRAPHCMD_FILE)

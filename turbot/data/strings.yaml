@@ -34,7 +34,6 @@ collectedfossils: |-
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
-fish_detail: '> **$name** with shadow size $shadow is available $time at $location (sells for $price bells) during $months $alert'
 fish_none_found: Did not find any fish searching for "$search".
 fossil_bad: |-
   Did not recognize the following fossils:
