@@ -718,6 +718,12 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with("No graph from last week.", None)
 
+    async def test_on_message_lastweek_capitalized(self, client, channel):
+        author = someone()
+        message = MockMessage(author, channel, "!LASTWEEK")
+        await client.on_message(message)
+        channel.sent.assert_called_with("No graph from last week.", None)
+
     async def test_on_message_lastweek(self, client, freezer, lastweek, channel):
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         channel.sent.assert_called_with("**Resetting data for a new week!**", None)
