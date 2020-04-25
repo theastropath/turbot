@@ -9,6 +9,7 @@ from contextlib import redirect_stdout
 from datetime import datetime, timedelta
 from io import StringIO
 from itertools import product
+from os import getenv
 from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
@@ -1106,7 +1107,11 @@ class Turbot(discord.Client):
 
 
 def get_token(token_file):  # pragma: no cover
-    """Returns the discord token from your token config file."""
+    """Returns the discord token from the environment or your token config file."""
+    token = getenv("TURBOT_TOKEN", None)
+    if token:
+        return token
+
     try:
         with open(token_file, "r") as f:
             return f.readline().strip()
@@ -1138,7 +1143,8 @@ def get_channels(channels_file):  # pragma: no cover
     "-b",
     "--bot-token-file",
     default=DEFAULT_CONFIG_TOKEN,
-    help="read your discord bot token from this file",
+    help="read your discord bot token from this file; "
+    "you can also set the token directly via the environment variable TURBOT_TOKEN",
 )
 @click.option(
     "-c",
