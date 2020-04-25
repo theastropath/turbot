@@ -79,6 +79,63 @@ def s(key, **kwargs):
     return Template(data).substitute(kwargs)
 
 
+def humanize_months(row):
+    """Generator that humanizes months from row data where each month is a column."""
+    ABBR = {
+        0: "Jan",
+        1: "Feb",
+        2: "Mar",
+        3: "Apr",
+        4: "May",
+        5: "Jun",
+        6: "Jul",
+        7: "Aug",
+        8: "Sep",
+        9: "Oct",
+        10: "Nov",
+        11: "Dec",
+    }
+    months = [
+        row["jan"],
+        row["feb"],
+        row["mar"],
+        row["apr"],
+        row["may"],
+        row["jun"],
+        row["jul"],
+        row["aug"],
+        row["sep"],
+        row["oct"],
+        row["nov"],
+        row["dec"],
+    ]
+    start = None
+    for m, inc in enumerate(months):
+        if inc and start is None:
+            start = m  # start of a range
+        elif not inc and start is None:
+            continue  # range hasn't started yet
+        elif inc and start is not None:
+            continue  # continuance of a range
+        else:
+            lhs = ABBR[start]
+            rhs = ABBR[m - 1]
+            if lhs != rhs:
+                yield f"{lhs} - {rhs}"  # previous element ended a range
+            else:
+                yield f"{lhs}"  # captures a lone element
+            start = None
+    if start == 0:
+        yield "the entire year"  # capture total range
+    elif start is not None:
+        lhs = ABBR[start]
+        rhs = ABBR[11]
+        if lhs != rhs:
+            yield f"{lhs} - {rhs}"  # capture a trailing range
+        else:
+            yield f"{lhs}"  # captures a trailing lone element
+
+
 def discord_user_from_name(channel, name):
     """Returns the discord user from the given channel and name."""
     lname = name.lower()
@@ -995,25 +1052,7 @@ class Turbot(discord.Client):
                 if not row[last_month]
                 else ""
             )
-            months = ", ".join(
-                filter(
-                    None,
-                    [
-                        "Jan" if row["jan"] else None,
-                        "Feb" if row["feb"] else None,
-                        "Mar" if row["mar"] else None,
-                        "Apr" if row["apr"] else None,
-                        "May" if row["may"] else None,
-                        "Jun" if row["jun"] else None,
-                        "Jul" if row["jul"] else None,
-                        "Aug" if row["aug"] else None,
-                        "Sep" if row["sep"] else None,
-                        "Oct" if row["oct"] else None,
-                        "Nov" if row["nov"] else None,
-                        "Dec" if row["dec"] else None,
-                    ],
-                )
-            )
+            months = ", ".join(list(humanize_months(row)))
             return {
                 **row,
                 "name": row["name"].capitalize(),
@@ -1058,25 +1097,7 @@ class Turbot(discord.Client):
                 if not row[last_month]
                 else ""
             )
-            months = ", ".join(
-                filter(
-                    None,
-                    [
-                        "Jan" if row["jan"] else None,
-                        "Feb" if row["feb"] else None,
-                        "Mar" if row["mar"] else None,
-                        "Apr" if row["apr"] else None,
-                        "May" if row["may"] else None,
-                        "Jun" if row["jun"] else None,
-                        "Jul" if row["jul"] else None,
-                        "Aug" if row["aug"] else None,
-                        "Sep" if row["sep"] else None,
-                        "Oct" if row["oct"] else None,
-                        "Nov" if row["nov"] else None,
-                        "Dec" if row["dec"] else None,
-                    ],
-                )
-            )
+            months = ", ".join(list(humanize_months(row)))
             return {
                 **row,
                 "name": row["name"].capitalize(),
