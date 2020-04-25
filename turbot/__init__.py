@@ -51,7 +51,6 @@ DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
 DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
 DEFAULT_DB_USERS = DB_DIR / "users.csv"
 
-
 # temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
@@ -385,7 +384,7 @@ class Turbot(discord.Client):
     async def process(self, message):
         """Process a command message."""
         tokens = message.content.split(" ")
-        request, params = tokens[0].lstrip("!"), tokens[1:]
+        request, params = tokens[0].lstrip("!").lower(), tokens[1:]
         if not request:
             return
         members = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -431,8 +430,8 @@ class Turbot(discord.Client):
     # Bot Command Functions
     ##############################
 
-    # Any method of this class that end in the name _command are automatically
-    # detected as bot commands. The methods should have a signature like:
+    # Any method of this class with a name that ends in _command is automatically
+    # detected as a bot command. These methods should have a signature like:
     #
     #     def your_command(self, channel, author, params)
     #
