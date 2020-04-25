@@ -1386,50 +1386,36 @@ class TestTurbot:
         message = MockMessage(author, channel, "!fish ch")
         await client.on_message(message)
         calls = channel.sent.call_args_list
-        assert calls[0] == call(f"Hemisphere preference registered for {author}.")
-        assert calls[1][1]["embed"].to_dict() == {
+        assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
+        assert calls.pop(0)[1]["embed"].to_dict() == {
             "fields": [
                 {"inline": True, "name": "price", "value": "200"},
-                {"inline": True, "name": "location", "value": "river"},
-                {"inline": True, "name": "shadow size", "value": "1"},
-                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
+                {"inline": True, "name": "location", "value": "sea"},
+                {"inline": True, "name": "shadow size", "value": "2"},
+                {"inline": True, "name": "available", "value": "4 am - 9 pm"},
                 {"inline": True, "name": "during", "value": "the entire year"},
             ],
             "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2c/NH-Icon-palechub.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/24/NH-Icon-anchovy.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
             },
-            "title": "Pale chub",
+            "title": "Anchovy",
             "type": "rich",
         }
-        assert calls[2][1]["embed"].to_dict() == {
+        assert calls.pop(0)[1]["embed"].to_dict() == {
             "fields": [
-                {"inline": True, "name": "price", "value": "4500"},
-                {"inline": True, "name": "location", "value": "pond"},
-                {"inline": True, "name": "shadow size", "value": "2"},
-                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
-                {"inline": True, "name": "during", "value": "the entire year"},
+                {"inline": True, "name": "price", "value": "3800"},
+                {"inline": True, "name": "location", "value": "river (clifftop)  pond"},
+                {"inline": True, "name": "shadow size", "value": "3"},
+                {"inline": True, "name": "available", "value": "4 pm - 9 am"},
+                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Nov"},
             ],
             "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/f/f9/NH-Icon-ranchugoldfish.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/1/15/NH-Icon-char.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
             },
-            "title": "Ranchu goldfish",
+            "title": "Char",
             "type": "rich",
         }
-        assert calls[3][1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "400"},
-                {"inline": True, "name": "location", "value": "river"},
-                {"inline": True, "name": "shadow size", "value": "2"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Mar - May"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/7/77/NH-Icon-loach.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Loach",
-            "type": "rich",
-        }
-        assert calls[4][1]["embed"].to_dict() == {
+        assert calls.pop(0)[1]["embed"].to_dict() == {
             "fields": [
                 {"inline": True, "name": "price", "value": "800"},
                 {"inline": True, "name": "location", "value": "river (clifftop)"},
@@ -1443,18 +1429,46 @@ class TestTurbot:
             "title": "Cherry salmon",
             "type": "rich",
         }
-        assert calls[5][1]["embed"].to_dict() == {
+        assert calls.pop(0)[1]["embed"].to_dict() == {
             "fields": [
-                {"inline": True, "name": "price", "value": "3800"},
-                {"inline": True, "name": "location", "value": "river (clifftop)  pond"},
-                {"inline": True, "name": "shadow size", "value": "3"},
-                {"inline": True, "name": "available", "value": "4 pm - 9 am"},
-                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Nov"},
+                {"inline": True, "name": "price", "value": "400"},
+                {"inline": True, "name": "location", "value": "river"},
+                {"inline": True, "name": "shadow size", "value": "2"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Mar - May"},
             ],
             "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/1/15/NH-Icon-char.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/7/77/NH-Icon-loach.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
             },
-            "title": "Char",
+            "title": "Loach",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "200"},
+                {"inline": True, "name": "location", "value": "river"},
+                {"inline": True, "name": "shadow size", "value": "1"},
+                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2c/NH-Icon-palechub.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Pale chub",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "4500"},
+                {"inline": True, "name": "location", "value": "pond"},
+                {"inline": True, "name": "shadow size", "value": "2"},
+                {"inline": True, "name": "available", "value": "9 am - 4 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/f/f9/NH-Icon-ranchugoldfish.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Ranchu goldfish",
             "type": "rich",
         }
 
@@ -1475,38 +1489,8 @@ class TestTurbot:
         #     call(None, embed=Matching(is_discord_embed)),
         # ]
         calls = channel.sent.call_args_list
-        assert calls[0] == call(f"Hemisphere preference registered for {author}.")
-        assert calls[1][1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "300"},
-                {"inline": True, "name": "location", "value": "sea"},
-                {"inline": True, "name": "shadow size", "value": "3"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Jan - Apr, Oct - Dec"},
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/c/c6/NH-Icon-dab.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Dab",
-            "type": "rich",
-        }
-        assert calls[2][1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "7000"},
-                {"inline": True, "name": "location", "value": "pier"},
-                {"inline": True, "name": "shadow size", "value": "6"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/50/NH-Icon-tuna.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Tuna",
-            "type": "rich",
-        }
-        assert calls[3][1]["embed"].to_dict() == {
+        assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
+        assert calls.pop(0)[1]["embed"].to_dict() == {
             "fields": [
                 {"inline": True, "name": "price", "value": "10000"},
                 {"inline": True, "name": "location", "value": "pier"},
@@ -1523,6 +1507,36 @@ class TestTurbot:
                 "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2f/NH-Icon-bluemarlin.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
             },
             "title": "Blue marlin",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "300"},
+                {"inline": True, "name": "location", "value": "sea"},
+                {"inline": True, "name": "shadow size", "value": "3"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Jan - Apr, Oct - Dec"},
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/c/c6/NH-Icon-dab.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Dab",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "7000"},
+                {"inline": True, "name": "location", "value": "pier"},
+                {"inline": True, "name": "shadow size", "value": "6"},
+                {"inline": True, "name": "available", "value": "all day"},
+                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/50/NH-Icon-tuna.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
+            },
+            "title": "Tuna",
             "type": "rich",
         }
 
@@ -1697,14 +1711,87 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!bugs butt")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr - Sep _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan - Jun, Sep - Dec \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct "  # noqa: E501
-        )
+        calls = channel.sent.call_args_list
+        assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "3000"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "8 am - 5 pm"},
+                {"inline": True, "name": "during", "value": "Apr - Sep"},
+                {"inline": True, "name": "alert", "value": "_New this month_"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/d/dc/NH-Icon-agriasbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Agrias butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "160"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Jan - Jun, Sep - Dec"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/3/3a/NH-Icon-commonbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Common butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "1000"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "8 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/d/dd/NH-Icon-paperkitebutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Paper kite butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "2500"},
+                {"inline": True, "name": "location", "value": "flying by hybrid flowers"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Jun"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-peacockbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Peacock butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "240"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Sep"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/6/65/NH-Icon-tigerbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Tiger butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "160"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Oct"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/f/fa/NH-Icon-yellowbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Yellow butterfly",
+            "type": "rich",
+        }
 
     async def test_on_message_bug_header(self, client, channel, monkeypatch):
         monkeypatch.setattr(random, "randint", lambda l, h: 100)
@@ -1716,17 +1803,92 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!bugs butt")
         await client.on_message(message)
-        channel.sent.assert_called_with(
+        calls = channel.sent.call_args_list
+        assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
+        assert calls.pop(0) == call(
             "```diff\n"
             "-Eeek! What wretched things. Alas, I am obliged to respond...\n"
-            "```\n"
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr - Sep _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan - Jun, Sep - Dec \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct "  # noqa: E501
+            "```"
         )
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "3000"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "8 am - 5 pm"},
+                {"inline": True, "name": "during", "value": "Apr - Sep"},
+                {"inline": True, "name": "alert", "value": "_New this month_"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/d/dc/NH-Icon-agriasbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Agrias butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "160"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Jan - Jun, Sep - Dec"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/3/3a/NH-Icon-commonbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Common butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "1000"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "8 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "the entire year"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/d/dd/NH-Icon-paperkitebutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Paper kite butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "2500"},
+                {"inline": True, "name": "location", "value": "flying by hybrid flowers"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Jun"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-peacockbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Peacock butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "240"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Sep"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/6/65/NH-Icon-tigerbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Tiger butterfly",
+            "type": "rich",
+        }
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "160"},
+                {"inline": True, "name": "location", "value": "flying"},
+                {"inline": True, "name": "available", "value": "4 am - 7 pm"},
+                {"inline": True, "name": "during", "value": "Mar - Jun, Sep - Oct"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/f/fa/NH-Icon-yellowbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
+            },
+            "title": "Yellow butterfly",
+            "type": "rich",
+        }
 
     async def test_on_message_bug_search_leaving(self, client, channel, monkeypatch):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
@@ -1738,10 +1900,22 @@ class TestTurbot:
 
         message = MockMessage(author, channel, "!bugs leaving")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 "
-            "bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**"
-        )
+        calls = channel.sent.call_args_list
+        assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
+        assert calls.pop(0)[1]["embed"].to_dict() == {
+            "fields": [
+                {"inline": True, "name": "price", "value": "8000"},
+                {"inline": True, "name": "location", "value": "on the ground"},
+                {"inline": True, "name": "available", "value": "7 pm - 4 am"},
+                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
+                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
+            ],
+            "thumbnail": {
+                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
+            },
+            "title": "Tarantula",
+            "type": "rich",
+        }
 
     async def test_on_message_bug(self, client, channel, monkeypatch):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
@@ -1762,7 +1936,7 @@ class TestTurbot:
             "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
             "> **Pill bug** is available 11 pm - 4 pm, hitting rocks (sells for 250 bells) \n"  # noqa: E501
             "> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
-            "> **Snail** is available all day, on rocks (rain) (sells for 250 bells) \n"  # noqa: E501
+            "> **Snail** is available all day, on rocks and bushes (rain) (sells for 250 bells) \n"  # noqa: E501
             "> **Spider** is available 7 pm - 8 am, shaking trees (sells for 600 bells) \n"  # noqa: E501
             "> **Stinkbug** is available all day, on flowers (sells for 120 bells) \n"  # noqa: E501
             "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
