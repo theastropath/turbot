@@ -62,6 +62,7 @@ listfossils_count: __**$count Fossils remaining for $name**__
 listfossils_remaining: '>>> $items'
 neededfossils: '> **$name** needs $items'
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
+not_a_command: 'Sorry, there is no command named "$request"'
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'

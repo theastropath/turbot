@@ -259,7 +259,9 @@ class TestTurbot:
         author = someone()
         message = MockMessage(author, channel, "!xenomorph")
         await client.on_message(message)
-        channel.sent.assert_not_called()
+        channel.sent.assert_called_with(
+            'Sorry, there is no command named "xenomorph"', None,
+        )
 
     async def test_on_message_sell_no_price(self, client, channel):
         author = someone()

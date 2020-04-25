@@ -392,6 +392,7 @@ class Turbot(discord.Client):
         commands = [member[0] for member in members if member[0].endswith("_command")]
         matching = [command for command in commands if command.startswith(request)]
         if not matching:
+            await message.channel.send(s("not_a_command", request=request), file=None)
             return
         exact = f"{request}_command"
         if len(matching) > 1 and exact not in matching:
