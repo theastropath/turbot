@@ -25,7 +25,6 @@ def ingest(writer, hemisphere):
     def data_from(item):
         img = item.find("img")
         if img:
-            print(img)
             return img["data-src"]
         return item.text
 
@@ -35,12 +34,15 @@ def ingest(writer, hemisphere):
         for row_data in table_tag.select("tr")
     ]
 
-    print(tab_data)
-
     for row in range(1, len(tab_data)):
         data = [clean(i) for i in tab_data[row]]
         if data:
-            corrected = [d.lower() for d in [hemisphere.name, *data]]
+            corrected = [
+                hemisphere.name.lower(),
+                data[0].lower(),
+                data[1],
+                *[d.lower() for d in data[2:]],
+            ]
             writer.writerow(corrected)
 
 

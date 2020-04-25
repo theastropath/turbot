@@ -461,11 +461,25 @@ class Turbot(discord.Client):
             method = getattr(self, command)
             async with message.channel.typing():
                 response, attachment = method(message.channel, message.author, params)
-            pages = list(self.paginate(response))
-            last_page_index = len(pages) - 1
-            for i, page in enumerate(pages):
-                file = attachment if attachment and i == last_page_index else None
-                await message.channel.send(page, file=file)
+            if not isinstance(response, list):
+                response = [response]
+            last_reply_index = len(response) - 1
+            for n, reply in enumerate(response):
+                if isinstance(reply, str):
+                    pages = list(self.paginate(reply))
+                    last_page_index = len(pages) - 1
+                    for i, page in enumerate(pages):
+                        file = (
+                            attachment
+                            if attachment
+                            and i == last_page_index
+                            and n == last_reply_index
+                            else None
+                        )
+                        await message.channel.send(page, file=file)
+                elif isinstance(reply, discord.embeds.Embed):
+                    file = attachment if attachment and n == last_reply_index else None
+                    await message.channel.send(embed=reply, file=file)
 
     ##############################
     # Discord Client Behavior
@@ -498,9 +512,19 @@ class Turbot(discord.Client):
     # - `author` is the Discord author who sent the command.
     # - `params` are any space delimitered parameters also sent with the command.
     #
-    # The return value for a command method should be `(string, discord.File)` where the
+    # The return value for a command method can be `(string, discord.File)` where the
     # string is the response message the bot should send to the channel and the file
     # object is an attachment to send with the message. For no attachment, use `None`.
+    #
+    # You can also return `(embed, discord.File)` to respond with an embed (plus the
+    # optional attachment as well if so desired).
+    #
+    # And finally you can also respond with a list if you want the bot to make multiple
+    # replies. This works with both embeds and strings. For example:
+    #
+    #     return ["send", "multiple", "replies"], None
+    #
+    # Would trigger the bot to send three messages to the channel with no attachment.
     #
     # The docstring used for the command method will be automatically used as the help
     # message for the command. To document commands with parameters use a | to delimit
@@ -1066,11 +1090,24 @@ class Turbot(discord.Client):
                 found = available[available[next_month] == 0]
             else:
                 found = available[available.name.str.contains(search)]
+
             if found.empty:
                 return s("fish_none_found", search=search), None
             else:
-                lines = [s("fish_detail", **details(row)) for _, row in found.iterrows()]
-                return "\n".join(sorted(lines)), None
+                response = []
+                for _, row in found.iterrows():
+                    info = details(row)
+                    embed = discord.Embed(title=info["name"])
+                    embed.set_thumbnail(url=info["image"])
+                    embed.add_field(name="price", value=info["price"])
+                    embed.add_field(name="location", value=info["location"])
+                    embed.add_field(name="shadow size", value=info["shadow"])
+                    embed.add_field(name="available", value=info["time"])
+                    embed.add_field(name="during", value=info["months"])
+                    if info["alert"]:
+                        embed.add_field(name="alert", value=info["alert"])
+                    response.append(embed)
+                return response, None
 
         lines = [s("fish", **details(row)) for _, row in available.iterrows()]
         return "\n".join(sorted(lines)), None
