@@ -1,161 +1,161 @@
-hemisphere,name,price,location,time,jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
-northern,common butterfly,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
-northern,yellow butterfly,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
-northern,tiger butterfly,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
-northern,peacock butterfly,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
-northern,common bluebottle,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
-northern,paper kite butterfly,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
-northern,great purple emperor,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
-northern,monarch butterfly,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
-northern,emperor butterfly,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
-northern,agrias butterfly,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
-northern,rajah brooke's birdwing,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
-northern,queen alexandra's birdwing,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
-northern,moth,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
-northern,atlas moth,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
-northern,madagascan sunset moth,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
-northern,long locust,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
-northern,migratory locust,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
-northern,rice grasshopper,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
-northern,grasshopper,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
-northern,cricket,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
-northern,bell cricket,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
-northern,mantis,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
-northern,orchid mantis,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
-northern,honeybee,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
-northern,wasp,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,brown cicada,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-northern,robust cicada,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-northern,giant cicada,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-northern,walker cicada,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
-northern,evening cicada,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
-northern,cicada shell,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-northern,red dragonfly,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
-northern,darner dragonfly,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
-northern,banded dragonfly,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
-northern,damselfly,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
-northern,firefly,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
-northern,mole cricket,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
-northern,pondskater,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
-northern,diving beetle,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
-northern,giant water bug,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
-northern,stinkbug,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
-northern,man-faced stink bug,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
-northern,ladybug,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
-northern,tiger beetle,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
-northern,jewel beetle,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
-northern,violin beetle,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
-northern,citrus long-horned beetle,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,rosalia batesi beetle,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
-northern,blue weevil beetle,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
-northern,dung beetle,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
-northern,earth-boring dung beetle,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
-northern,scarab beetle,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,drone beetle,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
-northern,goliath beetle,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
-northern,saw stag,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-northern,miyama stag,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-northern,giant stag,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,rainbow stag,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
-northern,cyclommatus stag,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,golden stag,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,giraffe stag,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,horned dynastid,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,horned atlas,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,horned elephant,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,horned hercules,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-northern,walking stick,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
-northern,walking leaf,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
-northern,bagworm,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,ant,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,hermit crab,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
-northern,wharf roach,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,fly,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,mosquito,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
-northern,flea,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
-northern,snail,250,on rocks (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
-northern,pill bug,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
-northern,centipede,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
-northern,spider,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
-northern,tarantula,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
-northern,scorpion,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0
-southern,common butterfly,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
-southern,yellow butterfly,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
-southern,tiger butterfly,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
-southern,peacock butterfly,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
-southern,common bluebottle,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
-southern,paper kite butterfly,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
-southern,great purple emperor,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
-southern,monarch butterfly,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
-southern,emperor butterfly,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
-southern,agrias butterfly,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
-southern,rajah brooke's birdwing,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
-southern,queen alexandra's birdwing,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
-southern,moth,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
-southern,atlas moth,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
-southern,madagascan sunset moth,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
-southern,long locust,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
-southern,migratory locust,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
-southern,rice grasshopper,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
-southern,grasshopper,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
-southern,cricket,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
-southern,bell cricket,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
-southern,mantis,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
-southern,orchid mantis,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
-southern,honeybee,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
-southern,wasp,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,brown cicada,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-southern,robust cicada,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-southern,giant cicada,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
-southern,walker cicada,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
-southern,evening cicada,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
-southern,cicada shell,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-southern,red dragonfly,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
-southern,darner dragonfly,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
-southern,banded dragonfly,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
-southern,damselfly,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
-southern,firefly,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
-southern,mole cricket,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
-southern,pondskater,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
-southern,diving beetle,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
-southern,giant water bug,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
-southern,stinkbug,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
-southern,man-faced stink bug,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
-southern,ladybug,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
-southern,tiger beetle,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
-southern,jewel beetle,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
-southern,violin beetle,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
-southern,citrus long-horned beetle,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,rosalia batesi beetle,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
-southern,blue weevil beetle,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
-southern,dung beetle,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
-southern,earth-boring dung beetle,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
-southern,scarab beetle,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,drone beetle,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
-southern,goliath beetle,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
-southern,saw stag,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-southern,miyama stag,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
-southern,giant stag,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,rainbow stag,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
-southern,cyclommatus stag,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,golden stag,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,giraffe stag,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,horned dynastid,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,horned atlas,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,horned elephant,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,horned hercules,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
-southern,walking stick,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
-southern,walking leaf,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
-southern,bagworm,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,ant,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,hermit crab,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
-southern,wharf roach,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,fly,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,mosquito,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
-southern,flea,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
-southern,snail,250,on rocks (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
-southern,pill bug,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
-southern,centipede,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
-southern,spider,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
-southern,tarantula,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
-southern,scorpion,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0
+hemisphere,name,image,price,location,time,jan,feb,mar,apr,may,jun,jul,aug,sep,oct,nov,dec
+northern,common butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/3/3a/NH-Icon-commonbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,yellow butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/f/fa/NH-Icon-yellowbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
+northern,tiger butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/6/65/NH-Icon-tigerbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
+northern,peacock butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-peacockbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
+northern,common bluebottle,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5e/NH-Icon-commonbluebottle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
+northern,paper kite butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/d/dd/NH-Icon-paperkitebutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
+northern,great purple emperor,https://vignette.wikia.nocookie.net/animalcrossing/images/2/27/NH-Icon-greatpurpleemperor.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
+northern,monarch butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-monarchbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
+northern,emperor butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5e/NH-Icon-emperorbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
+northern,agrias butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/d/dc/NH-Icon-agriasbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
+northern,rajah brooke's birdwing,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e2/NH-Icon-rajahbrookesbirdwing.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
+northern,queen alexandra's birdwing,https://vignette.wikia.nocookie.net/animalcrossing/images/b/b8/NH-Icon-queenalexandrasbirdwing.png/revision/latest/scale-to-width-down/64?cb=20200401005429,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,moth,https://vignette.wikia.nocookie.net/animalcrossing/images/1/12/NH-Icon-moth.png/revision/latest/scale-to-width-down/64?cb=20200401005428,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,atlas moth,https://vignette.wikia.nocookie.net/animalcrossing/images/6/6a/NH-Icon-atlasmoth.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
+northern,madagascan sunset moth,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7d/NH-Icon-madagascansunsetmoth.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
+northern,long locust,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ef/NH-Icon-longlocust.png/revision/latest/scale-to-width-down/64?cb=20200401005429,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
+northern,migratory locust,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e4/NH-Icon-migratorylocust.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+northern,rice grasshopper,https://vignette.wikia.nocookie.net/animalcrossing/images/d/d3/NH-Icon-ricegrasshopper.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+northern,grasshopper,https://vignette.wikia.nocookie.net/animalcrossing/images/5/56/NH-Icon-grasshopper.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
+northern,cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7a/NH-Icon-cricket.png/revision/latest/scale-to-width-down/64?cb=20200401005428,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
+northern,bell cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-bellcricket.png/revision/latest/scale-to-width-down/64?cb=20200401005428,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
+northern,mantis,https://vignette.wikia.nocookie.net/animalcrossing/images/0/00/NH-Icon-mantis.png/revision/latest/scale-to-width-down/64?cb=20200401005429,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+northern,orchid mantis,https://vignette.wikia.nocookie.net/animalcrossing/images/9/9e/NH-Icon-orchidmantis.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+northern,honeybee,https://vignette.wikia.nocookie.net/animalcrossing/images/2/26/NH-Icon-honeybee.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
+northern,wasp,https://vignette.wikia.nocookie.net/animalcrossing/images/9/9e/NH-Icon-wasp.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,brown cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/a/ab/NH-Icon-browncicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,robust cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/2/2f/NH-Icon-robustcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005429,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giant cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/5/58/NH-Icon-giantcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,walker cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ec/NH-Icon-walkercicada.png/revision/latest/scale-to-width-down/64?cb=20200401005429,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
+northern,evening cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/1/16/NH-Icon-eveningcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
+northern,cicada shell,https://vignette.wikia.nocookie.net/animalcrossing/images/9/97/NH-Icon-cicadashell.png/revision/latest/scale-to-width-down/64?cb=20200401005428,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,red dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/e/eb/NH-Icon-reddragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
+northern,darner dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/7/70/NH-Icon-darnerdragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
+northern,banded dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/6/64/NH-Icon-bandeddragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
+northern,damselfly,https://vignette.wikia.nocookie.net/animalcrossing/images/1/16/NH-Icon-damselfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
+northern,firefly,https://vignette.wikia.nocookie.net/animalcrossing/images/a/ae/NH-Icon-firefly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
+northern,mole cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/0/00/NH-Icon-molecricket.png/revision/latest/scale-to-width-down/64?cb=20200401005429,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
+northern,pondskater,https://vignette.wikia.nocookie.net/animalcrossing/images/f/f4/NH-Icon-pondskater.png/revision/latest/scale-to-width-down/64?cb=20200401005429,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,diving beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c5/NH-Icon-divingbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+northern,giant water bug,https://vignette.wikia.nocookie.net/animalcrossing/images/5/55/NH-Icon-giantwaterbug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
+northern,stinkbug,https://vignette.wikia.nocookie.net/animalcrossing/images/8/80/NH-Icon-stinkbug.png/revision/latest/scale-to-width-down/64?cb=20200401005429,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
+northern,man-faced stink bug,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c7/NH-Icon-manfacedstinkbug.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
+northern,ladybug,https://vignette.wikia.nocookie.net/animalcrossing/images/1/18/NH-Icon-ladybug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
+northern,tiger beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e3/NH-Icon-tigerbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
+northern,jewel beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-jewelbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
+northern,violin beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/6/6a/NH-Icon-violinbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
+northern,citrus long-horned beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-citruslonghornedbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,rosalia batesi beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e0/NH-Icon-rosaliabatesibeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
+northern,blue weevil beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/f/f5/NH-Icon-blueweevilbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,dung beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c0/NH-Icon-dungbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005431,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
+northern,earth-boring dung beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/0/0c/NH-Icon-earthboringdungbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
+northern,scarab beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4c/NH-Icon-scarabbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,drone beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-dronebeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
+northern,goliath beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5b/NH-Icon-goliathbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,saw stag,https://vignette.wikia.nocookie.net/animalcrossing/images/4/48/NH-Icon-sawstag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,miyama stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/1b/NH-Icon-miyamastag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giant stag,https://vignette.wikia.nocookie.net/animalcrossing/images/2/25/NH-Icon-giantstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,rainbow stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/1c/NH-Icon-rainbowstag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,cyclommatus stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/17/NH-Icon-cyclommatusstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,golden stag,https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-goldenstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,giraffe stag,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7c/NH-Icon-giraffestag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned dynastid,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ef/NH-Icon-horneddynastid.png/revision/latest/scale-to-width-down/64?cb=20200401005428,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned atlas,https://vignette.wikia.nocookie.net/animalcrossing/images/1/12/NH-Icon-hornedatlas.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned elephant,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4f/NH-Icon-hornedelephant.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,horned hercules,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c2/NH-Icon-hornedhercules.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+northern,walking stick,https://vignette.wikia.nocookie.net/animalcrossing/images/6/62/NH-Icon-walkingstick.png/revision/latest/scale-to-width-down/64?cb=20200401005428,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
+northern,walking leaf,https://vignette.wikia.nocookie.net/animalcrossing/images/c/cb/NH-Icon-walkingleaf.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
+northern,bagworm,https://vignette.wikia.nocookie.net/animalcrossing/images/8/81/NH-Icon-bagworm.png/revision/latest/scale-to-width-down/64?cb=20200401005428,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,ant,https://vignette.wikia.nocookie.net/animalcrossing/images/4/45/NH-Icon-ant.png/revision/latest/scale-to-width-down/64?cb=20200401005428,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,hermit crab,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7f/NH-Icon-hermitcrab.png/revision/latest/scale-to-width-down/64?cb=20200401005430,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,wharf roach,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5d/NH-Icon-wharfroach.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,fly,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4f/NH-Icon-fly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,mosquito,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c0/NH-Icon-mosquito.png/revision/latest/scale-to-width-down/64?cb=20200401005429,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
+northern,flea,https://vignette.wikia.nocookie.net/animalcrossing/images/9/92/NH-Icon-flea.png/revision/latest/scale-to-width-down/64?cb=20200401005428,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
+northern,snail,https://vignette.wikia.nocookie.net/animalcrossing/images/b/b1/NH-Icon-snail.png/revision/latest/scale-to-width-down/64?cb=20200401005429,250,on rocks and bushes (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
+northern,pill bug,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c5/NH-Icon-pillbug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,centipede,https://vignette.wikia.nocookie.net/animalcrossing/images/3/30/NH-Icon-centipede.png/revision/latest/scale-to-width-down/64?cb=20200401005429,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
+northern,spider,https://vignette.wikia.nocookie.net/animalcrossing/images/2/26/NH-Icon-spider.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+northern,tarantula,https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
+northern,scorpion,https://vignette.wikia.nocookie.net/animalcrossing/images/3/34/NH-Icon-scorpion.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0
+southern,common butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/3/3a/NH-Icon-commonbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,flying,4 am - 7 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,yellow butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/f/fa/NH-Icon-yellowbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,flying,4 am - 7 pm,0,0,1,1,1,1,0,0,1,1,0,0
+southern,tiger butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/6/65/NH-Icon-tigerbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,240,flying,4 am - 7 pm,0,0,1,1,1,1,1,1,1,0,0,0
+southern,peacock butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-peacockbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2500,flying by hybrid flowers,4 am - 7 pm,0,0,1,1,1,1,0,0,0,0,0,0
+southern,common bluebottle,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5e/NH-Icon-commonbluebottle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,flying,4 am - 7 pm,0,0,0,1,1,1,1,1,0,0,0,0
+southern,paper kite butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/d/dd/NH-Icon-paperkitebutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,flying,8 am - 7 pm,1,1,1,1,1,1,1,1,1,1,1,1
+southern,great purple emperor,https://vignette.wikia.nocookie.net/animalcrossing/images/2/27/NH-Icon-greatpurpleemperor.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,flying,4 am - 7 pm,0,0,0,0,1,1,1,1,0,0,0,0
+southern,monarch butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-monarchbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005429,140,flying,4 am - 5 pm,0,0,0,0,0,0,0,0,1,1,1,0
+southern,emperor butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5e/NH-Icon-emperorbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,4000,flying,5 pm - 8 am,1,1,1,0,0,1,1,1,1,0,0,1
+southern,agrias butterfly,https://vignette.wikia.nocookie.net/animalcrossing/images/d/dc/NH-Icon-agriasbutterfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,0,0,0
+southern,rajah brooke's birdwing,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e2/NH-Icon-rajahbrookesbirdwing.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2500,flying,8 am - 5 pm,1,1,0,1,1,1,1,1,1,0,0,1
+southern,queen alexandra's birdwing,https://vignette.wikia.nocookie.net/animalcrossing/images/b/b8/NH-Icon-queenalexandrasbirdwing.png/revision/latest/scale-to-width-down/64?cb=20200401005429,4000,flying,8 am - 4 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,moth,https://vignette.wikia.nocookie.net/animalcrossing/images/1/12/NH-Icon-moth.png/revision/latest/scale-to-width-down/64?cb=20200401005428,130,flying by light,7 pm - 4 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,atlas moth,https://vignette.wikia.nocookie.net/animalcrossing/images/6/6a/NH-Icon-atlasmoth.png/revision/latest/scale-to-width-down/64?cb=20200401005428,3000,on trees,7 pm - 4 am,0,0,0,1,1,1,1,1,1,0,0,0
+southern,madagascan sunset moth,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7d/NH-Icon-madagascansunsetmoth.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2500,flying,8 am - 4 pm,0,0,0,1,1,1,1,1,1,0,0,0
+southern,long locust,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ef/NH-Icon-longlocust.png/revision/latest/scale-to-width-down/64?cb=20200401005429,200,on the ground,8 am - 7 pm,0,0,0,1,1,1,1,1,1,1,1,0
+southern,migratory locust,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e4/NH-Icon-migratorylocust.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+southern,rice grasshopper,https://vignette.wikia.nocookie.net/animalcrossing/images/d/d3/NH-Icon-ricegrasshopper.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,on the ground,8 am - 7 pm,0,0,0,0,0,0,0,1,1,1,1,0
+southern,grasshopper,https://vignette.wikia.nocookie.net/animalcrossing/images/5/56/NH-Icon-grasshopper.png/revision/latest/scale-to-width-down/64?cb=20200401005428,160,on the ground,8 am - 5 pm,0,0,0,0,0,0,1,1,1,0,0,0
+southern,cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7a/NH-Icon-cricket.png/revision/latest/scale-to-width-down/64?cb=20200401005428,130,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,1,0
+southern,bell cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-bellcricket.png/revision/latest/scale-to-width-down/64?cb=20200401005428,430,on the ground,5 pm - 8 am,0,0,0,0,0,0,0,0,1,1,0,0
+southern,mantis,https://vignette.wikia.nocookie.net/animalcrossing/images/0/00/NH-Icon-mantis.png/revision/latest/scale-to-width-down/64?cb=20200401005429,430,on flowers,8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+southern,orchid mantis,https://vignette.wikia.nocookie.net/animalcrossing/images/9/9e/NH-Icon-orchidmantis.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2400,on flowers (white),8 am - 5 pm,0,0,1,1,1,1,1,1,1,1,1,0
+southern,honeybee,https://vignette.wikia.nocookie.net/animalcrossing/images/2/26/NH-Icon-honeybee.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,flying,8 am - 5 pm,0,0,1,1,1,1,1,0,0,0,0,0
+southern,wasp,https://vignette.wikia.nocookie.net/animalcrossing/images/9/9e/NH-Icon-wasp.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2500,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,brown cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/a/ab/NH-Icon-browncicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,250,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,robust cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/2/2f/NH-Icon-robustcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005429,300,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giant cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/5/58/NH-Icon-giantcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,500,on trees,8 am - 5 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,walker cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ec/NH-Icon-walkercicada.png/revision/latest/scale-to-width-down/64?cb=20200401005429,400,on trees,8 am - 5 pm,0,0,0,0,0,0,0,1,1,0,0,0
+southern,evening cicada,https://vignette.wikia.nocookie.net/animalcrossing/images/1/16/NH-Icon-eveningcicada.png/revision/latest/scale-to-width-down/64?cb=20200401005428,550,on trees,4 am - 8 am & 4 pm - 7 pm,0,0,0,0,0,0,1,1,0,0,0,0
+southern,cicada shell,https://vignette.wikia.nocookie.net/animalcrossing/images/9/97/NH-Icon-cicadashell.png/revision/latest/scale-to-width-down/64?cb=20200401005428,10,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,red dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/e/eb/NH-Icon-reddragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,180,flying,8 am - 7 pm,0,0,0,0,0,0,0,0,1,1,0,0
+southern,darner dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/7/70/NH-Icon-darnerdragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,230,flying,8 am - 5 pm,0,0,0,1,1,1,1,1,1,1,0,0
+southern,banded dragonfly,https://vignette.wikia.nocookie.net/animalcrossing/images/6/64/NH-Icon-bandeddragonfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,4500,flying,8 am - 5 pm,0,0,0,0,1,1,1,1,1,1,0,0
+southern,damselfly,https://vignette.wikia.nocookie.net/animalcrossing/images/1/16/NH-Icon-damselfly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,500,flying,all day,1,1,0,0,0,0,0,0,0,0,1,1
+southern,firefly,https://vignette.wikia.nocookie.net/animalcrossing/images/a/ae/NH-Icon-firefly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,flying,7 pm - 4 am,0,0,0,0,0,1,0,0,0,0,0,0
+southern,mole cricket,https://vignette.wikia.nocookie.net/animalcrossing/images/0/00/NH-Icon-molecricket.png/revision/latest/scale-to-width-down/64?cb=20200401005429,500,underground,all day,1,1,1,1,1,0,0,0,0,0,1,1
+southern,pondskater,https://vignette.wikia.nocookie.net/animalcrossing/images/f/f4/NH-Icon-pondskater.png/revision/latest/scale-to-width-down/64?cb=20200401005429,130,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,diving beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c5/NH-Icon-divingbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,800,on ponds and rivers,8 am - 7 pm,0,0,0,0,1,1,1,1,1,0,0,0
+southern,giant water bug,https://vignette.wikia.nocookie.net/animalcrossing/images/5/55/NH-Icon-giantwaterbug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2000,on ponds and rivers,7 pm - 8 am,0,0,0,1,1,1,1,1,1,0,0,0
+southern,stinkbug,https://vignette.wikia.nocookie.net/animalcrossing/images/8/80/NH-Icon-stinkbug.png/revision/latest/scale-to-width-down/64?cb=20200401005429,120,on flowers,all day,0,0,1,1,1,1,1,1,1,1,0,0
+southern,man-faced stink bug,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c7/NH-Icon-manfacedstinkbug.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,on flowers,7 pm - 8 am,0,0,1,1,1,1,1,1,1,1,0,0
+southern,ladybug,https://vignette.wikia.nocookie.net/animalcrossing/images/1/18/NH-Icon-ladybug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on flowers,8 am - 5 pm,0,0,1,1,1,1,0,0,0,1,0,0
+southern,tiger beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e3/NH-Icon-tigerbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,1500,on the ground,all day,0,1,1,1,1,1,1,1,1,1,0,0
+southern,jewel beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-jewelbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,2400,on tree stumps,all day,0,0,0,1,1,1,1,1,0,0,0,0
+southern,violin beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/6/6a/NH-Icon-violinbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,450,on tree stumps,all day,0,0,0,0,1,1,0,0,1,1,1,0
+southern,citrus long-horned beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-citruslonghornedbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,350,on tree stumps,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,rosalia batesi beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/e/e0/NH-Icon-rosaliabatesibeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,3000,on tree stumps,all day,0,0,0,0,1,1,1,1,1,0,0,0
+southern,blue weevil beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/f/f5/NH-Icon-blueweevilbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,800,on trees (coconut?),all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,dung beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c0/NH-Icon-dungbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005431,3000,on the ground (rolling snowballs),all day,1,1,0,0,0,0,0,0,0,0,0,1
+southern,earth-boring dung beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/0/0c/NH-Icon-earthboringdungbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,300,on the ground,all day,0,0,0,0,0,0,1,1,1,0,0,0
+southern,scarab beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4c/NH-Icon-scarabbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005429,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,drone beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/9/99/NH-Icon-dronebeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on trees,all day,0,0,0,0,0,1,1,1,0,0,0,0
+southern,goliath beetle,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5b/NH-Icon-goliathbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,saw stag,https://vignette.wikia.nocookie.net/animalcrossing/images/4/48/NH-Icon-sawstag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,2000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,miyama stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/1b/NH-Icon-miyamastag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,1000,on trees,all day,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giant stag,https://vignette.wikia.nocookie.net/animalcrossing/images/2/25/NH-Icon-giantstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,10000,on trees,11 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,rainbow stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/1c/NH-Icon-rainbowstag.png/revision/latest/scale-to-width-down/64?cb=20200401005429,6000,on trees,7 pm - 8 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,cyclommatus stag,https://vignette.wikia.nocookie.net/animalcrossing/images/1/17/NH-Icon-cyclommatusstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,golden stag,https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-goldenstag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,giraffe stag,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7c/NH-Icon-giraffestag.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut?),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned dynastid,https://vignette.wikia.nocookie.net/animalcrossing/images/e/ef/NH-Icon-horneddynastid.png/revision/latest/scale-to-width-down/64?cb=20200401005428,1350,on trees,5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned atlas,https://vignette.wikia.nocookie.net/animalcrossing/images/1/12/NH-Icon-hornedatlas.png/revision/latest/scale-to-width-down/64?cb=20200401005428,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned elephant,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4f/NH-Icon-hornedelephant.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,horned hercules,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c2/NH-Icon-hornedhercules.png/revision/latest/scale-to-width-down/64?cb=20200401005428,12000,on trees (coconut),5 pm - 8 am,0,0,0,0,0,0,1,1,0,0,0,0
+southern,walking stick,https://vignette.wikia.nocookie.net/animalcrossing/images/6/62/NH-Icon-walkingstick.png/revision/latest/scale-to-width-down/64?cb=20200401005428,600,on trees,4 am - 8 am & 5 pm - 7 pm,0,0,0,0,0,0,1,1,1,1,1,0
+southern,walking leaf,https://vignette.wikia.nocookie.net/animalcrossing/images/c/cb/NH-Icon-walkingleaf.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,under trees disguised as leafs,all day,0,0,0,0,0,0,1,1,1,0,0,0
+southern,bagworm,https://vignette.wikia.nocookie.net/animalcrossing/images/8/81/NH-Icon-bagworm.png/revision/latest/scale-to-width-down/64?cb=20200401005428,600,shaking trees,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,ant,https://vignette.wikia.nocookie.net/animalcrossing/images/4/45/NH-Icon-ant.png/revision/latest/scale-to-width-down/64?cb=20200401005428,80,on rotten food,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,hermit crab,https://vignette.wikia.nocookie.net/animalcrossing/images/7/7f/NH-Icon-hermitcrab.png/revision/latest/scale-to-width-down/64?cb=20200401005430,1000,beach disguised as shells,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,wharf roach,https://vignette.wikia.nocookie.net/animalcrossing/images/5/5d/NH-Icon-wharfroach.png/revision/latest/scale-to-width-down/64?cb=20200401005428,200,on beach rocks,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,fly,https://vignette.wikia.nocookie.net/animalcrossing/images/4/4f/NH-Icon-fly.png/revision/latest/scale-to-width-down/64?cb=20200401005428,60,on trash items,all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,mosquito,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c0/NH-Icon-mosquito.png/revision/latest/scale-to-width-down/64?cb=20200401005429,130,flying,5 pm - 4 am,0,0,0,0,0,1,1,1,1,0,0,0
+southern,flea,https://vignette.wikia.nocookie.net/animalcrossing/images/9/92/NH-Icon-flea.png/revision/latest/scale-to-width-down/64?cb=20200401005428,70,villager's heads,all day,0,0,0,1,1,1,1,1,1,1,1,0
+southern,snail,https://vignette.wikia.nocookie.net/animalcrossing/images/b/b1/NH-Icon-snail.png/revision/latest/scale-to-width-down/64?cb=20200401005429,250,on rocks and bushes (rain),all day,1,1,1,1,1,1,1,1,1,1,1,1
+southern,pill bug,https://vignette.wikia.nocookie.net/animalcrossing/images/c/c5/NH-Icon-pillbug.png/revision/latest/scale-to-width-down/64?cb=20200401005428,250,hitting rocks,11 pm - 4 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,centipede,https://vignette.wikia.nocookie.net/animalcrossing/images/3/30/NH-Icon-centipede.png/revision/latest/scale-to-width-down/64?cb=20200401005429,300,hitting rocks,4 pm - 11 pm,1,1,1,1,1,1,0,0,1,1,1,1
+southern,spider,https://vignette.wikia.nocookie.net/animalcrossing/images/2/26/NH-Icon-spider.png/revision/latest/scale-to-width-down/64?cb=20200401005429,600,shaking trees,7 pm - 8 am,1,1,1,1,1,1,1,1,1,1,1,1
+southern,tarantula,https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on the ground,7 pm - 4 am,1,1,1,1,0,0,0,0,0,0,1,1
+southern,scorpion,https://vignette.wikia.nocookie.net/animalcrossing/images/3/34/NH-Icon-scorpion.png/revision/latest/scale-to-width-down/64?cb=20200401005429,8000,on the ground,7 pm - 4 am,0,0,0,0,1,1,1,1,1,1,0,0

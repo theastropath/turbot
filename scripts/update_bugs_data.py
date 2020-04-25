@@ -22,6 +22,12 @@ def clean(item):
 
 
 def ingest(writer, hemisphere):
+    def data_from(item):
+        img = item.find("img")
+        if img:
+            return img["data-src"]
+        return item.text
+
     table_tag = tree.select(".tabber table")[hemisphere.value]
 
     # there's some weird nesting on the northern bug table, keep any eye on this,
@@ -30,15 +36,19 @@ def ingest(writer, hemisphere):
         table_tag = table_tag.select("table")[0]
 
     tab_data = [
-        [item.text for item in row_data.select("td")]
+        [data_from(item) for item in row_data.select("td")]
         for row_data in table_tag.select("tr")
     ]
 
     for row in range(1, len(tab_data)):
         data = [clean(i) for i in tab_data[row]]
         if data:
-            # lowercase all data and strip out the image column (2nd column)
-            corrected = [d.lower() for d in [hemisphere.name, data[0], *data[2:]]]
+            corrected = [
+                hemisphere.name.lower(),
+                data[0].lower(),
+                data[1],
+                *[d.lower() for d in data[2:]],
+            ]
             writer.writerow(corrected)
 
 
@@ -48,6 +58,7 @@ with open(Path("turbot") / "data" / "bugs.csv", "w", newline="") as out:
         [
             "hemisphere",
             "name",
+            "image",
             "price",
             "location",
             "time",

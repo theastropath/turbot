@@ -1095,7 +1095,8 @@ class Turbot(discord.Client):
                 return s("fish_none_found", search=search), None
             else:
                 response = []
-                for _, row in found.iterrows():
+                rows = [row for _, row in found.iterrows()]
+                for row in sorted(rows, key=lambda r: r["name"]):
                     info = details(row)
                     embed = discord.Embed(title=info["name"])
                     embed.set_thumbnail(url=info["image"])
@@ -1156,10 +1157,20 @@ class Turbot(discord.Client):
             if found.empty:
                 return s("bugs_none_found", search=search), None
             else:
-                lines = sorted(
-                    [s("bugs_detail", **details(row)) for _, row in found.iterrows()]
-                )
-                return "\n".join(add_header(lines)), None
+                response = []
+                rows = [row for _, row in found.iterrows()]
+                for row in sorted(rows, key=lambda r: r["name"]):
+                    info = details(row)
+                    embed = discord.Embed(title=info["name"])
+                    embed.set_thumbnail(url=info["image"])
+                    embed.add_field(name="price", value=info["price"])
+                    embed.add_field(name="location", value=info["location"])
+                    embed.add_field(name="available", value=info["time"])
+                    embed.add_field(name="during", value=info["months"])
+                    if info["alert"]:
+                        embed.add_field(name="alert", value=info["alert"])
+                    response.append(embed)
+                return add_header(response), None
 
         lines = sorted([s("bugs", **details(row)) for _, row in available.iterrows()])
         return "\n".join(add_header(lines)), None

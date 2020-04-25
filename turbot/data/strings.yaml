@@ -5,7 +5,6 @@ best: '> $name: $price bells at $timestamp'
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
-bugs_detail: '> **$name** is available $time, $location (sells for $price bells) during $months $alert'
 bugs_header: |-
   ```diff
   -Eeek! What wretched things. Alas, I am obliged to respond...
