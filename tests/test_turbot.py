@@ -1446,12 +1446,12 @@ class TestTurbot:
         message = MockMessage(author, channel, "!fish ch")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Char** with shadow size 3 is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
-            "> **Cherry salmon** with shadow size 3 is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) during Mar, Apr, May, Jun, Sep, Oct, Nov \n"  # noqa: E501
-            "> **Loach** with shadow size 2 is available all day at river (sells for 400 bells) during Mar, Apr, May \n"  # noqa: E501
-            "> **Pale chub** with shadow size 1 is available 9 am - 4 pm at river (sells for 200 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Ranchu goldfish** with shadow size 2 is available 9 am - 4 pm at pond (sells for 4500 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec ",  # noqa: E501
+            "> **Anchovy** with shadow size 2 is available 4 am - 9 pm at sea (sells for 200 bells) during the entire year \n"  # noqa: E501
+            "> **Char** with shadow size 3 is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) during Mar - Jun, Sep - Nov \n"  # noqa: E501
+            "> **Cherry salmon** with shadow size 3 is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) during Mar - Jun, Sep - Nov \n"  # noqa: E501
+            "> **Loach** with shadow size 2 is available all day at river (sells for 400 bells) during Mar - May \n"  # noqa: E501
+            "> **Pale chub** with shadow size 1 is available 9 am - 4 pm at river (sells for 200 bells) during the entire year \n"  # noqa: E501
+            "> **Ranchu goldfish** with shadow size 2 is available 9 am - 4 pm at pond (sells for 4500 bells) during the entire year ",  # noqa: E501
             None,
         )
 
@@ -1465,9 +1465,9 @@ class TestTurbot:
         message = MockMessage(author, channel, "!fish leaving")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan, Feb, Mar, Apr, Jul, Aug, Sep, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dab** with shadow size 3 is available all day at sea (sells for 300 bells) during Jan, Feb, Mar, Apr, Oct, Nov, Dec **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Tuna** with shadow size 6 is available all day at pier (sells for 7000 bells) during Jan, Feb, Mar, Apr, Nov, Dec **GONE NEXT MONTH!**",  # noqa: E501
+            "> **Blue marlin** with shadow size 6 is available all day at pier (sells for 10000 bells) during Jan - Apr, Jul - Sep, Nov - Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Dab** with shadow size 3 is available all day at sea (sells for 300 bells) during Jan - Apr, Oct - Dec **GONE NEXT MONTH!**\n"  # noqa: E501
+            "> **Tuna** with shadow size 6 is available all day at pier (sells for 7000 bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**",  # noqa: E501
             None,
         )
 
@@ -1653,12 +1653,12 @@ class TestTurbot:
         message = MockMessage(author, channel, "!bugs butt")
         await client.on_message(message)
         channel.sent.assert_called_with(
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr, May, Jun, Jul, Aug, Sep _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan, Feb, Mar, Apr, May, Jun, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar, Apr, May, Jun \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar, Apr, May, Jun, Jul, Aug, Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar, Apr, May, Jun, Sep, Oct ",  # noqa: E501
+            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr - Sep _New this month_\n"  # noqa: E501
+            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan - Jun, Sep - Dec \n"  # noqa: E501
+            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
+            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
+            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct ",  # noqa: E501
             None,
         )
 
@@ -1676,12 +1676,12 @@ class TestTurbot:
             "```diff\n"
             "-Eeek! What wretched things. Alas, I am obliged to respond...\n"
             "```\n"
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr, May, Jun, Jul, Aug, Sep _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan, Feb, Mar, Apr, May, Jun, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar, Apr, May, Jun \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar, Apr, May, Jun, Jul, Aug, Sep \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar, Apr, May, Jun, Sep, Oct ",  # noqa: E501
+            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) during Apr - Sep _New this month_\n"  # noqa: E501
+            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Jan - Jun, Sep - Dec \n"  # noqa: E501
+            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) during the entire year \n"  # noqa: E501
+            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) during Mar - Jun \n"  # noqa: E501
+            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) during Mar - Sep \n"  # noqa: E501
+            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) during Mar - Jun, Sep - Oct ",  # noqa: E501
             None,
         )
 
@@ -1697,7 +1697,7 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 "
-            "bells) during Jan, Feb, Mar, Apr, Nov, Dec **GONE NEXT MONTH!**",
+            "bells) during Jan - Apr, Nov - Dec **GONE NEXT MONTH!**",
             None,
         )
 
@@ -1800,6 +1800,37 @@ class TestTurbot:
             assert len(pages) == 2
             assert all(len(page) <= 2000 for page in pages)
             assert pages == [text[0:2000], text[2000:]]
+
+    async def test_humanize_months(self):
+        def subject(*args):
+            row = dict(
+                zip(
+                    [
+                        "jan",
+                        "feb",
+                        "mar",
+                        "apr",
+                        "may",
+                        "jun",
+                        "jul",
+                        "aug",
+                        "sep",
+                        "oct",
+                        "nov",
+                        "dec",
+                    ],
+                    args,
+                )
+            )
+            return list(turbot.humanize_months(row))
+
+        assert subject(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) == ["the entire year"]
+        assert subject(1, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0) == ["Jan - Mar", "Jul - Sep"]
+        assert subject(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1) == ["Jan - Mar", "Dec"]
+        assert subject(0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0) == ["Mar"]
+        assert subject(0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1) == ["Mar", "Oct - Dec"]
+        assert subject(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == ["Jan"]
+        assert subject(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == []
 
 
 class TestFigures:
