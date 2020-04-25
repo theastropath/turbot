@@ -10,7 +10,7 @@ A Discord bot for tracking _Animal Crossing: New Horizons_ turnip prices and fos
 ## Usage
 
 1. Go to the root directory of this repository.
-2. Create a file named `config/token.txt` and paste your Discord bot token into it.
+2. Create a file named `config/token.txt` and paste your Discord bot token into it. Alternatively you can set the token via the environment variable `TURBOT_TOKEN`.
 3. Create a file named `config/channels.txt` and paste a list of channels you would like Turbot to run in. Put each channel name on a new line.
 4. Ensure that you have the proper Python 3 dependencies installed: `pip install -r requirements.txt`.
 5. Install the application: `python setup.py install`.
