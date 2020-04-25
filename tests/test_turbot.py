@@ -1059,7 +1059,22 @@ class TestTurbot:
         await client.on_message(message)
         channel.sent.assert_called_with(
             "__**All Possible Fossils**__\n"
-            ">>> acanthostega, amber, ammonite, ankylo skull, ankylo tail, ankylo torso, anomalocaris, archaeopteryx, archelon skull, archelon tail, australopith, brachio chest, brachio pelvis, brachio skull, brachio tail, coprolite, deinony tail, deinony torso, dimetrodon skull, dimetrodon torso, dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo skull, diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, iguanodon skull, iguanodon tail, iguanodon torso, juramaia, left megalo side, left ptera wing, left quetzal wing, mammoth skull, mammoth torso, megacero skull, megacero tail, megacero torso, myllokunmingia, ophthalmo skull, ophthalmo torso, pachy skull, pachy tail, parasaur skull, parasaur tail, parasaur torso, plesio body, plesio skull, plesio tail, ptera body, quetzal torso, right megalo side, right ptera wing, right quetzal wing, sabertooth skull, sabertooth tail, shark-tooth pattern, spino skull, spino tail, spino torso, stego skull, stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso, tricera skull, tricera tail, tricera torso, trilobite",  # noqa: E501
+            ">>> acanthostega, amber, ammonite, ankylo skull, ankylo tail, ankylo torso"
+            ", anomalocaris, archaeopteryx, archelon skull, archelon tail, australopith"
+            ", brachio chest, brachio pelvis, brachio skull, brachio tail, coprolite"
+            ", deinony tail, deinony torso, dimetrodon skull, dimetrodon torso"
+            ", dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo skull"
+            ", diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, iguanodon skull"
+            ", iguanodon tail, iguanodon torso, juramaia, left megalo side"
+            ", left ptera wing, left quetzal wing, mammoth skull, mammoth torso"
+            ", megacero skull, megacero tail, megacero torso, myllokunmingia"
+            ", ophthalmo skull, ophthalmo torso, pachy skull, pachy tail, parasaur skull"
+            ", parasaur tail, parasaur torso, plesio body, plesio skull, plesio tail"
+            ", ptera body, quetzal torso, right megalo side, right ptera wing"
+            ", right quetzal wing, sabertooth skull, sabertooth tail"
+            ", shark-tooth pattern, spino skull, spino tail, spino torso, stego skull"
+            ", stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso"
+            ", tricera skull, tricera tail, tricera torso, trilobite",
             None,
         )
 
@@ -1508,7 +1523,7 @@ class TestTurbot:
             "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
             "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"  # noqa: E501
             "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"  # noqa: E501
-            "> **Black bass** is available all day at river (sells for 400 bells) \n"  # noqa: E501
+            "> **Black bass** is available all day at river (sells for 320 bells) \n"  # noqa: E501
             "> **Blue marlin** is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
             "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"  # noqa: E501
             "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
@@ -1516,11 +1531,11 @@ class TestTurbot:
             "> **Char** is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) \n"  # noqa: E501
             "> **Cherry salmon** is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) \n"  # noqa: E501
             "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
-            "> **Coelacanth** is available all day at sea (while raining) (sells for 15000 bells) \n"  # noqa: E501
+            "> **Coelacanth** is available all day at sea (sells for 15000 bells) \n"  # noqa: E501
             "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
             "> **Crucian carp** is available all day at river (sells for 160 bells) \n"  # noqa: E501
             "> **Dab** is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"  # noqa: E501
+            "> **Dace** is available 4 pm - 9 am at river (sells for 192 bells) \n"  # noqa: E501
             "> **Freshwater goby** is available 4 pm - 9 am at river (sells for 400 bells) \n"  # noqa: E501
             "> **Golden trout** is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) \n"  # noqa: E501
             "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"  # noqa: E501
