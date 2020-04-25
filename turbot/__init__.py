@@ -1085,7 +1085,7 @@ class Turbot(discord.Client):
             }
 
         if params:
-            search = params[0]
+            search = " ".join(params)
             if search == "leaving":
                 found = available[available[next_month] == 0]
             else:
@@ -1149,7 +1149,7 @@ class Turbot(discord.Client):
             return lines
 
         if params:
-            search = params[0]
+            search = " ".join(params)
             if search == "leaving":
                 found = available[available[next_month] == 0]
             else:
