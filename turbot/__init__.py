@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import inspect
 import logging
 import random
@@ -850,25 +848,29 @@ class Turbot(discord.Client):
                 name = discord_user_from_id(channel, needer)
                 results[name].append(fossil)
 
+        def add_header(lines):
+            lines.insert(0, s("fossilsearch_header"))
+            return lines
+
         if not results and not invalid:
             return s("fossilsearch_noneed"), None
 
         if not results and invalid:
-            lines = [s("fossilsearch_header")]
+            lines = []
             if valid:
                 lines.append(
                     s("fossilsearch_row", name="No one", fossils=", ".join(sorted(valid)))
                 )
             lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-            return "\n".join(lines), None
+            return "\n".join(add_header(sorted(lines))), None
 
-        lines = [s("fossilsearch_header")]
+        lines = []
         for name, needed in results.items():
             need_list = fossils = ", ".join(sorted(needed))
             lines.append(s("fossilsearch_row", name=name, fossils=need_list))
         if invalid:
             lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-        return "\n".join(lines), None
+        return "\n".join(add_header(sorted(lines))), None
 
     def allfossils_command(self, channel, author, params):
         """

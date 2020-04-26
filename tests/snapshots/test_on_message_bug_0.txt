@@ -1,13 +1,23 @@
-> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) 
-> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) 
-> **Pill bug** is available 11 pm - 4 pm, hitting rocks (sells for 250 bells) 
-> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_
-> **Snail** is available all day, on rocks and bushes (rain) (sells for 250 bells) 
-> **Spider** is available 7 pm - 8 am, shaking trees (sells for 600 bells) 
-> **Stinkbug** is available all day, on flowers (sells for 120 bells) 
-> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 bells) **GONE NEXT MONTH!**
-> **Tiger beetle** is available all day, on the ground (sells for 1500 bells) 
-> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) 
-> **Wasp** is available all day, shaking trees (sells for 2500 bells) 
-> **Wharf roach** is available all day, on beach rocks (sells for 200 bells) 
-> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) 
+> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_
+> **Ant** is available all day, on rotten food (sells for 80 bells) 
+> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_
+> **Bagworm** is available all day, shaking trees (sells for 600 bells) 
+> **Centipede** is available 4 pm - 11 pm, hitting rocks (sells for 300 bells) 
+> **Citrus long-horned beetle** is available all day, on tree stumps (sells for 350 bells) 
+> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_
+> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) 
+> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_
+> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_
+> **Fly** is available all day, on trash items (sells for 60 bells) 
+> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_
+> **Hermit crab** is available 7 pm - 8 am, beach disguised as shells (sells for 1000 bells) 
+> **Honeybee** is available 8 am - 5 pm, flying (sells for 200 bells) 
+> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_
+> **Ladybug** is available 8 am - 5 pm, on flowers (sells for 200 bells) 
+> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_
+> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_
+> **Man-faced stink bug** is available 7 pm - 8 am, on flowers (sells for 1000 bells) 
+> **Mantis** is available 8 am - 5 pm, on flowers (sells for 430 bells) 
+> **Mole cricket** is available all day, underground (sells for 500 bells) 
+> **Moth** is available 7 pm - 4 am, flying by light (sells for 130 bells) 
+> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) 
