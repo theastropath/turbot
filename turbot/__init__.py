@@ -1069,8 +1069,10 @@ class Turbot(discord.Client):
         response = ""
         if params:
             items = set(item.strip().lower() for item in " ".join(params).split(","))
-            valid = items.intersection(ART["name"])
-            invalid = items - valid
+            validset = items.intersection(ART["name"])
+            invalidset = items - validset
+            valid = sorted(list(validset))
+            invalid = sorted(list(invalidset))
             lines = []
             response = s("art_header") + "\n"
             for art in valid:
