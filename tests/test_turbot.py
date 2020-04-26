@@ -1,3 +1,4 @@
+import inspect
 import random
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -86,6 +87,7 @@ NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 TST_ROOT = dirname(realpath(__file__))
 DAT_ROOT = Path(TST_ROOT) / "data"
 SRC_ROOT = Path(TST_ROOT).parent
+
 SRC_DIRS = ["tests", "turbot", "scripts"]
 
 ADMIN_ROLE = MockRole("Turbot Admin")
@@ -203,6 +205,24 @@ def lastweek(mocker, monkeypatch):
 @pytest.fixture
 def channel():
     return MockChannel("text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+
+
+snap_counter = 0
+
+
+@pytest.fixture
+def snap(snapshot):
+    global snap_counter
+    snapshot.snapshot_dir = Path("tests") / "snapshots"
+    snap_counter = 0
+
+    def match(obj):
+        global snap_counter
+        test = inspect.stack()[1].function
+        snapshot.assert_match(str(obj), f"{test}_{snap_counter}.txt")
+        snap_counter = snap_counter + 1
+
+    return match
 
 
 ##############################
@@ -573,30 +593,15 @@ class TestTurbot:
             f"> {FRIEND}: 100 bells at {friend_now}"
         )
 
-    async def test_on_message_turnippattern_happy_paths(self, client, channel):
-        message = MockMessage(someone(), channel, "!turnippattern 100 86")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
-            "> **Decreasing**: Prices will continuously fall.\n"  # noqa: E501
-            "> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
-        )
+    async def test_on_message_turnippattern_happy_paths(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 86"))
+        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 99"))
+        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 22"))
 
-        message = MockMessage(someone(), channel, "!turnippattern 100 99")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
-            "> **Random**: Prices are completely random. Sell when it goes over your buying price.\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
-        )
-
-        message = MockMessage(someone(), channel, "!turnippattern 100 22")
-        await client.on_message(message)
-        channel.sent.assert_called_with(
-            "Based on your prices, you will see one of the following patterns this week:\n"  # noqa: E501
-            "> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday."  # noqa: E501
-        )
+        calls = channel.sent.call_args_list
+        snap(calls.pop(0))
+        snap(calls.pop(0))
+        snap(calls.pop(0))
 
     async def test_on_message_turnippattern_invalid_params(self, client, channel):
         message = MockMessage(someone(), channel, "!turnippattern 100")
@@ -1000,28 +1005,10 @@ class TestTurbot:
             "Did not recognize the following fossils:\n> a foot, unicorn bits"
         )
 
-    async def test_on_message_allfossils(self, client, channel):
+    async def test_on_message_allfossils(self, client, channel, snap):
         message = MockMessage(someone(), channel, "!allfossils")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            "__**All Possible Fossils**__\n"
-            ">>> acanthostega, amber, ammonite, ankylo skull, ankylo tail, ankylo torso"
-            ", anomalocaris, archaeopteryx, archelon skull, archelon tail, australopith"
-            ", brachio chest, brachio pelvis, brachio skull, brachio tail, coprolite"
-            ", deinony tail, deinony torso, dimetrodon skull, dimetrodon torso"
-            ", dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo skull"
-            ", diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, iguanodon skull"
-            ", iguanodon tail, iguanodon torso, juramaia, left megalo side"
-            ", left ptera wing, left quetzal wing, mammoth skull, mammoth torso"
-            ", megacero skull, megacero tail, megacero torso, myllokunmingia"
-            ", ophthalmo skull, ophthalmo torso, pachy skull, pachy tail, parasaur skull"
-            ", parasaur tail, parasaur torso, plesio body, plesio skull, plesio tail"
-            ", ptera body, quetzal torso, right megalo side, right ptera wing"
-            ", right quetzal wing, sabertooth skull, sabertooth tail"
-            ", shark-tooth pattern, spino skull, spino tail, spino torso, stego skull"
-            ", stego tail, stego torso, t. rex skull, t. rex tail, t. rex torso"
-            ", tricera skull, tricera tail, tricera torso, trilobite"
-        )
+        snap(channel.sent.call_args_list.pop(0))
 
     async def test_on_message_listfossils_bad_name(self, client, lines, channel):
         author = someone()
@@ -1053,39 +1040,18 @@ class TestTurbot:
             "**Congratulations, you've collected all fossils!**"
         )
 
-    async def test_on_message_listfossils_no_name(self, client, lines, channel):
-        author = someone()
-
+    async def test_on_message_listfossils_no_name(self, client, lines, channel, snap):
         # first collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
-        message = MockMessage(author, channel, f"!collect {fossils}")
+        message = MockMessage(GUY, channel, f"!collect {fossils}")
         await client.on_message(message)
 
         # then list them
-        message = MockMessage(author, channel, "!listfossils")
+        message = MockMessage(GUY, channel, "!listfossils")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"__**70 Fossils remaining for {author}**__\n"
-            ">>> acanthostega, ankylo tail, ankylo torso, anomalocaris, "
-            "archaeopteryx, archelon skull, archelon tail, australopith, brachio "
-            "chest, brachio pelvis, brachio skull, brachio tail, coprolite, "
-            "deinony tail, deinony torso, dimetrodon skull, dimetrodon torso, "
-            "dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo "
-            "skull, diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, "
-            "iguanodon skull, iguanodon tail, iguanodon torso, juramaia, left "
-            "megalo side, left ptera wing, left quetzal wing, mammoth skull, "
-            "mammoth torso, megacero skull, megacero tail, megacero torso, "
-            "myllokunmingia, ophthalmo skull, ophthalmo torso, pachy skull, "
-            "pachy tail, parasaur skull, parasaur tail, parasaur torso, plesio "
-            "body, plesio skull, plesio tail, ptera body, quetzal torso, right "
-            "megalo side, right ptera wing, right quetzal wing, sabertooth skull, "
-            "sabertooth tail, shark-tooth pattern, spino skull, spino tail, "
-            "spino torso, stego skull, stego tail, stego torso, t. rex skull, "
-            "t. rex tail, t. rex torso, tricera skull, tricera tail, tricera "
-            "torso, trilobite"
-        )
+        snap(channel.sent.call_args_list.pop(0))
 
-    async def test_on_message_listfossils_with_name(self, client, lines, channel):
+    async def test_on_message_listfossils_with_name(self, client, lines, channel, snap):
         # first have someone collect some fossils
         fossils = "amber, ammonite ,ankylo skull"
         message = MockMessage(GUY, channel, f"!collect {fossils}")
@@ -1094,26 +1060,7 @@ class TestTurbot:
         # then have someone else list them
         message = MockMessage(BUDDY, channel, f"!listfossils {GUY.name}")
         await client.on_message(message)
-        channel.sent.assert_called_with(
-            f"__**70 Fossils remaining for {GUY}**__\n"
-            ">>> acanthostega, ankylo tail, ankylo torso, anomalocaris, "
-            "archaeopteryx, archelon skull, archelon tail, australopith, brachio "
-            "chest, brachio pelvis, brachio skull, brachio tail, coprolite, "
-            "deinony tail, deinony torso, dimetrodon skull, dimetrodon torso, "
-            "dinosaur track, diplo chest, diplo neck, diplo pelvis, diplo "
-            "skull, diplo tail, diplo tail tip, dunkleosteus, eusthenopteron, "
-            "iguanodon skull, iguanodon tail, iguanodon torso, juramaia, left "
-            "megalo side, left ptera wing, left quetzal wing, mammoth skull, "
-            "mammoth torso, megacero skull, megacero tail, megacero torso, "
-            "myllokunmingia, ophthalmo skull, ophthalmo torso, pachy skull, "
-            "pachy tail, parasaur skull, parasaur tail, parasaur torso, plesio "
-            "body, plesio skull, plesio tail, ptera body, quetzal torso, right "
-            "megalo side, right ptera wing, right quetzal wing, sabertooth skull, "
-            "sabertooth tail, shark-tooth pattern, spino skull, spino tail, "
-            "spino torso, stego skull, stego tail, stego torso, t. rex skull, "
-            "t. rex tail, t. rex torso, tricera skull, tricera tail, tricera "
-            "torso, trilobite"
-        )
+        snap(channel.sent.call_args_list.pop(0))
 
     async def test_on_message_neededfossils(self, client, channel):
         everything = sorted(list(turbot.FOSSILS))
@@ -1376,7 +1323,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!fish sea"))
         await client.on_message(MockMessage(FRIEND, channel, "!fish sea"))
 
-    async def test_on_message_fish_search_query(self, client, channel):
+    async def test_on_message_fish_search_query(self, client, channel, snap):
         author = someone()
 
         # give our author a hemisphere first
@@ -1387,16 +1334,9 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
-            "> **Char** is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) \n"  # noqa: E501
-            "> **Cherry salmon** is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) \n"  # noqa: E501
-            "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
-            "> **Pale chub** is available 9 am - 4 pm at river (sells for 200 bells) \n"  # noqa: E501
-            "> **Ranchu goldfish** is available 9 am - 4 pm at pond (sells for 4500 bells) "  # noqa: E501
-        )
+        snap(calls.pop(0))
 
-    async def test_on_message_fish_search_leaving(self, client, channel):
+    async def test_on_message_fish_search_leaving(self, client, channel, snap):
         author = someone()
 
         # give our author a hemisphere first
@@ -1407,57 +1347,9 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "10000"},
-                {"inline": True, "name": "location", "value": "pier"},
-                {"inline": True, "name": "shadow size", "value": "6"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {
-                    "inline": True,
-                    "name": "during",
-                    "value": "Jan - Apr, Jul - Sep, Nov - Dec",
-                },
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/2f/NH-Icon-bluemarlin.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Blue marlin",
-            "type": "rich",
-        }
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "300"},
-                {"inline": True, "name": "location", "value": "sea"},
-                {"inline": True, "name": "shadow size", "value": "3"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Jan - Apr, Oct - Dec"},
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/c/c6/NH-Icon-dab.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Dab",
-            "type": "rich",
-        }
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "7000"},
-                {"inline": True, "name": "location", "value": "pier"},
-                {"inline": True, "name": "shadow size", "value": "6"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/50/NH-Icon-tuna.png/revision/latest/scale-to-width-down/64?cb=20200401003129"  # noqa: E501
-            },
-            "title": "Tuna",
-            "type": "rich",
-        }
+        snap([call[1]["embed"].to_dict() for call in calls])
 
-    async def test_on_message_fish_search_arriving(self, client, channel):
+    async def test_on_message_fish_search_arriving(self, client, channel, snap):
         author = someone()
 
         # give our author a hemisphere first
@@ -1468,20 +1360,9 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
-            "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_\n"  # noqa: E501
-            "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_\n"  # noqa: E501
-            "> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_\n"  # noqa: E501
-            "> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_\n"  # noqa: E501
-            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
-        )
+        snap(calls.pop(0))
 
-    async def test_on_message_fish(self, client, channel):
+    async def test_on_message_fish(self, client, channel, snap):
         author = someone()
 
         # give our author a hemisphere first
@@ -1494,52 +1375,11 @@ class TestTurbot:
 
         call = calls.pop()
         response = call[0][0]
-        assert response == (
-            "> **Oarfish** is available all day at sea (sells for 9000 bells) \n"  # noqa: E501
-            "> **Olive flounder** is available all day at sea (sells for 800 bells) \n"  # noqa: E501
-            "> **Pale chub** is available 9 am - 4 pm at river (sells for 200 bells) \n"  # noqa: E501
-            "> **Pop-eyed goldfish** is available 9 am - 4 pm at pond (sells for 1300 bells) \n"  # noqa: E501
-            "> **Ranchu goldfish** is available 9 am - 4 pm at pond (sells for 4500 bells) \n"  # noqa: E501
-            "> **Red snapper** is available all day at sea (sells for 3000 bells) \n"  # noqa: E501
-            "> **Sea bass** is available all day at sea (sells for 400 bells) \n"  # noqa: E501
-            "> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_\n"  # noqa: E501
-            "> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_\n"  # noqa: E501
-            "> **Squid** is available all day at sea (sells for 500 bells) \n"  # noqa: E501
-            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Tadpole** is available all day at pond (sells for 100 bells) \n"  # noqa: E501
-            "> **Tuna** is available all day at pier (sells for 7000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
-        )
+        snap(response)
 
         call = calls.pop()
         response = call[0][0]
-        assert response == (
-            "> **Anchovy** is available 4 am - 9 pm at sea (sells for 200 bells) \n"  # noqa: E501
-            "> **Barred knifejaw** is available all day at sea (sells for 5000 bells) \n"  # noqa: E501
-            "> **Barreleye** is available 9 pm - 4 am at sea (sells for 15000 bells) \n"  # noqa: E501
-            "> **Black bass** is available all day at river (sells for 400 bells) \n"  # noqa: E501
-            "> **Blue marlin** is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Bluegill** is available 9 am - 4 pm at river (sells for 180 bells) \n"  # noqa: E501
-            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Carp** is available all day at pond (sells for 300 bells) \n"  # noqa: E501
-            "> **Char** is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) \n"  # noqa: E501
-            "> **Cherry salmon** is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) \n"  # noqa: E501
-            "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
-            "> **Coelacanth** is available all day at sea (sells for 15000 bells) \n"  # noqa: E501
-            "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Crucian carp** is available all day at river (sells for 160 bells) \n"  # noqa: E501
-            "> **Dab** is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Dace** is available 4 pm - 9 am at river (sells for 240 bells) \n"  # noqa: E501
-            "> **Freshwater goby** is available 4 pm - 9 am at river (sells for 400 bells) \n"  # noqa: E501
-            "> **Golden trout** is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) \n"  # noqa: E501
-            "> **Goldfish** is available all day at pond (sells for 1300 bells) \n"  # noqa: E501
-            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_\n"  # noqa: E501
-            "> **Horse mackerel** is available all day at sea (sells for 150 bells) \n"  # noqa: E501
-            "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Koi** is available 4 pm - 9 am at pond (sells for 4000 bells) \n"  # noqa: E501
-            "> **Loach** is available all day at river (sells for 400 bells) \n"  # noqa: E501
-            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_\n"  # noqa: E501
-        )
+        snap(response)
 
     async def test_on_message_timezone_no_params(self, client, lines, channel):
         author = someone()
@@ -1642,7 +1482,9 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!bugs butt"))
         await client.on_message(MockMessage(FRIEND, channel, "!bugs butt"))
 
-    async def test_on_message_bug_search_query_many(self, client, channel, monkeypatch):
+    async def test_on_message_bug_search_query_many(
+        self, client, channel, monkeypatch, snap
+    ):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1654,16 +1496,11 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) "  # noqa: E501
-        )
+        snap(calls.pop(0))
 
-    async def test_on_message_bug_search_query_few(self, client, channel, monkeypatch):
+    async def test_on_message_bug_search_query_few(
+        self, client, channel, monkeypatch, snap
+    ):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1675,48 +1512,9 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "350"},
-                {"inline": True, "name": "location", "value": "on tree stumps"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "the entire year"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-citruslonghornedbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
-            },
-            "title": "Citrus long-horned beetle",
-            "type": "rich",
-        }
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "2400"},
-                {"inline": True, "name": "location", "value": "on tree stumps"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Apr - Aug"},
-                {"inline": True, "name": "alert", "value": "_New this month_"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-jewelbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
-            },
-            "title": "Jewel beetle",
-            "type": "rich",
-        }
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "1500"},
-                {"inline": True, "name": "location", "value": "on the ground"},
-                {"inline": True, "name": "available", "value": "all day"},
-                {"inline": True, "name": "during", "value": "Feb - Oct"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/e/e3/NH-Icon-tigerbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"  # noqa: E501
-            },
-            "title": "Tiger beetle",
-            "type": "rich",
-        }
+        snap([call[1]["embed"].to_dict() for call in calls])
 
-    async def test_on_message_bug_header(self, client, channel, monkeypatch):
+    async def test_on_message_bug_header(self, client, channel, monkeypatch, snap):
         monkeypatch.setattr(random, "randint", lambda l, h: 100)
         author = someone()
 
@@ -1728,19 +1526,11 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "```diff\n"
-            "-Eeek! What wretched things. Alas, I am obliged to respond...\n"
-            "```\n"
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) \n"  # noqa: E501
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) "  # noqa: E501
-        )
+        snap(calls.pop(0))
 
-    async def test_on_message_bug_search_leaving(self, client, channel, monkeypatch):
+    async def test_on_message_bug_search_leaving(
+        self, client, channel, monkeypatch, snap
+    ):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1752,22 +1542,11 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0)[1]["embed"].to_dict() == {
-            "fields": [
-                {"inline": True, "name": "price", "value": "8000"},
-                {"inline": True, "name": "location", "value": "on the ground"},
-                {"inline": True, "name": "available", "value": "7 pm - 4 am"},
-                {"inline": True, "name": "during", "value": "Jan - Apr, Nov - Dec"},
-                {"inline": True, "name": "alert", "value": "**GONE NEXT MONTH!**"},
-            ],
-            "thumbnail": {
-                "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429"  # noqa: E501
-            },
-            "title": "Tarantula",
-            "type": "rich",
-        }
+        snap([call[1]["embed"].to_dict() for call in calls])
 
-    async def test_on_message_bug_search_arriving(self, client, channel, monkeypatch):
+    async def test_on_message_bug_search_arriving(
+        self, client, channel, monkeypatch, snap
+    ):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1779,20 +1558,9 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_\n"  # noqa: E501
-            "> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_\n"  # noqa: E501
-            "> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_\n"  # noqa: E501
-            "> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_\n"  # noqa: E501
-            "> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
-            "> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_"  # noqa: E501
-        )
+        snap(calls.pop(0))
 
-    async def test_on_message_new(self, client, channel, monkeypatch):
+    async def test_on_message_new(self, client, channel, monkeypatch, snap):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1804,32 +1572,10 @@ class TestTurbot:
         await client.on_message(message)
         calls = channel.sent.call_args_list
         assert calls.pop(0) == call(f"Hemisphere preference registered for {author}.")
-        assert calls.pop(0) == call(
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_\n"  # noqa: E501
-            "> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_\n"  # noqa: E501
-            "> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_\n"  # noqa: E501
-            "> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_\n"  # noqa: E501
-            "> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
-            "> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_"  # noqa: E501
-        )
-        assert calls.pop(0) == call(
-            "> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_\n"  # noqa: E501
-            "> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_\n"  # noqa: E501
-            "> **Killifish** is available all day at pond (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_\n"  # noqa: E501
-            "> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_\n"  # noqa: E501
-            "> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_\n"  # noqa: E501
-            "> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_\n"  # noqa: E501
-            "> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_"  # noqa: E501
-        )
+        snap(calls.pop(0))
+        snap(calls.pop(0))
 
-    async def test_on_message_bug(self, client, channel, monkeypatch):
+    async def test_on_message_bug(self, client, channel, monkeypatch, snap):
         monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
 
@@ -1843,49 +1589,11 @@ class TestTurbot:
 
         call = calls.pop()
         response = call[0][0]
-        assert response == (
-            "> **Paper kite butterfly** is available 8 am - 7 pm, flying (sells for 1000 bells) \n"  # noqa: E501
-            "> **Peacock butterfly** is available 4 am - 7 pm, flying by hybrid flowers (sells for 2500 bells) \n"  # noqa: E501
-            "> **Pill bug** is available 11 pm - 4 pm, hitting rocks (sells for 250 bells) \n"  # noqa: E501
-            "> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
-            "> **Snail** is available all day, on rocks and bushes (rain) (sells for 250 bells) \n"  # noqa: E501
-            "> **Spider** is available 7 pm - 8 am, shaking trees (sells for 600 bells) \n"  # noqa: E501
-            "> **Stinkbug** is available all day, on flowers (sells for 120 bells) \n"  # noqa: E501
-            "> **Tarantula** is available 7 pm - 4 am, on the ground (sells for 8000 bells) **GONE NEXT MONTH!**\n"  # noqa: E501
-            "> **Tiger beetle** is available all day, on the ground (sells for 1500 bells) \n"  # noqa: E501
-            "> **Tiger butterfly** is available 4 am - 7 pm, flying (sells for 240 bells) \n"  # noqa: E501
-            "> **Wasp** is available all day, shaking trees (sells for 2500 bells) \n"  # noqa: E501
-            "> **Wharf roach** is available all day, on beach rocks (sells for 200 bells) \n"  # noqa: E501
-            "> **Yellow butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) "  # noqa: E501
-        )
+        snap(response)
 
         call = calls.pop()
         response = call[0][0]
-        assert response == (
-            "> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Ant** is available all day, on rotten food (sells for 80 bells) \n"  # noqa: E501
-            "> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_\n"  # noqa: E501
-            "> **Bagworm** is available all day, shaking trees (sells for 600 bells) \n"  # noqa: E501
-            "> **Centipede** is available 4 pm - 11 pm, hitting rocks (sells for 300 bells) \n"  # noqa: E501
-            "> **Citrus long-horned beetle** is available all day, on tree stumps (sells for 350 bells) \n"  # noqa: E501
-            "> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_\n"  # noqa: E501
-            "> **Common butterfly** is available 4 am - 7 pm, flying (sells for 160 bells) \n"  # noqa: E501
-            "> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_\n"  # noqa: E501
-            "> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_\n"  # noqa: E501
-            "> **Fly** is available all day, on trash items (sells for 60 bells) \n"  # noqa: E501
-            "> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_\n"  # noqa: E501
-            "> **Hermit crab** is available 7 pm - 8 am, beach disguised as shells (sells for 1000 bells) \n"  # noqa: E501
-            "> **Honeybee** is available 8 am - 5 pm, flying (sells for 200 bells) \n"  # noqa: E501
-            "> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_\n"  # noqa: E501
-            "> **Ladybug** is available 8 am - 5 pm, on flowers (sells for 200 bells) \n"  # noqa: E501
-            "> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_\n"  # noqa: E501
-            "> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_\n"  # noqa: E501
-            "> **Man-faced stink bug** is available 7 pm - 8 am, on flowers (sells for 1000 bells) \n"  # noqa: E501
-            "> **Mantis** is available 8 am - 5 pm, on flowers (sells for 430 bells) \n"  # noqa: E501
-            "> **Mole cricket** is available all day, underground (sells for 500 bells) \n"  # noqa: E501
-            "> **Moth** is available 7 pm - 4 am, flying by light (sells for 130 bells) \n"  # noqa: E501
-            "> **Orchid mantis** is available 8 am - 5 pm, on flowers (white) (sells for 2400 bells) \n"  # noqa: E501
-        )
+        snap(response)
 
     async def test_get_graph_bad_user(self, client, channel):
         client.get_graph(channel, PUNK.name, turbot.GRAPHCMD_FILE)

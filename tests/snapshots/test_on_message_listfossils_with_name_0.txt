@@ -1,0 +1,1 @@
+call('Marked the following fossils as collected:\n> amber, ammonite, ankylo skull')

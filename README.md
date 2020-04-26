@@ -82,6 +82,15 @@ python setup.py develop # or `python setup.py install --force` if you have it in
 pytest -k figures --mpl-generate-path=tests/baseline
 ```
 
+### Updating test snapshots
+
+We also use [pytest-snapshot](https://github.com/joseph-roitman/pytest-snapshot) to generate and test against snapshots. To generate new snapshots pass `--snapshot-update` to your `pytest` command. For example, from the root of this repository:
+
+```shell
+python setup.py develop # or `python setup.py install --force` if you have it installed locally
+pytest -k your_test_function --snapshot-update
+```
+
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
 [build-badge]:      https://github.com/theastropath/turbot/workflows/Turbot/badge.svg
