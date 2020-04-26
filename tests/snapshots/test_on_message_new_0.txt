@@ -1,1 +1,10 @@
-call("> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_\n> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_\n> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_\n> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_\n> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_\n> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_\n> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_\n> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_\n> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_\n> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_")
+> **Agrias butterfly** is available 8 am - 5 pm, flying (sells for 3000 bells) _New this month_
+> **Atlas moth** is available 7 pm - 4 am, on trees (sells for 3000 bells) _New this month_
+> **Common bluebottle** is available 4 am - 7 pm, flying (sells for 300 bells) _New this month_
+> **Darner dragonfly** is available 8 am - 5 pm, flying (sells for 230 bells) _New this month_
+> **Flea** is available all day, villager's heads (sells for 70 bells) _New this month_
+> **Giant water bug** is available 7 pm - 8 am, on ponds and rivers (sells for 2000 bells) _New this month_
+> **Jewel beetle** is available all day, on tree stumps (sells for 2400 bells) _New this month_
+> **Long locust** is available 8 am - 7 pm, on the ground (sells for 200 bells) _New this month_
+> **Madagascan sunset moth** is available 8 am - 4 pm, flying (sells for 2500 bells) _New this month_
+> **Rajah brooke's birdwing** is available 8 am - 5 pm, flying (sells for 2500 bells) _New this month_

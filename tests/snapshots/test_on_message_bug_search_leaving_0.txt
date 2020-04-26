@@ -1,1 +1,36 @@
-[{'thumbnail': {'url': 'https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429'}, 'fields': [{'inline': True, 'name': 'price', 'value': '8000'}, {'inline': True, 'name': 'location', 'value': 'on the ground'}, {'inline': True, 'name': 'available', 'value': '7 pm - 4 am'}, {'inline': True, 'name': 'during', 'value': 'Jan - Apr, Nov - Dec'}, {'inline': True, 'name': 'alert', 'value': '**GONE NEXT MONTH!**'}], 'type': 'rich', 'title': 'Tarantula'}]
+[
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "8000"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "on the ground"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "7 pm - 4 am"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Jan - Apr, Nov - Dec"
+            },
+            {
+                "inline": true,
+                "name": "alert",
+                "value": "**GONE NEXT MONTH!**"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/0/0a/NH-Icon-tarantula.png/revision/latest/scale-to-width-down/64?cb=20200401005429"
+        },
+        "title": "Tarantula",
+        "type": "rich"
+    }
+]
