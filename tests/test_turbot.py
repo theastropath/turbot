@@ -249,20 +249,15 @@ def channel():
     return MockChannel("text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
 
 
-snap_counter = 0
-
-
 @pytest.fixture
 def snap(snapshot):
-    global snap_counter
     snapshot.snapshot_dir = Path("tests") / "snapshots"
-    snap_counter = 0
+    snap.counter = 0
 
     def match(obj):
-        global snap_counter
         test = inspect.stack()[1].function
-        snapshot.assert_match(str(obj), f"{test}_{snap_counter}.txt")
-        snap_counter = snap_counter + 1
+        snapshot.assert_match(str(obj), f"{test}_{snap.counter}.txt")
+        snap.counter += 1
 
     return match
 
