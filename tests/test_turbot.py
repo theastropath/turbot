@@ -128,9 +128,10 @@ NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 
 TST_ROOT = dirname(realpath(__file__))
 DAT_ROOT = Path(TST_ROOT) / "data"
-SRC_ROOT = Path(TST_ROOT).parent
+REPO_ROOT = Path(TST_ROOT).parent
+SRC_ROOT = REPO_ROOT / "src"
 
-SRC_DIRS = ["tests", "turbot", "scripts"]
+SRC_DIRS = [REPO_ROOT / "tests", SRC_ROOT / "turbot", REPO_ROOT / "scripts"]
 
 ADMIN_ROLE = MockRole("Turbot Admin")
 PLAYER_ROLE = MockRole("ACNH Player")
@@ -1807,21 +1808,27 @@ class TestFigures:
 
 class TestCodebase:
     def test_flake8(self):
-        """Assures that the Python codebase passes configured Flake8 checks."""
-        chdir(SRC_ROOT)
-        proc = run(["flake8", *SRC_DIRS], capture_output=True)
-        assert proc.returncode == 0, f"Flake8 issues:\n{proc.stdout.decode('utf-8')}"
+        """Checks that the Python codebase passes configured flake8 checks."""
+        chdir(REPO_ROOT)
+        cmd = ["flake8", *SRC_DIRS]
+        print("running:", " ".join(str(part) for part in cmd))
+        proc = run(cmd, capture_output=True)
+        assert proc.returncode == 0, f"flake8 issues:\n{proc.stdout.decode('utf-8')}"
 
     def test_black(self):
-        """Assures that the Python codebase passes configured black checks."""
-        chdir(SRC_ROOT)
-        proc = run(["black", "--check", *SRC_DIRS], capture_output=True)
+        """Checks that the Python codebase passes configured black checks."""
+        chdir(REPO_ROOT)
+        cmd = ["black", "-v", "--check", *SRC_DIRS]
+        print("running:", " ".join(str(part) for part in cmd))
+        proc = run(cmd, capture_output=True)
         assert proc.returncode == 0, f"black issues:\n{proc.stdout.decode('utf-8')}"
 
     def test_isort(self):
-        """Assures that the Python codebase imports are correctly sorted."""
-        chdir(SRC_ROOT)
-        proc = run(["isort", "-df", "-rc", "-c", *SRC_DIRS], capture_output=True)
+        """Checks that the Python codebase imports are correctly sorted."""
+        chdir(REPO_ROOT)
+        cmd = ["isort", "-df", "-rc", "-c", *SRC_DIRS]
+        print("running:", " ".join(str(part) for part in cmd))
+        proc = run(cmd, capture_output=True)
         assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"
 
 

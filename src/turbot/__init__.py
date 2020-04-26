@@ -19,6 +19,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import poetry_version
 import pytz
 from yaml import load
 
@@ -27,15 +28,16 @@ try:
 except ImportError:  # pragma: no cover
     from yaml import Loader
 
+__version__ = poetry_version.extract(source_file=__file__)
+
 matplotlib.use("Agg")
 
 PACKAGE_ROOT = Path(dirname(realpath(__file__)))
 RUNTIME_ROOT = Path(".")
 
 # application configuration files
-CONFIG_DIR = RUNTIME_ROOT / "config"
-DEFAULT_CONFIG_TOKEN = CONFIG_DIR / "token.txt"
-DEFAULT_CONFIG_CHANNELS = CONFIG_DIR / "channels.txt"
+DEFAULT_CONFIG_TOKEN = RUNTIME_ROOT / "token.txt"
+DEFAULT_CONFIG_CHANNELS = RUNTIME_ROOT / "channels.txt"
 
 # static application asset data
 DATA_DIR = PACKAGE_ROOT / "data"
@@ -56,12 +58,6 @@ DEFAULT_DB_USERS = DB_DIR / "users.csv"
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
-
-# ensure application directories exist
-CONFIG_DIR.mkdir(exist_ok=True)
-DATA_DIR.mkdir(exist_ok=True)
-DB_DIR.mkdir(exist_ok=True)
-TMP_DIR.mkdir(exist_ok=True)
 
 with open(STRINGS_DATA_FILE) as f:
     STRINGS = load(f, Loader=Loader)
@@ -1536,6 +1532,10 @@ def main(
     if not auth_channels:
         print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
+
+    # ensure transient application directories exist
+    DB_DIR.mkdir(exist_ok=True)
+    TMP_DIR.mkdir(exist_ok=True)
 
     Turbot(
         token=get_token(bot_token_file),

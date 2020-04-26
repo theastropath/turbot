@@ -12,6 +12,8 @@ jobs:
         python-version: '3.7'
     - name: Install tox
       run: pip install tox
+    - name: Install poetry
+      run: pip install poetry
     - name: Run tox
       run: python -m tox
     - name: Codecov

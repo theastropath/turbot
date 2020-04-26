@@ -1,12 +1,24 @@
 # Contributing
 
-This bot is developed for Python 3.7+ and it is built on top of the [`discord.py`](https://github.com/Rapptz/discord.py) library.
+This bot is developed for Python 3.7 and it is built on top of the [`discord.py`](https://github.com/Rapptz/discord.py) library.
 
-To install development dependencies (which also includes the production dependencies) use: `pip install -r requirements/dev.txt`. This will allow you to run [PyTest](https://docs.pytest.org/en/latest/) tests locally.
+It uses [`poetry`](usage) to manage dependencies. To install development dependencies use: `poetry install`. This will allow you to run [PyTest](https://docs.pytest.org/en/latest/) and the included scripts.
+
+You can install `poetry` with `pip`:
+
+```shell
+pip install poetry
+```
 
 ## Running tests
 
-Run all these tests with [tox](https://tox.readthedocs.io/en/latest/):
+We use [tox](https://tox.readthedocs.io/en/latest/) to manage test execution. It can be installed with `pip`:
+
+```shell
+pip install tox
+```
+
+Then run all tests with:
 
 ```shell
 tox
@@ -20,20 +32,24 @@ tox -- -k fossil
 
 After running the _full test suite_ you can view code coverage reports in the newly created `htmlcov` directory.
 
+```shell
+open htmlcov/index.htmlcov
+```
+
 ## Installing the application
 
-Install in development mode using [setuptools](https://setuptools.readthedocs.io/en/latest/):
+Install in development mode `poetry`:
 
 ```shell
-python setup.py develop
+poetry install
 ```
 
 ## Running the application
 
-Make sure that you have created the required "token.txt" and "channels.txt" files as described above in the usage section. Setuptools will have installed an entry point for you, so run it to get usage help:
+Make sure that you have created the required "token.txt" and "channels.txt" files or else provide them via the command line.
 
 ```shell
-turbot --help
+poetry run turbot --help
 ```
 
 ## Formatting and linting
@@ -44,24 +60,22 @@ Codebase consistency is maintained by the industry standard [black][black]. For 
 tox -- -k codebase
 ```
 
-## Updating fish and bugs data
+## Updating application data
 
-Data on fish and bugs comes directly from [the Animal Crossing fandom page][wiki] and then compiled into a csv file in the package's `data` directory. The scripts to do this are included in the `scripts` directory. Run them to fetch the latest data:
+Data on art, bugs, and fish comes directly from [the Animal Crossing fandom page][wiki] and then compiled into a csv file in the package's `data` directory. The scripts to do this are included in the `scripts` directory. Run them to fetch the latest data:
 
 ```shell
-./scripts/update_bugs_data.py
-./scripts/update_fish_data.py
+poetry run scripts/update_art_data.py
+poetry run scripts/update_bugs_data.py
+poetry run scripts/update_fish_data.py
 ```
-
-Note that you must have development requirements installed to run these scripts.
 
 ## Updating baseline figures
 
 We use [pytest-mpl](https://github.com/matplotlib/pytest-mpl) to verify generated graphs in our test suite. Generating the baseline images is a bit of a process. From the root of this repository do:
 
 ```shell
-python setup.py develop # or `python setup.py install --force` if you have it installed locally
-pytest -k figures --mpl-generate-path=tests/baseline
+poetry run pytest -k figures --mpl-generate-path=tests/baseline
 ```
 
 ## Updating test snapshots
@@ -69,8 +83,7 @@ pytest -k figures --mpl-generate-path=tests/baseline
 We also use [pytest-snapshot](https://github.com/joseph-roitman/pytest-snapshot) to generate and test against snapshots. To generate new snapshots pass `--snapshot-update` to your `pytest` command. For example, from the root of this repository:
 
 ```shell
-python setup.py develop # or `python setup.py install --force` if you have it installed locally
-pytest -k your_test_function --snapshot-update
+poetry run pytest -k your_test_function --snapshot-update
 ```
 
 [black]:            https://github.com/psf/black
