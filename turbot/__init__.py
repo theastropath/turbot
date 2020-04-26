@@ -1071,24 +1071,34 @@ class Turbot(discord.Client):
             items = set(item.strip().lower() for item in " ".join(params).split(","))
             valid = items.intersection(ART["name"])
             invalid = items - valid
-
+            lines = []
+            response = s("art_header") + "\n"
             for art in valid:
                 piece = ART[ART.name == art].iloc[0]
                 if piece["has_fake"]:
-                    response += "> **" + piece["name"].title() + "** can be fake.\n"
-                    response += "> **Description:** " + piece["fake_description"] + "\n"
-                    response += "> **Real Painting:** <" + piece["real_image_url"] + ">\n"
-                    response += (
-                        "> **Fake Painting:** <" + piece["fake_image_url"] + ">\n\n"
+                    lines.append(
+                        s(
+                            "art_fake",
+                            name=piece["name"].title(),
+                            desc=piece["fake_description"],
+                            real_url=piece["real_image_url"],
+                            fake_url=piece["fake_image_url"],
+                        )
                     )
                 else:
-                    response += "> **" + piece["name"].title() + "** is always genuine.\n"
-                    response += (
-                        "> **Real Painting:** <" + piece["real_image_url"] + ">\n\n"
+                    lines.append(
+                        s(
+                            "art_real",
+                            name=piece["name"].title(),
+                            real_url=piece["real_image_url"],
+                        )
                     )
 
+            response += "\n> \n".join(lines)
+
             if invalid:
-                response += str(invalid)
+                response += "\n" + (s("art_invalid", items=", ".join(invalid)))
+
         else:
             response = s("allart", list=", ".join(sorted(ART["name"])))
 
