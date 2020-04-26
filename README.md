@@ -1,3 +1,5 @@
+<img align="right" src="turbot.png" />
+
 # Turbot
 
 [![build][build-badge]][build]
@@ -6,6 +8,8 @@
 [![mit][mit-badge]][mit]
 
 A Discord bot for tracking _Animal Crossing: New Horizons_ turnip prices and fossil collections.
+
+![screenshot](https://user-images.githubusercontent.com/1903876/80298703-f7e8a900-8743-11ea-95a7-23adc4682c1b.png)
 
 ## Usage
 
