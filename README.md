@@ -9,7 +9,7 @@
 
 A Discord bot for tracking _Animal Crossing: New Horizons_ turnip prices and fossil collections.
 
-![screenshot](https://user-images.githubusercontent.com/1903876/80298703-f7e8a900-8743-11ea-95a7-23adc4682c1b.png)
+![screenshot](https://user-images.githubusercontent.com/1903876/80298832-e784fe00-8744-11ea-8c0f-dbbf81bb5fb7.png)
 
 ## Usage
 
