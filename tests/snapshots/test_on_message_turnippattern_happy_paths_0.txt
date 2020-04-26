@@ -1,0 +1,4 @@
+Based on your prices, you will see one of the following patterns this week:
+> **Decreasing**: Prices will continuously fall.
+> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.
+> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.

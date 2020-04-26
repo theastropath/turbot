@@ -1,0 +1,94 @@
+[
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "350"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "on tree stumps"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "the entire year"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/8f/NH-Icon-citruslonghornedbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"
+        },
+        "title": "Citrus long-horned beetle",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "2400"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "on tree stumps"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Apr - Aug"
+            },
+            {
+                "inline": true,
+                "name": "alert",
+                "value": "_New this month_"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/8/82/NH-Icon-jewelbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"
+        },
+        "title": "Jewel beetle",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "1500"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "on the ground"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Feb - Oct"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/e/e3/NH-Icon-tigerbeetle.png/revision/latest/scale-to-width-down/64?cb=20200401005428"
+        },
+        "title": "Tiger beetle",
+        "type": "rich"
+    }
+]
