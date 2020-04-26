@@ -45,11 +45,13 @@ STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
 FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
 FISH_DATA_FILE = DATA_DIR / "fish.csv"
 BUGS_DATA_FILE = DATA_DIR / "bugs.csv"
+ART_DATA_FILE = DATA_DIR / "art.csv"
 
 # persisted user and application data
 DB_DIR = RUNTIME_ROOT / "db"
 DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
 DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
+DEFAULT_DB_ART = DB_DIR / "art.csv"
 DEFAULT_DB_USERS = DB_DIR / "users.csv"
 
 # temporary application files
@@ -69,10 +71,12 @@ with open(STRINGS_DATA_FILE) as f:
 with open(FOSSILS_DATA_FILE) as f:
     FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
 
+
 FISH = pd.read_csv(FISH_DATA_FILE)
 BUGS = pd.read_csv(BUGS_DATA_FILE)
+ART = pd.read_csv(ART_DATA_FILE)
 
-EMBED_LIMIT = 5  # more emebds in a row than this causes issues
+EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
 
 def s(key, **kwargs):
@@ -1055,6 +1059,38 @@ class Turbot(discord.Client):
 
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
+
+    def art_command(self, channel, author, params):
+        """
+        Get info about pieces of art that are available
+        """
+        response = ""
+        if params:
+            items = set(item.strip().lower() for item in " ".join(params).split(","))
+            valid = items.intersection(ART["name"])
+            invalid = items - valid
+
+            for art in valid:
+                piece = ART[ART.name == art].iloc[0]
+                if piece["has_fake"]:
+                    response += "> **" + piece["name"].title() + "** can be fake.\n"
+                    response += "> **Description:** " + piece["fake_description"] + "\n"
+                    response += "> **Real Painting:** <" + piece["real_image_url"] + ">\n"
+                    response += (
+                        "> **Fake Painting:** <" + piece["fake_image_url"] + ">\n\n"
+                    )
+                else:
+                    response += "> **" + piece["name"].title() + "** is always genuine.\n"
+                    response += (
+                        "> **Real Painting:** <" + piece["real_image_url"] + ">\n\n"
+                    )
+
+            if invalid:
+                response += str(invalid)
+        else:
+            response = s("allart", list=", ".join(sorted(ART["name"])))
+
+        return response, None
 
     def _creatures(self, *_, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""
