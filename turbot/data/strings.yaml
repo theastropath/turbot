@@ -15,7 +15,7 @@ art_invalid: |-
   > $items
 art_real: |-
   > **$name** is always genuine.
-  > **Real:** <$real_url>"
+  > **Real:** <$real_url>
 best: '> $name: $price bells at $timestamp'
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
