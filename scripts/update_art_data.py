@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 import csv
+import os
 import re
 from enum import Enum
 from pathlib import Path
-import os
 
 import requests
 from bs4 import BeautifulSoup
