@@ -93,7 +93,7 @@ pytest -k your_test_function --snapshot-update
 
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
-[build-badge]:      https://github.com/theastropath/turbot/workflows/Turbot/badge.svg
+[build-badge]:      https://github.com/theastropath/turbot/workflows/build/badge.svg
 [build]:            https://github.com/theastropath/turbot/actions
 [codecov-badge]:    https://codecov.io/gh/theastropath/turbot/branch/master/graph/badge.svg
 [codecov]:          https://codecov.io/gh/theastropath/turbot
