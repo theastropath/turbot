@@ -4,6 +4,18 @@ allart: |-
 allfossils: |-
   __**All Possible Fossils**__
   >>> $list
+artcount_invalid: '> $name'
+artcount_invalid_header: __**Did not recognize the following names**__
+artcount_no_params: Please provide at least one user name to search for an art count.
+artcount_valid: '> **$name** has $count pieces of art remaining.'
+artcount_valid_header: __**Art Count**__
+artsearch_header: __**Art Search**__
+artsearch_no_params: Please provide the name of a piece of art to lookup users that don't have it.
+artsearch_noneed: No one currently needs this.
+artsearch_row: '> $name needs: $art'
+art_bad: |-
+  Did not recognize the following pieces of art:
+  > $items
 art_fake: |-
   > **$name** can be fake.
   > **Description:** $desc
@@ -46,6 +58,20 @@ collectedfossils: |-
   __**$count Fossils donated by $name**__
   >>> $items
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
+collectart_no_params: Please provide the name of a piece of art to mark as collected.
+collectart_bad: |-
+  Did not recognize the following pieces of art:
+  > $items
+collectart_dupe: |-
+  The following art had already been collected:
+  > $items
+collectart_new: |-
+  Marked the following art as collected:
+  > $items
+collectedart: |-
+  __**$count Pieces of art donated by $name**__
+  >>> $items
+congrats_all_art: '**Congratulations, you''ve collected all the art!**'
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
@@ -71,6 +97,8 @@ history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells at $timestamp'
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
+listart_count: __**$count Pieces of art remaining for $name**__
+listart_remaining: '>>> $items'
 listfossils_count: __**$count Fossils remaining for $name**__
 listfossils_remaining: '>>> $items'
 neededfossils: '> **$name** needs $items'
@@ -106,3 +134,10 @@ uncollect_deleted: |-
   Unmarked the following fossils as collected:
   > $items
 uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
+uncollectart_no_params: Please provide the name of a piece of art to mark as uncollected.
+uncollectart_already: |-
+  The following pieces of art were already marked as not collected:
+  > $items
+uncollectart_deleted: |-
+  Unmarked the following pieces of art as collected:
+  > $items
