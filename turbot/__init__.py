@@ -72,6 +72,8 @@ with open(FOSSILS_DATA_FILE) as f:
 FISH = pd.read_csv(FISH_DATA_FILE)
 BUGS = pd.read_csv(BUGS_DATA_FILE)
 
+EMBED_LIMIT = 5  # more emebds in a row than this causes issues
+
 
 def s(key, **kwargs):
     """Returns a string from data/strings.yaml with subsitutions."""
@@ -1054,78 +1056,17 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
 
-    def fish_command(self, channel, author, params):
-        """
-        Tell you what fish are available now in your hemisphere. | [name|leaving]
-        """
+    def _creatures(self, *_, author, params, kind, source, force_text=False):
+        """The fish and bugs commands are so similar; I factored them out to a helper."""
         hemisphere = self.get_user_hemisphere(author.id)
         if not hemisphere:
-            return s("no_hemisphere"), None
+            return s("no_hemisphere")
 
         now = self.to_usertime(author.id, datetime.now(pytz.utc))
         this_month = now.strftime("%b").lower()
         next_month = (now + timedelta(days=33)).strftime("%b").lower()
         last_month = (now - timedelta(days=33)).strftime("%b").lower()
-        available = FISH[(FISH.hemisphere == hemisphere) & (FISH[this_month] == 1)]
-
-        def details(row):
-            alert = (
-                "**GONE NEXT MONTH!**"
-                if not row[next_month]
-                else "_New this month_"
-                if not row[last_month]
-                else ""
-            )
-            months = ", ".join(list(humanize_months(row)))
-            return {
-                **row,
-                "name": row["name"].capitalize(),
-                "months": months,
-                "alert": alert,
-            }
-
-        if params:
-            search = " ".join(params)
-            if search == "leaving":
-                found = available[available[next_month] == 0]
-            else:
-                found = available[available.name.str.contains(search)]
-
-            if found.empty:
-                return s("fish_none_found", search=search), None
-            else:
-                response = []
-                rows = [row for _, row in found.iterrows()]
-                for row in sorted(rows, key=lambda r: r["name"]):
-                    info = details(row)
-                    embed = discord.Embed(title=info["name"])
-                    embed.set_thumbnail(url=info["image"])
-                    embed.add_field(name="price", value=info["price"])
-                    embed.add_field(name="location", value=info["location"])
-                    embed.add_field(name="shadow size", value=info["shadow"])
-                    embed.add_field(name="available", value=info["time"])
-                    embed.add_field(name="during", value=info["months"])
-                    if info["alert"]:
-                        embed.add_field(name="alert", value=info["alert"])
-                    response.append(embed)
-                return response, None
-
-        lines = [s("fish", **details(row)) for _, row in available.iterrows()]
-        return "\n".join(sorted(lines)), None
-
-    def bugs_command(self, channel, author, params):
-        """
-        Tell you what bugs are available now in your hemisphere. | [name|leaving]
-        """
-        hemisphere = self.get_user_hemisphere(author.id)
-        if not hemisphere:
-            return s("no_hemisphere"), None
-
-        now = self.to_usertime(author.id, datetime.now(pytz.utc))
-        this_month = now.strftime("%b").lower()
-        next_month = (now + timedelta(days=33)).strftime("%b").lower()
-        last_month = (now - timedelta(days=33)).strftime("%b").lower()
-        available = BUGS[(BUGS.hemisphere == hemisphere) & (BUGS[this_month] == 1)]
+        available = source[(source.hemisphere == hemisphere) & (source[this_month] == 1)]
 
         def details(row):
             alert = (
@@ -1144,6 +1085,8 @@ class Turbot(discord.Client):
             }
 
         def add_header(lines):
+            if kind != "bugs":
+                return lines
             if random.randint(0, 100) > 70:
                 lines.insert(0, s("bugs_header"))
             return lines
@@ -1152,10 +1095,15 @@ class Turbot(discord.Client):
             search = " ".join(params)
             if search == "leaving":
                 found = available[available[next_month] == 0]
+            elif search == "arriving":
+                found = available[available[last_month] == 0]
             else:
                 found = available[available.name.str.contains(search)]
+
             if found.empty:
-                return s("bugs_none_found", search=search), None
+                return s(f"{kind}_none_found", search=search)
+            elif force_text or len(found) > EMBED_LIMIT:
+                available = found  # fallback to the less detailed, text only, response
             else:
                 response = []
                 rows = [row for _, row in found.iterrows()]
@@ -1165,15 +1113,61 @@ class Turbot(discord.Client):
                     embed.set_thumbnail(url=info["image"])
                     embed.add_field(name="price", value=info["price"])
                     embed.add_field(name="location", value=info["location"])
+                    if "shadow" in info:
+                        embed.add_field(name="shadow size", value=info["shadow"])
                     embed.add_field(name="available", value=info["time"])
                     embed.add_field(name="during", value=info["months"])
                     if info["alert"]:
                         embed.add_field(name="alert", value=info["alert"])
                     response.append(embed)
-                return add_header(response), None
+                return add_header(response)
 
-        lines = sorted([s("bugs", **details(row)) for _, row in available.iterrows()])
-        return "\n".join(add_header(lines)), None
+        lines = [s(kind, **details(row)) for _, row in available.iterrows()]
+        return "\n".join(add_header(sorted(lines)))
+
+    def fish_command(self, channel, author, params):
+        """
+        Tells you what fish are available now in your hemisphere.
+        | [name|leaving|arriving]
+        """
+        return (
+            self._creatures(author=author, params=params, kind="fish", source=FISH),
+            None,
+        )
+
+    def bugs_command(self, channel, author, params):
+        """
+        Tells you what bugs are available now in your hemisphere.
+        | [name|leaving|arriving]
+        """
+        return (
+            self._creatures(author=author, params=params, kind="bugs", source=BUGS),
+            None,
+        )
+
+    def new_command(self, channel, author, params):
+        """
+        Tells you what new things available in your hemisphere right now.
+        """
+        return (
+            [
+                self._creatures(
+                    author=author,
+                    params=["arriving"],
+                    kind="bugs",
+                    source=BUGS,
+                    force_text=True,
+                ),
+                self._creatures(
+                    author=author,
+                    params=["arriving"],
+                    kind="fish",
+                    source=FISH,
+                    force_text=True,
+                ),
+            ],
+            None,
+        )
 
 
 def get_token(token_file):  # pragma: no cover
