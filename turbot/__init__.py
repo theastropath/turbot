@@ -43,11 +43,13 @@ STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
 FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
 FISH_DATA_FILE = DATA_DIR / "fish.csv"
 BUGS_DATA_FILE = DATA_DIR / "bugs.csv"
+ART_DATA_FILE = DATA_DIR / "art.csv"
 
 # persisted user and application data
 DB_DIR = RUNTIME_ROOT / "db"
 DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
 DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
+DEFAULT_DB_ART = DB_DIR / "art.csv"
 DEFAULT_DB_USERS = DB_DIR / "users.csv"
 
 # temporary application files
@@ -67,10 +69,12 @@ with open(STRINGS_DATA_FILE) as f:
 with open(FOSSILS_DATA_FILE) as f:
     FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
 
+
 FISH = pd.read_csv(FISH_DATA_FILE)
 BUGS = pd.read_csv(BUGS_DATA_FILE)
+ART = pd.read_csv(ART_DATA_FILE)
 
-EMBED_LIMIT = 5  # more emebds in a row than this causes issues
+EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
 
 def s(key, **kwargs):
@@ -1057,6 +1061,50 @@ class Turbot(discord.Client):
 
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
+
+    def art_command(self, channel, author, params):
+        """
+        Get info about pieces of art that are available
+        """
+        response = ""
+        if params:
+            items = set(item.strip().lower() for item in " ".join(params).split(","))
+            validset = items.intersection(ART["name"])
+            invalidset = items - validset
+            valid = sorted(list(validset))
+            invalid = sorted(list(invalidset))
+            lines = []
+            response = s("art_header") + "\n"
+            for art in valid:
+                piece = ART[ART.name == art].iloc[0]
+                if piece["has_fake"]:
+                    lines.append(
+                        s(
+                            "art_fake",
+                            name=piece["name"].title(),
+                            desc=piece["fake_description"],
+                            real_url=piece["real_image_url"],
+                            fake_url=piece["fake_image_url"],
+                        )
+                    )
+                else:
+                    lines.append(
+                        s(
+                            "art_real",
+                            name=piece["name"].title(),
+                            real_url=piece["real_image_url"],
+                        )
+                    )
+
+            response += "\n> \n".join(lines)
+
+            if invalid:
+                response += "\n" + (s("art_invalid", items=", ".join(invalid)))
+
+        else:
+            response = s("allart", list=", ".join(sorted(ART["name"])))
+
+        return response, None
 
     def _creatures(self, *_, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""

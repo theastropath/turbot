@@ -1,0 +1,7 @@
+__**Art Search Results**__
+> **Academic Painting** can be fake.
+> **Description:** The forged painting has a coffee stain on the top right whereas the genuine does not.
+> **Real:** <https://vignette.wikia.nocookie.net/animalcrossing/images/c/ce/Animal-crossing-new-horizons-guide-redd-academic-painting-texture-real.png/revision/latest>
+> **Fake:** <https://vignette.wikia.nocookie.net/animalcrossing/images/e/ec/Animal-crossing-new-horizons-guide-redd-academic-painting-texture-fake.png/revision/latest>
+Did not recognize the following pieces of art:
+> asdf

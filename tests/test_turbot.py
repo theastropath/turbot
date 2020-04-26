@@ -1360,6 +1360,22 @@ class TestTurbot:
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
 
+    async def test_on_message_art_fulllist(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!art"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_art_correctnames(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(someone(), channel, "!art amazing painting, proper painting",)
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_art_invalidnames(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(someone(), channel, "!art academic painting, asdf",)
+        )
+        snap(channel.last_sent_response)
+
     async def test_get_graph_bad_user(self, client, channel):
         client.get_graph(channel, PUNK.name, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
