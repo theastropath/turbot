@@ -25,21 +25,27 @@ Then you must configure two things:
 1. Your Discord bot token.
 2. The list of channels you want `turbot` to monitor.
 
-To provide your Discord bot token either set an environment variable named `TURBOT_TOKEN` to the token or paste it into a file named `token.txt`.
+To provide your Discord bot token either set an environment variable named
+`TURBOT_TOKEN` to the token or paste it into a file named `token.txt`.
 
-For the list of channels you can provide channel names on the command line using any number of `--channel "name"` options. Alternatively you can create a file named `channels.txt` where each line of the file is a channel name.
+For the list of channels you can provide channel names on the command line using
+any number of `--channel "name"` options. Alternatively you can create a file
+named `channels.txt` where each line of the file is a channel name.
 
 More usage help can be found by running `turbot --help`.
 
 ## 📱 Using the bot
 
-Once you've connected the bot to your server, you can interact with it over Discord via the following commands in any of the authorized channels.
+Once you've connected the bot to your server, you can interact with it over
+Discord via the following commands in any of the authorized channels.
 
 - `!help` - Provides detailed help about all of the following commands.
 
 ### 🤔 User Preferences
 
-These commands allow users to set their preferences. These preferences are used to make other commands more relevant, for example by converting times to the user's preferred timezone.
+These commands allow users to set their preferences. These preferences are used
+to make other commands more relevant, for example by converting times to the
+user's preferred timezone.
 
 - `!hemisphere`
 - `!timezone`
@@ -62,7 +68,9 @@ These commands help users buy low and sell high in the stalk market.
 
 ### 🦴 Fossils
 
-When a community of users tracks fossils and trades needed fossils between each other, everyone finishes collecting all the available fossils in the game so much more quickly than they would on their own.
+When a community of users tracks fossils and trades needed fossils between each
+other, everyone finishes collecting all the available fossils in the game so
+much more quickly than they would on their own.
 
 - `!allfossils`
 - `!collect`
@@ -101,6 +109,6 @@ Helps users tell fake art from real art and tracks your collection.
 [lexicalunit]:      http://github.com/lexicalunit
 [mit-badge]:        https://img.shields.io/badge/License-MIT-yellow.svg
 [mit]:              https://opensource.org/licenses/MIT
-[python-badge]:     https://img.shields.io/badge/python-3.7-blue.svg
+[python-badge]:     https://img.shields.io/badge/python-3.7+-blue.svg
 [python]:           https://www.python.org/
 [theastropath]:     https://github.com/theastropath
