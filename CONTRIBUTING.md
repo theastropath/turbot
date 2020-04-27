@@ -60,7 +60,7 @@ Now install [`tox-pyenv`](https://pypi.org/project/tox-pyenv/) so that `tox` can
 automatically find your environments:
 
 ```shell
-pip isntall tox-pyenv
+pip install tox-pyenv
 ```
 
 Now let's create the python environments you'll need. The following commands
