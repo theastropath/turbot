@@ -187,7 +187,14 @@ class Turbot(discord.Client):
     """Discord turnip bot"""
 
     def __init__(
-        self, token, channels, prices_file, fossils_file, users_file, log_level=None
+        self,
+        token,
+        channels,
+        prices_file,
+        art_file,
+        fossils_file,
+        users_file,
+        log_level=None,
     ):
         if log_level:  # pragma: no cover
             logging.basicConfig(level=log_level)
@@ -195,10 +202,12 @@ class Turbot(discord.Client):
         self.token = token
         self.channels = channels
         self.prices_file = prices_file
+        self.art_file = art_file
         self.fossils_file = fossils_file
         self.users_file = users_file
         self.base_prophet_url = "https://turnipprophet.io/?prices="  # TODO: configurable?
         self._prices_data = None  # do not use directly, load it from load_prices()
+        self._art_data = None  # do not use directly, load it from load_art()
         self._fossils_data = None  # do not use directly, load it from load_fossils()
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
@@ -257,6 +266,20 @@ class Turbot(discord.Client):
                     columns=["author", "hemisphere", "timezone"]
                 )
         return self._users_data
+
+    def save_art(self, data):
+        """Saves the given art data to csv file."""
+        data.to_csv(self.art_file, index=False)  # persist to disk
+        self._art_data = data  # in-memory optimization
+
+    def load_art(self):
+        """Returns a DataFrame of art data or creates an empty one."""
+        if self._art_data is None:
+            try:
+                self._art_data = pd.read_csv(self.art_file)
+            except FileNotFoundError:
+                self._art_data = pd.DataFrame(columns=["author", "name"])
+        return self._art_data
 
     def save_fossils(self, data):
         """Saves the given fossils data to csv file."""
@@ -1062,9 +1085,214 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
 
+    def collectart_command(self, channel, author, params):
+        """
+        Mark pieces of art as donated to your museum.  The names must match the
+        in-game item name, and more than one can be provided if separated by
+        commas. | <list of art pieces>
+        """
+        if not params:
+            return s("collectart_no_params"), None
+
+        art = self.load_art()
+        yourart = art[art.author == author.id]
+
+        items = set(item.strip().lower() for item in " ".join(params).split(","))
+        validset = items.intersection(ART["name"])
+        invalidset = items - validset
+        valid = sorted(list(validset))
+        invalid = sorted(list(invalidset))
+
+        dupes = yourart.loc[yourart.name.isin(valid)].name.values.tolist()
+        new_names = list(set(valid) - set(dupes))
+        new_data = [[author.id, name] for name in new_names]
+        new_art = pd.DataFrame(columns=art.columns, data=new_data)
+        art = art.append(new_art, ignore_index=True)
+        yourart = art[art.author == author.id]  # re-fetch for congrats
+
+        self.save_art(art)
+
+        lines = []
+        if new_names:
+            lines.append(s("collectart_new", items=", ".join(sorted(new_names))))
+        if dupes:
+            lines.append(s("collectart_dupe", items=", ".join(sorted(dupes))))
+        if invalid:
+            lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
+        if len(ART) == len(yourart.index):
+            lines.append(s("congrats_all_art"))
+        return "\n".join(lines), None
+
+    def uncollectart_command(self, channel, author, params):
+        """
+        Unmark pieces of art as donated to your museum.  The names must match the
+        in-game item name, and more than one can be provided if separated by
+        commas. | <list of art pieces>
+        """
+        if not params:
+            return s("uncollectart_no_params"), None
+
+        art = self.load_art()
+        yourart = art[art.author == author.id]
+
+        items = set(item.strip().lower() for item in " ".join(params).split(","))
+        validset = items.intersection(ART["name"])
+        invalidset = items - validset
+        valid = sorted(list(validset))
+        invalid = sorted(list(invalidset))
+
+        previously_collected = yourart.loc[yourart.name.isin(valid)]
+        deleted = set(previously_collected.name.values.tolist())
+        didnt_have = validset - deleted
+        art = art.drop(previously_collected.index)
+        self.save_art(art)
+
+        lines = []
+        if deleted:
+            lines.append(s("uncollectart_deleted", items=", ".join(sorted(deleted))))
+        if didnt_have:
+            lines.append(s("uncollectart_already", items=", ".join(sorted(didnt_have))))
+        if invalid:
+            lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
+        return "\n".join(lines), None
+
+    def listart_command(self, channel, author, params):
+        """
+        Lists all art that you still need to donate. If a user is provided, it gives
+        the same information for that user instead. | [user]
+        """
+        target = author.id if not params else params[0]
+        target_name = discord_user_name(channel, target)
+        target_id = discord_user_id(channel, target_name)
+        if not target_name or not target_id:
+            return s("cant_find_user", name=target), None
+
+        art = self.load_art()
+        yours = art[art.author == target_id]
+        collected = set(yours.name.unique())
+        allnames = set(ART.name.unique())
+        remaining = allnames - collected
+
+        lines = []
+        if remaining:
+            lines.append(s("listart_count", count=len(remaining), name=target_name))
+            lines.append(s("listart_remaining", items=", ".join(sorted(remaining))))
+        else:
+            lines.append(s("congrats_all_art"))
+        return "\n".join(lines), None
+
+    def collectedart_command(self, channel, author, params):
+        """
+        Lists all art that you have donated. If a user is provided, it gives
+        the same information for that user instead. | [user]
+        """
+        target = author.id if not params else params[0]
+        target_name = discord_user_name(channel, target)
+        target_id = discord_user_id(channel, target_name)
+        if not target_name or not target_id:
+            return s("cant_find_user", name=target), None
+
+        art = self.load_art()
+        yours = art[art.author == target_id]
+        collected = set(yours.name.unique())
+        return (
+            s(
+                "collectedart",
+                name=target_name,
+                count=len(collected),
+                items=", ".join(sorted(collected)),
+            ),
+            None,
+        )
+
+    def artcount_command(self, channel, author, params):
+        """
+        Provides a count of the number of pieces of art remaining for the comma-separated
+        list of users. | <list of users>
+        """
+        if not params:
+            return s("artcount_no_params"), None
+
+        users = set(item.strip().lower() for item in " ".join(params).split(","))
+
+        valid = []
+        invalid = []
+        for user in users:
+            user_name = discord_user_name(channel, user)
+            user_id = discord_user_id(channel, user_name)
+            if user_name and user_id:
+                valid.append((user_name, user_id))
+            else:
+                invalid.append(user)
+
+        lines = []
+        if valid:
+            lines.append(s("artcount_valid_header"))
+            art = self.load_art()
+            for user_name, user_id in sorted(valid):
+                yours = art[art.author == user_id]
+                collected = set(yours.name.unique())
+                allnames = set(ART.name.unique())
+                remaining = allnames - collected
+                lines.append(s("artcount_valid", name=user_name, count=len(remaining)))
+        if invalid:
+            lines.append(s("artcount_invalid_header"))
+            for user in invalid:
+                lines.append(s("artcount_invalid", name=user))
+        return "\n".join(lines), None
+
+    def artsearch_command(self, channel, author, params):
+        """
+        Searches all users to see who needs the listed pieces of art. The names must
+        match the in-game item name, and more than one can be provided if separated
+        by commas | <list of art>
+        """
+        if not params:
+            return s("artsearch_no_params"), None
+
+        items = set(item.strip().lower() for item in " ".join(params).split(","))
+        validset = items.intersection(ART["name"])
+        invalidset = items - validset
+        valid = sorted(list(validset))
+        invalid = sorted(list(invalidset))
+
+        art = self.load_art()
+        users = art.author.unique()
+        results = defaultdict(list)
+        for artpiece in valid:
+            havers = art[art.name == artpiece].author.unique()
+            needers = np.setdiff1d(users, havers).tolist()
+            for needer in needers:
+                name = discord_user_from_id(channel, needer)
+                results[name].append(artpiece)
+
+        def add_header(lines):
+            lines.insert(0, s("artsearch_header"))
+            return lines
+
+        if not results and not invalid:
+            return s("artsearch_noneed"), None
+
+        if not results and invalid:
+            lines = []
+            if valid:
+                lines.append(
+                    s("artsearch_row", name="No one", art=", ".join(sorted(valid)))
+                )
+            lines.append(s("art_bad", items=", ".join(sorted(invalid))))
+            return "\n".join(add_header(sorted(lines))), None
+
+        lines = []
+        for name, needed in results.items():
+            need_list = art = ", ".join(sorted(needed))
+            lines.append(s("artsearch_row", name=name, art=need_list))
+        if invalid:
+            lines.append(s("art_bad", items=", ".join(sorted(invalid))))
+        return "\n".join(add_header(sorted(lines))), None
+
     def art_command(self, channel, author, params):
         """
-        Get info about pieces of art that are available
+        Get info about pieces of art that are available | [List of art pieces]
         """
         response = ""
         if params:
@@ -1279,7 +1507,10 @@ def get_channels(channels_file):  # pragma: no cover
     help="read price data from this file",
 )
 @click.option(
-    "-p",
+    "-a", "--art-file", default=DEFAULT_DB_ART, help="read art data from this file",
+)
+@click.option(
+    "-f",
     "--fossils-file",
     default=DEFAULT_DB_FOSSILS,
     help="read fossil data from this file",
@@ -1297,6 +1528,7 @@ def main(
     channel,
     auth_channels_file,
     prices_file,
+    art_file,
     fossils_file,
     users_file,
 ):  # pragma: no cover
@@ -1309,6 +1541,7 @@ def main(
         token=get_token(bot_token_file),
         channels=auth_channels,
         prices_file=prices_file,
+        art_file=art_file,
         fossils_file=fossils_file,
         users_file=users_file,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
