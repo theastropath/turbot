@@ -14,6 +14,7 @@ from string import Template
 
 import click
 import discord
+import dunamai as _dunamai
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -21,8 +22,6 @@ import numpy as np
 import pandas as pd
 import pytz
 from yaml import load
-
-import dunamai as _dunamai
 
 try:
     from yaml import CLoader as Loader
@@ -1520,6 +1519,7 @@ def get_channels(channels_file):  # pragma: no cover
     default=DEFAULT_DB_USERS,
     help="read users preferences data from this file",
 )
+@click.version_option(version=__version__)
 def main(
     log_level,
     verbose,
