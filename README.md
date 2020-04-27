@@ -1,4 +1,4 @@
-<img align="right" src="turbot.png" />
+<img align="right" src="https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png" />
 
 # Turbot
 
