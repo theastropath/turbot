@@ -86,5 +86,26 @@ We also use [pytest-snapshot](https://github.com/joseph-roitman/pytest-snapshot)
 poetry run pytest -k your_test_function --snapshot-update
 ```
 
+## Release process
+
+To release a new version of `turbot`, use `poetry`:
+
+```shell
+poetry version [major|minor|patch]
+git commit -am "Release vM.M.P"
+git push
+poetry publish
+```
+
+You can get the `M.M.P` version numbers from `pyproject.toml` after you've run the `poetry version` command. On a *NIX shell you could also get automatically it like so:
+
+```shell
+cat pyproject.toml | grep "^version" | cut -d= -f2 | sed 's/"//g;s/ //g;s/^/v/;'
+```
+
+When you use the `poetry publish` command you will be prompted for your [PyPI](https://pypi.org/) credentials.
+
+After publishing you can view the package at https://pypi.org/project/turbot/ to see that everything looks good.
+
 [black]:            https://github.com/psf/black
 [wiki]:             https://animalcrossing.fandom.com/
