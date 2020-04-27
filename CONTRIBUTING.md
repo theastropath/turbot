@@ -38,7 +38,7 @@ open htmlcov/index.htmlcov
 
 ## Installing the application
 
-Install in development mode `poetry`:
+Install in development mode via `poetry`:
 
 ```shell
 poetry install
