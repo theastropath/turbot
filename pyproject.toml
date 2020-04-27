@@ -1,15 +1,75 @@
 [tool.black]
 line-length = 90
-target-version = ['py37']
 include = '\.pyi?$'
 
 [tool.isort]
-multi_line_output=3
-include_trailing_comma=true
-force_grid_wrap=0
-use_parentheses=true
-line_length=90
-ensure_newline_before_comments=true
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 90
+ensure_newline_before_comments = true
 
 [tool.pylint]
 max-line-length = 90
+
+[tool.poetry]
+name = 'turbot'
+version = "2.2.1"
+license = 'MIT'
+authors = [
+    'TheAstropath <theastropath@gmail.com>',
+    'lexicalunit <lexicalunit@lexicalunit.com>'
+]
+readme = 'README.md'
+description = 'Provides a Discord client and utilities for everything Animal Crossing: New Horizons.'
+keywords=['discord', 'turnip', 'bot', 'animal crossing', 'new horizons']
+repository = 'https://github.com/theastropath/turbot'
+homepage = 'https://github.com/theastropath/turbot'
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Communications :: Chat",
+    "Topic :: Games/Entertainment :: Simulation",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+]
+packages = [
+    { include = "turbot", from = "src" },
+]
+
+[tool.poetry.dependencies]
+python = '^3.7'
+click = "^7.1.1"
+discord-py = "^1.3.3"
+matplotlib = "^3.2.1"
+pandas = "^1.0.3"
+numpy = "^1.18.3"
+pytz = "*"
+pyyaml = "*"
+dunamai = "^1.1.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.1"
+callee = "^0.3.1"
+requests = "^2.23.0"
+beautifulsoup4 = "^4.9.0"
+black = "^19.10b0"
+flake8 = "^3.7.9"
+pytest-freezegun = "^0.4.1"
+pytest-asyncio = "^0.11.0"
+pytest-mock = "^3.1.0"
+pytest-mpl = "^0.11"
+pytest-snapshot = "^0.3.0"
+tox = "^3.14.6"
+lxml = "^4.5.0"
+isort = "^4.3.21"
+coverage = "^5.1"
+
+[tool.poetry.scripts]
+turbot = 'turbot:main'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

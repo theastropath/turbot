@@ -1,16 +1,12 @@
 ########################################################################
 # turbot
 ########################################################################
-.vscode
-
-# transient application files
-/config
+/.python-version
+/coverage
 /db
 /tmp
-
-# 2.0 data files
-/prices.csv
-/token.txt
+channels.txt
+token.txt
 
 ########################################################################
 # https://github.com/github/gitignore/blob/master/Global/Windows.gitignore

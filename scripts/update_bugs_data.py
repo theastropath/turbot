@@ -52,7 +52,7 @@ def ingest(writer, hemisphere):
             writer.writerow(corrected)
 
 
-with open(Path("turbot") / "data" / "bugs.csv", "w", newline="") as out:
+with open(Path("src") / "turbot" / "data" / "bugs.csv", "w", newline="") as out:
     writer = csv.writer(out)
     writer.writerow(
         [
