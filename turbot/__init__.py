@@ -187,7 +187,14 @@ class Turbot(discord.Client):
     """Discord turnip bot"""
 
     def __init__(
-        self, token, channels, prices_file, art_file, fossils_file, users_file, log_level=None
+        self,
+        token,
+        channels,
+        prices_file,
+        art_file,
+        fossils_file,
+        users_file,
+        log_level=None,
     ):
         if log_level:  # pragma: no cover
             logging.basicConfig(level=log_level)
@@ -1086,7 +1093,7 @@ class Turbot(discord.Client):
         """
         if not params:
             return s("collectart_no_params"), None
-        
+
         art = self.load_art()
         yourart = art[art.author == author.id]
 
@@ -1101,10 +1108,10 @@ class Turbot(discord.Client):
         new_data = [[author.id, name] for name in new_names]
         new_art = pd.DataFrame(columns=art.columns, data=new_data)
         art = art.append(new_art, ignore_index=True)
-        yourart = art[art.author == author.id] #re-fetch for congrats
+        yourart = art[art.author == author.id]  # re-fetch for congrats
 
         self.save_art(art)
-        
+
         lines = []
         if new_names:
             lines.append(s("collectart_new", items=", ".join(sorted(new_names))))
@@ -1112,10 +1119,10 @@ class Turbot(discord.Client):
             lines.append(s("collectart_dupe", items=", ".join(sorted(dupes))))
         if invalid:
             lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
-        if len(FOSSILS) == len(yourart.index):
+        if len(ART) == len(yourart.index):
             lines.append(s("congrats_all_art"))
         return "\n".join(lines), None
-    
+
     def uncollectart_command(self, channel, author, params):
         """
         Unmark pieces of art as donated to your museum.  The names must match the
@@ -1124,7 +1131,7 @@ class Turbot(discord.Client):
         """
         if not params:
             return s("uncollectart_no_params"), None
-        
+
         art = self.load_art()
         yourart = art[art.author == author.id]
 
@@ -1149,7 +1156,6 @@ class Turbot(discord.Client):
             lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
         return "\n".join(lines), None
 
-
     def listart_command(self, channel, author, params):
         """
         Lists all art that you still need to donate. If a user is provided, it gives
@@ -1166,7 +1172,7 @@ class Turbot(discord.Client):
         collected = set(yours.name.unique())
         allnames = set(ART.name.unique())
         remaining = allnames - collected
-        
+
         lines = []
         if remaining:
             lines.append(s("listart_count", count=len(remaining), name=target_name))
@@ -1174,7 +1180,7 @@ class Turbot(discord.Client):
         else:
             lines.append(s("congrats_all_art"))
         return "\n".join(lines), None
-    
+
     def collectedart_command(self, channel, author, params):
         """
         Lists all art that you have donated. If a user is provided, it gives
@@ -1198,7 +1204,7 @@ class Turbot(discord.Client):
             ),
             None,
         )
-    
+
     def artcount_command(self, channel, author, params):
         """
         Provides a count of the number of pieces of art remaining for the comma-separated
@@ -1234,7 +1240,7 @@ class Turbot(discord.Client):
             for user in invalid:
                 lines.append(s("artcount_invalid", name=user))
         return "\n".join(lines), None
-        
+
     def artsearch_command(self, channel, author, params):
         """
         Searches all users to see who needs the listed pieces of art. The names must
@@ -1271,7 +1277,7 @@ class Turbot(discord.Client):
             lines = []
             if valid:
                 lines.append(
-                    s("artsearch_row", name="No one", fossils=", ".join(sorted(valid)))
+                    s("artsearch_row", name="No one", art=", ".join(sorted(valid)))
                 )
             lines.append(s("art_bad", items=", ".join(sorted(invalid))))
             return "\n".join(add_header(sorted(lines))), None
@@ -1501,10 +1507,7 @@ def get_channels(channels_file):  # pragma: no cover
     help="read price data from this file",
 )
 @click.option(
-    "-a",
-    "--art-file",
-    default=DEFAULT_DB_ART,
-    help="read art data from this file",
+    "-a", "--art-file", default=DEFAULT_DB_ART, help="read art data from this file",
 )
 @click.option(
     "-f",

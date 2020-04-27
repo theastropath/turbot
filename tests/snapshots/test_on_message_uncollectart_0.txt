@@ -1,0 +1,6 @@
+Unmarked the following pieces of art as collected:
+> academic painting, great statue
+The following pieces of art were already marked as not collected:
+> ancient statue
+Did not recognize the following pieces of art:
+> anime waifu

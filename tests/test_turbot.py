@@ -206,6 +206,7 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
         token=CLIENT_TOKEN,
         channels=[AUTHORIZED_CHANNEL],
         prices_file=tmp_path / "prices.csv",
+        art_file=tmp_path / "art.csv",
         fossils_file=tmp_path / "fossils.csv",
         users_file=tmp_path / "users.csv",
     )
@@ -806,6 +807,253 @@ class TestTurbot:
             f"> {rest_str}\n"
             "**Congratulations, you've collected all fossils!**"
         )
+
+    async def test_on_message_uncollectart_no_list(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!uncollectart"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_uncollectart_with_only_bad(self, client, channel, snap):
+        art = "anime waifu, wall scroll"
+        await client.on_message(MockMessage(someone(), channel, f"!uncollectart {art}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_uncollectart(self, client, lines, channel, snap):
+        # first collect some fossils
+        author = someone()
+        art = "great statue, sinking painting ,academic painting"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+
+        # then delete some of them
+        art = "great statue, anime waifu, ancient statue, academic painting"
+        await client.on_message(MockMessage(author, channel, f"!uncollectart {art}"))
+        snap(channel.last_sent_response)
+
+        with open(client.art_file) as f:
+            assert f.readlines() == ["author,name\n", f"{author.id},sinking painting\n"]
+
+        # and delete one more
+        await client.on_message(
+            MockMessage(author, channel, f"!uncollectart sinking painting")
+        )
+        snap(channel.last_sent_response)
+
+        with open(client.art_file) as f:
+            assert f.readlines() == ["author,name\n"]
+
+    async def test_on_message_artsearch_no_list(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!artsearch"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artsearch_no_need(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(
+                GUY,
+                channel,
+                "!collectart sinking painting, great statue, wistful painting",
+            )
+        )
+
+        await client.on_message(
+            MockMessage(PUNK, channel, "!artsearch sinking painting, great statue")
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artsearch_no_need_with_bad(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(
+                GUY,
+                channel,
+                "!collectart sinking painting, great statue, wistful painting",
+            )
+        )
+
+        await client.on_message(
+            MockMessage(
+                PUNK, channel, "!artsearch sinking painting, great statue, anime waifu"
+            )
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artsearch(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collectart sinking painting")
+        )
+        await client.on_message(
+            MockMessage(GUY, channel, "!collectart sinking painting, great statue")
+        )
+
+        query = "sinking painting, great statue, wistful painting"
+        await client.on_message(MockMessage(PUNK, channel, f"!artsearch {query}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artsearch_with_bad(self, client, channel, snap):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collectart sinking painting")
+        )
+        await client.on_message(
+            MockMessage(GUY, channel, "!collectart sinking painting, great statue")
+        )
+
+        query = "sinking painting, great statue, wistful painting, anime waifu"
+        await client.on_message(MockMessage(PUNK, channel, f"!artsearch {query}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artcount_no_params(self, client, lines, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!artcount"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artcount_bad_name(self, client, lines, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, f"!artcount {PUNK.name}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artcount_no_art(self, client, lines, channel, snap):
+        await client.on_message(
+            MockMessage(someone(), channel, f"!artcount {BUDDY.name}")
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_artcount(self, client, lines, channel, snap):
+        author = someone()
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collectart sinking painting, great statue")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collectart sinking painting")
+        )
+        await client.on_message(
+            MockMessage(GUY, channel, "!collectart sinking painting, great statue")
+        )
+
+        users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
+        await client.on_message(MockMessage(author, channel, f"!artcount {users}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_collectedart_no_name(self, client, lines, channel, snap):
+        author = someone()
+        art = "sinking painting, academic painting, great statue"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+
+        await client.on_message(MockMessage(author, channel, "!collectedart"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_collectedart_with_name(self, client, lines, channel, snap):
+        art = "sinking painting, academic painting, great statue"
+        await client.on_message(MockMessage(GUY, channel, f"!collectart {art}"))
+
+        await client.on_message(MockMessage(BUDDY, channel, f"!collectedart {GUY.name}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_collectedart_bad_name(self, client, lines, channel, snap):
+        await client.on_message(MockMessage(BUDDY, channel, f"!collectedart {PUNK.name}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_collectart_no_list(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, "!collectart"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_collectart(self, client, lines, channel, snap):
+        # first collect some art
+        author = someone()
+        art = "academic painting, sinking painting, anime waifu"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+        snap(channel.last_sent_response)
+
+        assert set(lines(client.art_file)) == {
+            "author,name\n",
+            f"{author.id},academic painting\n",
+            f"{author.id},sinking painting\n",
+        }
+
+        # collect them again
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+        snap(channel.last_sent_response)
+
+        # collect some new stuff, but with some dupes
+        art = "body pillow, sinking painting, tremendous statue"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+        snap(channel.last_sent_response)
+
+        assert lines(client.art_file) == [f"{author.id},tremendous statue\n"]
+
+    async def test_on_message_collectart_congrats(self, client, lines, channel, snap):
+        everything = sorted(list(turbot.ART.name.unique()))
+        some, rest = everything[:10], everything[10:]
+
+        # someone else collects some pieces
+        art = "academic painting, sinking painting, tremendous statue"
+        await client.on_message(MockMessage(GUY, channel, f"!collectart {art}"))
+
+        # Buddy collects some
+        await client.on_message(
+            MockMessage(BUDDY, channel, f"!collectart {', '.join(some)}")
+        )
+
+        # Friend collects a different set
+        art = "mysterious painting, twinkling painting"
+        await client.on_message(MockMessage(FRIEND, channel, f"!collectart {art}"))
+
+        # Buddy collects the rest
+        await client.on_message(
+            MockMessage(BUDDY, channel, f"!collectart {', '.join(rest)}")
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_listart_bad_name(self, client, lines, channel, snap):
+        # first collect some fossils
+        author = someone()
+        art = "academic painting, sinking painting"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+
+        # then list them
+        await client.on_message(MockMessage(author, channel, f"!listart {PUNK.name}"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_listart_congrats(self, client, lines, channel, snap):
+        # first collect some fossils
+        author = someone()
+        everything = ",".join(sorted(list(turbot.ART.name.unique())))
+        await client.on_message(MockMessage(author, channel, f"!collectart {everything}"))
+
+        # then list them
+        await client.on_message(MockMessage(author, channel, f"!listart"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_listart_no_name(self, client, lines, channel, snap):
+        # first collect some fossils
+        author = someone()
+        art = "academic painting, sinking painting"
+        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+
+        # then list them
+        await client.on_message(MockMessage(author, channel, f"!listart"))
+        snap(channel.last_sent_response)
+
+    async def test_on_message_listart_with_name(self, client, lines, channel, snap):
+        # first collect some fossils
+        art = "academic painting, sinking painting"
+        await client.on_message(MockMessage(GUY, channel, f"!collectart {art}"))
+
+        # then list them
+        await client.on_message(MockMessage(BUDDY, channel, f"!listart"))
+        snap(channel.last_sent_response)
 
     async def test_on_message_fossilsearch_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!fossilsearch"))
