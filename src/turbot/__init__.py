@@ -19,16 +19,19 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import poetry_version
 import pytz
 from yaml import load
+
+import dunamai as _dunamai
 
 try:
     from yaml import CLoader as Loader
 except ImportError:  # pragma: no cover
     from yaml import Loader
 
-__version__ = poetry_version.extract(source_file=__file__)
+__version__ = _dunamai.get_version(
+    "turbot", third_choice=_dunamai.Version.from_any_vcs
+).serialize()
 
 matplotlib.use("Agg")
 

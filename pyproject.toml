@@ -48,7 +48,7 @@ pandas = "^1.0.3"
 numpy = "^1.18.3"
 pytz = "*"
 pyyaml = "*"
-poetry-version = "^0.1.5"
+dunamai = "^1.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
