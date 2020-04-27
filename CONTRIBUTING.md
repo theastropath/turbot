@@ -72,7 +72,7 @@ is instructive. Details on each command are given with inline comments.
 git clone https://github.com/momo-lab/xxenv-latest.git "$(pyenv root)"/plugins/xxenv-latest
 
 # for each python environment in the tox configuration, create it using pyenv
-# this step takes a while, but you will only need to do it this setup once
+# this step takes a while, but you will only need to do this setup once
 tox -l | while read -r py; do
     # translate a tox env name like "py37" into a number like "37"
     number="$(echo "$py" | sed "s/^py//")"
