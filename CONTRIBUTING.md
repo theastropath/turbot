@@ -21,6 +21,9 @@ Install in development mode via `poetry`:
 poetry install
 ```
 
+> **Note:** On some systems such as most Linux ones you may also need to install
+> `python3-venv` using your system's package manager as `poetry` depends on it.
+
 ## Running the application
 
 Make sure that you have created the required "token.txt" and "channels.txt"
@@ -88,8 +91,8 @@ done
 pyenv local $(pyenv versions --bare | tr '\n' ' ')
 ```
 
-For more clarification, the above script, **at the time of writing**, amounts to
-running the following three commands:
+The above script, **at the time of this writing**, amounts to running the
+following three commands:
 
 ```shell
 pyenv install 3.7.6
@@ -97,8 +100,13 @@ pyenv install 3.8.1
 pyenv local 3.7.6 3.8.1
 ```
 
-However, over time newer versions of python will become available and the above
-script handles that for you.
+But over time newer versions of python will become available and the above
+script should automatically handle that for you.
+
+> **Note:** If your `pyenv install` command fails, please read
+> [this](https://github.com/pyenv/pyenv/wiki/common-build-problems) help
+> documentation provided by `pyenv`. You probably need to install some
+> prerequisites on your system using your system's package manager.
 
 Now you should be able to run the entire test suite against all python
 environments with:
