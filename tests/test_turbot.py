@@ -1979,6 +1979,17 @@ class TestCodebase:
         proc = run(cmd, capture_output=True)
         assert proc.returncode == 0, f"isort issues:\n{proc.stdout.decode('utf-8')}"
 
+    def test_sort_strings(self):
+        """Checks that the strings data is correctly sorted."""
+        chdir(REPO_ROOT)
+        cmd = ["python", "scripts/sort_strings.py", "--check"]
+        print("running:", " ".join(str(part) for part in cmd))
+        proc = run(cmd, capture_output=True)
+        assert proc.returncode == 0, (
+            f"sort strings issues:\n{proc.stdout.decode('utf-8')}\n\n"
+            "Please run ./scripts/sort_string.py to resolve this issue."
+        )
+
 
 class TestMeta:
     # This test will fail in isolation, you must run the full test suite
