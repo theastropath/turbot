@@ -312,6 +312,69 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!xenomorph"))
         channel.sent.assert_called_with('Sorry, there is no command named "xenomorph"')
 
+    async def test_on_message_sell_at_time_with_tz(self, client, lines, channel, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
+        monday_evening = monday_morning + timedelta(hours=13)
+        # user's time is 8 hours ahead of utc on this date:
+        monday_evening_adjust = monday_evening + timedelta(hours=8)
+        command_time = monday_morning + timedelta(days=3)
+        freezer.move_to(command_time)
+
+        amount = somebells()
+        await client.on_message(
+            MockMessage(author, channel, f"!sell {amount} monday evening")
+        )
+        channel.sent.assert_called_with(
+            f"Logged selling price of {amount} for user {author}."
+        )
+        assert lines(client.prices_file) == [
+            "author,kind,price,timestamp\n",
+            f"{author.id},sell,{amount},{monday_evening_adjust}\n",
+        ]
+
+    async def test_on_message_sell_at_time(self, client, lines, channel, freezer):
+        monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
+        monday_evening = monday_morning + timedelta(hours=13)
+        command_time = monday_morning + timedelta(days=3)
+        freezer.move_to(command_time)
+
+        author = someone()
+        amount = somebells()
+        await client.on_message(
+            MockMessage(author, channel, f"!sell {amount} monday evening")
+        )
+        channel.sent.assert_called_with(
+            f"Logged selling price of {amount} for user {author}."
+        )
+        assert lines(client.prices_file) == [
+            "author,kind,price,timestamp\n",
+            f"{author.id},sell,{amount},{monday_evening}\n",
+        ]
+
+    async def test_on_message_sell_bad_time(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!sell 100 funday"))
+        channel.sent.assert_called_with(
+            "Please provide both the day of the week and time of day."
+        )
+
+    async def test_on_message_sell_bad_day(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!sell 100 fun morning"))
+        channel.sent.assert_called_with(
+            "Please use monday, wednesday, tuesday, etc for the day parameter."
+        )
+
+    async def test_on_message_sell_incomplete_time(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!sell 100 friday pants"))
+        channel.sent.assert_called_with(
+            "Please use either morning or evening as the time parameter."
+        )
+
     async def test_on_message_sell_no_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell"))
         channel.sent.assert_called_with(
@@ -364,6 +427,69 @@ class TestTurbot:
             f"(Lower than last selling price of {new_amount} bells)"
         )
         assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
+
+    async def test_on_message_buy_at_time_with_tz(self, client, lines, channel, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
+        monday_evening = monday_morning + timedelta(hours=13)
+        # user's time is 8 hours ahead of utc on this date:
+        monday_evening_adjust = monday_evening + timedelta(hours=8)
+        command_time = monday_morning + timedelta(days=3)
+        freezer.move_to(command_time)
+
+        amount = somebells()
+        await client.on_message(
+            MockMessage(author, channel, f"!buy {amount} monday evening")
+        )
+        channel.sent.assert_called_with(
+            f"Logged buying price of {amount} for user {author}."
+        )
+        assert lines(client.prices_file) == [
+            "author,kind,price,timestamp\n",
+            f"{author.id},buy,{amount},{monday_evening_adjust}\n",
+        ]
+
+    async def test_on_message_buy_at_time(self, client, lines, channel, freezer):
+        monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
+        monday_evening = monday_morning + timedelta(hours=13)
+        command_time = monday_morning + timedelta(days=3)
+        freezer.move_to(command_time)
+
+        author = someone()
+        amount = somebells()
+        await client.on_message(
+            MockMessage(author, channel, f"!buy {amount} monday evening")
+        )
+        channel.sent.assert_called_with(
+            f"Logged buying price of {amount} for user {author}."
+        )
+        assert lines(client.prices_file) == [
+            "author,kind,price,timestamp\n",
+            f"{author.id},buy,{amount},{monday_evening}\n",
+        ]
+
+    async def test_on_message_buy_bad_time(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!buy 100 funday"))
+        channel.sent.assert_called_with(
+            "Please provide both the day of the week and time of day."
+        )
+
+    async def test_on_message_buy_bad_day(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!buy 100 fun morning"))
+        channel.sent.assert_called_with(
+            "Please use monday, wednesday, tuesday, etc for the day parameter."
+        )
+
+    async def test_on_message_buy_incomplete_time(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!buy 100 friday pants"))
+        channel.sent.assert_called_with(
+            "Please use either morning or evening as the time parameter."
+        )
 
     async def test_on_message_buy_no_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy"))
@@ -421,7 +547,7 @@ class TestTurbot:
     async def test_on_message_bestsell_timezone(self, client, channel):
         friend_tz = "America/Los_Angeles"
         await client.on_message(MockMessage(FRIEND, channel, f"!timezone {friend_tz}"))
-        friend_now = NOW.astimezone(pytz.timezone("America/Los_Angeles"))
+        friend_now = NOW.astimezone(pytz.timezone(friend_tz))
 
         buddy_tz = "Canada/Saskatchewan"
         await client.on_message(MockMessage(BUDDY, channel, f"!timezone {buddy_tz}"))
@@ -537,7 +663,7 @@ class TestTurbot:
     async def test_on_message_bestbuy_timezone(self, client, channel):
         friend_tz = "America/Los_Angeles"
         await client.on_message(MockMessage(FRIEND, channel, f"!timezone {friend_tz}"))
-        friend_now = NOW.astimezone(pytz.timezone("America/Los_Angeles"))
+        friend_now = NOW.astimezone(pytz.timezone(friend_tz))
 
         buddy_tz = "Canada/Saskatchewan"
         await client.on_message(MockMessage(BUDDY, channel, f"!timezone {buddy_tz}"))
@@ -948,7 +1074,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
 
     async def test_on_message_collectedart_no_name(self, client, lines, channel, snap):
-        author = someone()
+        author = DUDE
         art = "sinking painting, academic painting, great statue"
         await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
 
@@ -967,12 +1093,12 @@ class TestTurbot:
         snap(channel.last_sent_response)
 
     async def test_on_message_collectart_no_list(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, "!collectart"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collectart"))
         snap(channel.last_sent_response)
 
     async def test_on_message_collectart(self, client, lines, channel, snap):
         # first collect some art
-        author = someone()
+        author = BUDDY
         art = "academic painting, sinking painting, anime waifu"
         await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
         snap(channel.last_sent_response)
@@ -1019,32 +1145,29 @@ class TestTurbot:
 
     async def test_on_message_listart_bad_name(self, client, lines, channel, snap):
         # first collect some fossils
-        author = someone()
         art = "academic painting, sinking painting"
-        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!collectart {art}"))
 
         # then list them
-        await client.on_message(MockMessage(author, channel, f"!listart {PUNK.name}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!listart {PUNK.name}"))
         snap(channel.last_sent_response)
 
     async def test_on_message_listart_congrats(self, client, lines, channel, snap):
         # first collect some fossils
-        author = someone()
         everything = ",".join(sorted(list(turbot.ART.name.unique())))
-        await client.on_message(MockMessage(author, channel, f"!collectart {everything}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!collectart {everything}"))
 
         # then list them
-        await client.on_message(MockMessage(author, channel, f"!listart"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!listart"))
         snap(channel.last_sent_response)
 
     async def test_on_message_listart_no_name(self, client, lines, channel, snap):
         # first collect some fossils
-        author = someone()
         art = "academic painting, sinking painting"
-        await client.on_message(MockMessage(author, channel, f"!collectart {art}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!collectart {art}"))
 
         # then list them
-        await client.on_message(MockMessage(author, channel, f"!listart"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!listart"))
         snap(channel.last_sent_response)
 
     async def test_on_message_listart_with_name(self, client, lines, channel, snap):
