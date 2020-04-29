@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytz
+from humanize import naturaltime
 from yaml import load
 
 try:
@@ -79,6 +80,14 @@ def s(key, **kwargs):
     """Returns a string from data/strings.yaml with subsitutions."""
     data = STRINGS.get(key, "")
     return Template(data).substitute(kwargs)
+
+
+def h(dt):
+    """Convertes a datetime to something readable by a human."""
+    if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
+        dt = dt.to_pydatetime()
+    naive_dt = dt.replace(tzinfo=None)
+    return naturaltime(naive_dt)
 
 
 def humanize_months(row):
@@ -729,7 +738,7 @@ class Turbot(discord.Client):
                 s(
                     f"history_{row.kind}",
                     price=row.price,
-                    timestamp=self.to_usertime(target_id, row.timestamp),
+                    timestamp=h(self.to_usertime(target_id, row.timestamp)),
                 )
             )
         return "\n".join(lines), None
@@ -769,7 +778,7 @@ class Turbot(discord.Client):
                     "best",
                     name=name,
                     price=row.price,
-                    timestamp=self.to_usertime(row.author, row.timestamp),
+                    timestamp=h(self.to_usertime(row.author, row.timestamp)),
                 )
             )
         return "\n".join(lines), None

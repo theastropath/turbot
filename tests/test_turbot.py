@@ -414,8 +414,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!bestsell"))
         channel.sent.assert_called_with(
             "__**Best Selling Prices in the Last 12 Hours**__\n"
-            f"> {BUDDY}: 600 bells at {NOW}\n"
-            f"> {FRIEND}: 200 bells at {NOW}"
+            f"> {BUDDY}: now for 600 bells\n"
+            f"> {FRIEND}: now for 200 bells"
         )
 
     async def test_on_message_bestsell_timezone(self, client, channel):
@@ -441,8 +441,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!bestsell"))
         channel.sent.assert_called_with(
             "__**Best Selling Prices in the Last 12 Hours**__\n"
-            f"> {BUDDY}: 600 bells at {buddy_now}\n"
-            f"> {FRIEND}: 200 bells at {friend_now}"
+            f"> {BUDDY}: {turbot.h(buddy_now)} for 600 bells\n"
+            f"> {FRIEND}: {turbot.h(friend_now)} for 200 bells"
         )
 
     async def test_on_message_oops(self, client, lines, channel):
@@ -483,9 +483,9 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!history"))
         channel.sent.assert_called_with(
             f"__**Historical info for {author}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
+            f"> Can buy turnips from Daisy Mae for 1 bells now\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells now\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells now"
         )
 
     async def test_on_message_history_with_name(self, client, channel):
@@ -496,9 +496,9 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, f"!history {BUDDY.name}"))
         channel.sent.assert_called_with(
             f"__**Historical info for {BUDDY}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells at {NOW}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells at {NOW}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells at {NOW}"
+            f"> Can buy turnips from Daisy Mae for 1 bells now\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells now\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells now"
         )
 
     async def test_on_message_history_timezone(self, client, channel):
@@ -514,9 +514,9 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!history"))
         channel.sent.assert_called_with(
             f"__**Historical info for {author}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells at {their_now}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells at {their_now}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells at {their_now}"
+            f"> Can buy turnips from Daisy Mae for 1 bells {turbot.h(their_now)}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells {turbot.h(their_now)}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells {turbot.h(their_now)}"
         )
 
     async def test_on_message_bestbuy(self, client, channel):
@@ -530,8 +530,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!bestbuy"))
         channel.sent.assert_called_with(
             "__**Best Buying Prices in the Last 12 Hours**__\n"
-            f"> {BUDDY}: 60 bells at {NOW}\n"
-            f"> {FRIEND}: 100 bells at {NOW}"
+            f"> {BUDDY}: now for 60 bells\n"
+            f"> {FRIEND}: now for 100 bells"
         )
 
     async def test_on_message_bestbuy_timezone(self, client, channel):
@@ -557,8 +557,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!bestbuy"))
         channel.sent.assert_called_with(
             "__**Best Buying Prices in the Last 12 Hours**__\n"
-            f"> {BUDDY}: 60 bells at {buddy_now}\n"
-            f"> {FRIEND}: 100 bells at {friend_now}"
+            f"> {BUDDY}: {turbot.h(buddy_now)} for 60 bells\n"
+            f"> {FRIEND}: {turbot.h(friend_now)} for 100 bells"
         )
 
     async def test_on_message_turnippattern_happy_paths(self, client, channel, snap):
