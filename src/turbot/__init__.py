@@ -1006,6 +1006,8 @@ class Turbot(discord.Client):
             else:
                 items_str = ", ".join(items_list)
             lines.append(s("neededfossils", name=name, items=items_str))
+        if not lines:
+            return s("neededfossils_none"), None
         return "\n".join(sorted(lines)), None
 
     def collectedfossils_command(self, channel, author, params):
@@ -1022,6 +1024,9 @@ class Turbot(discord.Client):
         fossils = self.load_fossils()
         yours = fossils[fossils.author == target_id]
         collected = set(yours.name.unique())
+
+        if len(collected) == len(FOSSILS):
+            return s("congrats_all_fossils"), None
 
         return (
             s(
