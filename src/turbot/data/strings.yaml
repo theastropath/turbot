@@ -29,7 +29,6 @@ artsearch_no_params: Please provide the name of a piece of art to lookup users t
 artsearch_noneed: No one currently needs this.
 artsearch_row: '> $name needs: $art'
 best: '> $name: $timestamp for $price bells'
-
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
@@ -73,7 +72,6 @@ collectedfossils: |-
   >>> $items
 congrats_all_art: '**Congratulations, you''ve collected all the art!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
-
 day_of_week_invalid: 'Please use monday, wednesday, tuesday, etc for the day parameter.'
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
@@ -105,6 +103,7 @@ listart_remaining: '>>> $items'
 listfossils_count: __**$count Fossils remaining for $name**__
 listfossils_remaining: '>>> $items'
 neededfossils: '> **$name** needs $items'
+neededfossils_none: 'No fossils are known to be needed at this time, new users must collect at least one fossil.'
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
 not_a_command: 'Sorry, there is no command named "$request"'
 not_admin: User is not a Turbot Admin

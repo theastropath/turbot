@@ -1362,6 +1362,23 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 fossils..._"
         )
 
+    async def test_on_message_neededfossils_none(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
+        channel.sent.assert_called_with(
+            "No fossils are known to be needed at this time, "
+            "new users must collect at least one fossil."
+        )
+
+    async def test_on_message_collectedfossils_congrats(self, client, lines, channel):
+        author = someone()
+        everything = ", ".join(sorted(turbot.FOSSILS))
+        await client.on_message(MockMessage(author, channel, f"!collect {everything}"))
+
+        await client.on_message(MockMessage(author, channel, "!collectedfossils"))
+        channel.sent.assert_called_with(
+            "**Congratulations, you've collected all fossils!**"
+        )
+
     async def test_on_message_collectedfossils_no_name(self, client, lines, channel):
         author = someone()
         fossils = "amber, ammonite ,ankylo skull"
