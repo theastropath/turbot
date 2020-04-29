@@ -29,6 +29,7 @@ artsearch_no_params: Please provide the name of a piece of art to lookup users t
 artsearch_noneed: No one currently needs this.
 artsearch_row: '> $name needs: $art'
 best: '> $name: $timestamp for $price bells'
+
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
@@ -72,6 +73,8 @@ collectedfossils: |-
   >>> $items
 congrats_all_art: '**Congratulations, you''ve collected all the art!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
+
+day_of_week_invalid: 'Please use monday, wednesday, tuesday, etc for the day parameter.'
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
@@ -107,6 +110,7 @@ not_a_command: 'Sorry, there is no command named "$request"'
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
+price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
 sell_higher_price: Logged selling price of $price for user $name. (Higher than last selling price of $last_price bells)
 sell_lower_price: Logged selling price of $price for user $name. (Lower than last selling price of $last_price bells)
@@ -115,6 +119,7 @@ sell_no_params: Please include selling price after command name.
 sell_nonnumeric_price: Selling price must be a number.
 sell_nonpositive_price: Selling price must be greater than zero.
 sell_same_price: Logged selling price of $price for user $name. (Same as last selling price)
+time_of_day_invalid: Please use either morning or evening as the time parameter.
 timezone: Timezone preference registered for $name.
 timezone_bad_params: 'Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the complete list of TZ names.'
 timezone_no_params: Please provide the name of your timezone.

@@ -75,6 +75,16 @@ ART = pd.read_csv(ART_DATA_FILE)
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
+DAYS = {
+    "sunday": 0,
+    "monday": 1,
+    "tuesday": 2,
+    "wednesday": 3,
+    "thrusday": 4,
+    "friday": 5,
+    "saturday": 6,
+}
+
 
 def s(key, **kwargs):
     """Returns a string from data/strings.yaml with subsitutions."""
@@ -374,14 +384,13 @@ class Turbot(discord.Client):
         plt.savefig(graphname, dpi=100)
         return plt
 
-    def append_price(self, author, kind, price):
+    def append_price(self, author, kind, price, at):
         """Adds a price to the prices data file for the given author and kind."""
+        at = datetime.now(pytz.utc) if not at else at
+        at = at.astimezone(pytz.utc)  # always store data in UTC
         prices = self.load_prices()
         prices = prices.append(
-            pd.DataFrame(
-                columns=prices.columns,
-                data=[[author.id, kind, price, datetime.now(pytz.utc)]],
-            ),
+            pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]]),
             ignore_index=True,
         )
         self.save_prices(prices)
@@ -590,9 +599,36 @@ class Turbot(discord.Client):
         usage += "\n> turbot created by TheAstropath"
         return usage, None
 
+    class _PriceTimeError(Exception):
+        def __init__(self, key):
+            self.key = key
+
+    def _get_price_time(self, user_id, params):
+        if len(params) == 1:
+            return None
+
+        if len(params) != 3:
+            raise Turbot._PriceTimeError("price_time_invalid")
+
+        day_of_week = params[1].lower()
+        if day_of_week not in DAYS:
+            raise Turbot._PriceTimeError("day_of_week_invalid")
+
+        time_of_day = params[2].lower()
+        if time_of_day not in ["morning", "evening"]:
+            raise Turbot._PriceTimeError("time_of_day_invalid")
+
+        now = self.to_usertime(user_id, datetime.now(pytz.utc))
+        start = now - timedelta(days=now.isoweekday() % 7)  # start of week
+        start = datetime(start.year, start.month, start.day, tzinfo=start.tzinfo)
+        day_offset = DAYS[day_of_week]
+        hour_offset = 13 if time_of_day == "evening" else 0
+        return start + timedelta(days=day_offset, hours=hour_offset)
+
     def sell_command(self, channel, author, params):
         """
-        Log the price that you can sell turnips for on your island. | <price>
+        Log the price that you can sell turnips for on your island.
+        | <price> [day time]
         """
         if not params:
             return s("sell_no_params"), None
@@ -607,12 +643,17 @@ class Turbot(discord.Client):
 
         last_price = self.get_last_price(author.id)
 
+        try:
+            price_time = self._get_price_time(author.id, params)
+        except Turbot._PriceTimeError as err:
+            return s(err.key), None
+
         logging.debug("saving sell price of %s bells for user id %s", price, author.id)
-        self.append_price(author, "sell", price)
+        self.append_price(author=author, kind="sell", price=price, at=price_time)
 
         key = (
             "sell_new_price"
-            if not last_price
+            if not last_price or price_time is not None
             else "sell_higher_price"
             if price > last_price
             else "sell_lower_price"
@@ -623,7 +664,8 @@ class Turbot(discord.Client):
 
     def buy_command(self, channel, author, params):
         """
-        Log the price that you can buy turnips from Daisy Mae on your island. | <price>
+        Log the price that you can buy turnips from Daisy Mae on your island.
+        | <price> [day time]
         """
         if not params:
             return s("buy_no_params"), None
@@ -636,8 +678,14 @@ class Turbot(discord.Client):
         if price <= 0:
             return s("buy_nonpositive_price"), None
 
+        try:
+            price_time = self._get_price_time(author.id, params)
+        except Turbot._PriceTimeError as err:
+            return s(err.key), None
+
         logging.debug("saving buy price of %s bells for user id %s", price, author.id)
-        self.append_price(author, "buy", price)
+        self.append_price(author=author, kind="buy", price=price, at=price_time)
+
         return s("buy", price=price, name=author), None
 
     def reset_command(self, channel, author, params):
