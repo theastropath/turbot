@@ -1,41 +1,45 @@
-allart: |-
-  __**All Pieces of Art**__
-  >>> $list
-allfossils: |-
-  __**All Possible Fossils**__
-  >>> $list
-art_bad: |-
-  Did not recognize the following pieces of art:
-  > $items
-art_fake: |-
-  > **$name** can be fake.
+allart: '__**All Pieces of Art**__
+
+  >>> $list'
+allfossils: '__**All Possible Fossils**__
+
+  >>> $list'
+art_bad: 'Did not recognize the following pieces of art:
+
+  > $items'
+art_fake: '> **$name** can be fake.
+
   > **Description:** $desc
+
   > **Real:** <$real_url>
-  > **Fake:** <$fake_url>
+
+  > **Fake:** <$fake_url>'
 art_header: __**Art Search Results**__
-art_invalid: |-
-  Did not recognize the following pieces of art:
-  > $items
-art_real: |-
-  > **$name** is always genuine.
-  > **Real:** <$real_url>
+art_invalid: 'Did not recognize the following pieces of art:
+
+  > $items'
+art_real: '> **$name** is always genuine.
+
+  > **Real:** <$real_url>'
 artcount_invalid: '> $name'
 artcount_invalid_header: __**Did not recognize the following names**__
 artcount_no_params: Please provide at least one user name to search for an art count.
 artcount_valid: '> **$name** has $count pieces of art remaining.'
 artcount_valid_header: __**Art Count**__
 artsearch_header: __**Art Search**__
-artsearch_no_params: Please provide the name of a piece of art to lookup users that don't have it.
+artsearch_no_params: Please provide the name of a piece of art to lookup users that
+  don't have it.
 artsearch_noneed: No one currently needs this.
 artsearch_row: '> $name needs: $art'
 best: '> $name: $timestamp for $price bells'
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
-bugs_header: |-
-  ```diff
+bugs_header: '```diff
+
   -Eeek! What wretched things. Alas, I am obliged to respond...
-  ```
+
+  ```'
 bugs_none_found: Did not find any bugs searching for "$search".
 buy: Logged buying price of $price for user $name.
 buy_no_params: Please include buying price after command name.
@@ -44,55 +48,58 @@ buy_nonpositive_price: Buying price must be greater than zero.
 cant_find_buy: There is no recent buy price for $name.
 cant_find_user: Can not find the user named $name in this channel.
 clear: '**Cleared history for $name.**'
-collect_bad: |-
-  Did not recognize the following fossils:
-  > $items
-collect_dupe: |-
-  The following fossils had already been collected:
-  > $items
-collect_new: |-
-  Marked the following fossils as collected:
-  > $items
+collect_bad: 'Did not recognize the following fossils:
+
+  > $items'
+collect_dupe: 'The following fossils had already been collected:
+
+  > $items'
+collect_new: 'Marked the following fossils as collected:
+
+  > $items'
 collect_no_params: Please provide the name of a fossil to mark as collected.
-collectart_bad: |-
-  Did not recognize the following pieces of art:
-  > $items
-collectart_dupe: |-
-  The following art had already been collected:
-  > $items
-collectart_new: |-
-  Marked the following art as collected:
-  > $items
+collectart_bad: 'Did not recognize the following pieces of art:
+
+  > $items'
+collectart_dupe: 'The following art had already been collected:
+
+  > $items'
+collectart_new: 'Marked the following art as collected:
+
+  > $items'
 collectart_no_params: Please provide the name of a piece of art to mark as collected.
-collectedart: |-
-  __**$count Pieces of art donated by $name**__
-  >>> $items
-collectedfossils: |-
-  __**$count Fossils donated by $name**__
-  >>> $items
+collectedart: '__**$count Pieces of art donated by $name**__
+
+  >>> $items'
+collectedfossils: '__**$count Fossils donated by $name**__
+
+  >>> $items'
 congrats_all_art: '**Congratulations, you''ve collected all the art!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
-day_of_week_invalid: 'Please use monday, wednesday, tuesday, etc for the day parameter.'
+day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day parameter.
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
-fossil_bad: |-
-  Did not recognize the following fossils:
-  > $items
+fossil_bad: 'Did not recognize the following fossils:
+
+  > $items'
 fossilcount_invalid: '> $name'
 fossilcount_invalid_header: __**Did not recognize the following names**__
-fossilcount_no_params: Please provide at least one user name to search for a fossil count.
+fossilcount_no_params: Please provide at least one user name to search for a fossil
+  count.
 fossilcount_valid: '> **$name** has $count fossils remaining.'
 fossilcount_valid_header: __**Fossil Count**__
 fossilsearch_header: __**Fossil Search**__
-fossilsearch_no_params: Please provide the name of a fossil to lookup users that don't have it.
+fossilsearch_no_params: Please provide the name of a fossil to lookup users that don't
+  have it.
 fossilsearch_noneed: No one currently needs this.
 fossilsearch_row: '> $name needs: $fossils'
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
 hemisphere: Hemisphere preference registered for $name.
-hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere name.
-hemisphere_no_params: 'Please provide the name of your hemisphere, northern or southern.'
+hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere
+  name.
+hemisphere_no_params: Please provide the name of your hemisphere, northern or southern.
 history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp'
@@ -103,45 +110,57 @@ listart_remaining: '>>> $items'
 listfossils_count: __**$count Fossils remaining for $name**__
 listfossils_remaining: '>>> $items'
 neededfossils: '> **$name** needs $items'
-neededfossils_none: 'No fossils are known to be needed at this time, new users must collect at least one fossil.'
+neededfossils_none: No fossils are known to be needed at this time, new users must
+  collect at least one fossil.
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
-not_a_command: 'Sorry, there is no command named "$request"'
+not_a_command: Sorry, there is no command named "$request"
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
-sell_higher_price: Logged selling price of $price for user $name. (Higher than last selling price of $last_price bells)
-sell_lower_price: Logged selling price of $price for user $name. (Lower than last selling price of $last_price bells)
+sell_higher_price: Logged selling price of $price for user $name. (Higher than last
+  selling price of $last_price bells)
+sell_lower_price: Logged selling price of $price for user $name. (Lower than last
+  selling price of $last_price bells)
 sell_new_price: Logged selling price of $price for user $name.
 sell_no_params: Please include selling price after command name.
 sell_nonnumeric_price: Selling price must be a number.
 sell_nonpositive_price: Selling price must be greater than zero.
-sell_same_price: Logged selling price of $price for user $name. (Same as last selling price)
+sell_same_price: Logged selling price of $price for user $name. (Same as last selling
+  price)
 time_of_day_invalid: Please use either morning or evening as the time parameter.
 timezone: Timezone preference registered for $name.
-timezone_bad_params: 'Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the complete list of TZ names.'
+timezone_bad_params: Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  for the complete list of TZ names.
 timezone_no_params: Please provide the name of your timezone.
-turnippattern_bad_params: |-
-  Please provide Daisy Mae's price and your Monday morning price
-  eg. !turnippattern <buy price> <Monday morning sell price>
-turnippattern_header: 'Based on your prices, you will see one of the following patterns this week:'
+turnippattern_bad_params: 'Please provide Daisy Mae''s price and your Monday morning
+  price
+
+  eg. !turnippattern <buy price> <Monday morning sell price>'
+turnippattern_header: 'Based on your prices, you will see one of the following patterns
+  this week:'
 turnippattern_nonnumeric_price: Prices must be numbers.
-turnippattern_pattern1: '> **Random**: Prices are completely random. Sell when it goes over your buying price.'
+turnippattern_pattern1: '> **Random**: Prices are completely random. Sell when it
+  goes over your buying price.'
 turnippattern_pattern2: '> **Decreasing**: Prices will continuously fall.'
-turnippattern_pattern3: '> **Small Spike**: Prices fall until a spike occurs. The price will go up three more times. Sell on the third increase for maximum profit. Spikes only occur from Monday to Thursday.'
-turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.'
-uncollect_already: |-
-  The following fossils were already marked as not collected:
-  > $items
-uncollect_deleted: |-
-  Unmarked the following fossils as collected:
-  > $items
+turnippattern_pattern3: '> **Small Spike**: Prices fall until a spike occurs. The
+  price will go up three more times. Sell on the third increase for maximum profit.
+  Spikes only occur from Monday to Thursday.'
+turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Prices
+  then decrease before shooting up twice. Sell the second time prices shoot up after
+  the decrease for maximum profit. Spikes only occur from Monday to Thursday.'
+uncollect_already: 'The following fossils were already marked as not collected:
+
+  > $items'
+uncollect_deleted: 'Unmarked the following fossils as collected:
+
+  > $items'
 uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
-uncollectart_already: |-
-  The following pieces of art were already marked as not collected:
-  > $items
-uncollectart_deleted: |-
-  Unmarked the following pieces of art as collected:
-  > $items
+uncollectart_already: 'The following pieces of art were already marked as not collected:
+
+  > $items'
+uncollectart_deleted: 'Unmarked the following pieces of art as collected:
+
+  > $items'
 uncollectart_no_params: Please provide the name of a piece of art to mark as uncollected.
