@@ -486,6 +486,7 @@ class Turbot(discord.Client):
         """Process a command message."""
         tokens = message.content.split(" ")
         request, params = tokens[0].lstrip("!").lower(), tokens[1:]
+        params = list(filter(None, params))  # ignore any empty string parameters
         if not request:
             return
         members = inspect.getmembers(self, predicate=inspect.ismethod)

@@ -389,6 +389,18 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!sell 0"))
         channel.sent.assert_called_with("Selling price must be greater than zero.")
 
+    async def test_on_message_sell_extra_space(self, client, lines, channel):
+        author = someone()
+        amount = somebells()
+        await client.on_message(MockMessage(author, channel, f"!sell  {amount}"))
+        channel.sent.assert_called_with(
+            f"Logged selling price of {amount} for user {author}."
+        )
+        assert lines(client.prices_file) == [
+            "author,kind,price,timestamp\n",
+            f"{author.id},sell,{amount},{NOW}\n",
+        ]
+
     async def test_on_message_sell(self, client, lines, channel):
         # initial sale
         author = someone()
@@ -595,10 +607,6 @@ class TestTurbot:
         channel.sent.assert_called_with(
             f"Can not find the user named {PUNK.name} in this channel."
         )
-
-    async def test_on_message_command_with_blank_name(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, f"!listfossils   "))
-        channel.sent.assert_called_with("Can not find the user named  in this channel.")
 
     async def test_on_message_history_without_name(self, client, channel):
         author = someone()
