@@ -1844,6 +1844,27 @@ class TestTurbot:
         assert subject(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == ["Jan"]
         assert subject(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == []
 
+    async def test_on_message_info(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
+        await client.on_message(
+            MockMessage(author, channel, "!timezone America/Los_Angeles")
+        )
+        await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
+        assert channel.last_sent_response == (
+            f"__**{author}**__\n"
+            "> Hemisphere: Northern\n"
+            "> Current time: 04:00 PM PST"
+        )
+
+    async def test_on_message_info_not_found(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
+        assert channel.last_sent_response == "No users found."
+
+    async def test_on_message_info_no_params(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, f"!info"))
+        assert channel.last_sent_response == "Please provide a search term."
+
 
 class TestFigures:
     @pytest.mark.mpl_image_compare

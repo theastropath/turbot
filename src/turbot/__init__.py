@@ -1508,6 +1508,34 @@ class Turbot(discord.Client):
             None,
         )
 
+    def info_command(self, channel, author, params):
+        """
+        Gives you information on a user. | [user]
+        """
+        if len(params) < 1:
+            return s("info_no_params"), None
+
+        users = self.load_users()
+        for _, row in users.iterrows():
+            user_id = row["author"]
+            name = discord_user_name(channel, user_id)
+            if not name:
+                continue
+
+            if name.find(params[0]) != -1:
+                now = self.to_usertime(user_id, datetime.now(pytz.utc))
+                return (
+                    s(
+                        "info",
+                        hemisphere=self.get_user_hemisphere(user_id).title(),
+                        time=now.strftime("%I:%M %p %Z"),
+                        name=name,
+                    ),
+                    None,
+                )
+
+        return s("info_not_found"), None
+
 
 def get_token(token_file):  # pragma: no cover
     """Returns the discord token from the environment or your token config file."""
