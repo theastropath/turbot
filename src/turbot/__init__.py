@@ -1146,8 +1146,8 @@ class Turbot(discord.Client):
         collected_art = set(your_art.name.unique())
         all_art = len(collected_art) == len(ART_SET)
 
+        lines = []
         if any([all_fossils, all_art]):
-            lines = []
             if all_fossils:
                 lines.append(s("congrats_all_fossils"))
             if all_art:
@@ -1155,8 +1155,7 @@ class Turbot(discord.Client):
             if all([all_fossils, all_art]):
                 return "\n".join(lines), None
 
-        lines = []
-        if collected_art:
+        if collected_art and not all_art:
             lines.append(
                 s(
                     "collected_art",
@@ -1165,7 +1164,7 @@ class Turbot(discord.Client):
                     items=", ".join(sorted(collected_art)),
                 )
             )
-        if collected_fossils:
+        if collected_fossils and not all_fossils:
             lines.append(
                 s(
                     "collected_fossils",

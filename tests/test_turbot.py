@@ -1136,12 +1136,12 @@ class TestTurbot:
             ">>> academic painting, great statue, sinking painting"
         )
 
-    async def test_on_message_collected_art_congrats(self, client, channel, snap):
+    async def test_on_message_collected_art_congrats(self, client, channel):
         everything = ",".join(turbot.ART_SET)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
         await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
-        snap(channel.last_sent_response)
+        channel.last_sent_response == "**Congratulations, you've collected all art!**"
 
     async def test_on_message_uncollected_art_congrats(self, client, channel, snap):
         everything = ",".join(turbot.ART_SET)
@@ -1414,13 +1414,15 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!allfossils"))
         snap(channel.last_sent_response)
 
-    async def test_on_message_collected_fossils_congrats(self, client, channel, snap):
+    async def test_on_message_collected_fossils_congrats(self, client, channel):
         author = someone()
         everything = ", ".join(sorted(turbot.FOSSILS_SET))
         await client.on_message(MockMessage(author, channel, f"!collect {everything}"))
 
         await client.on_message(MockMessage(author, channel, "!collected"))
-        snap(channel.last_sent_response)
+        assert channel.last_sent_response == (
+            "**Congratulations, you've collected all fossils!**"
+        )
 
     async def test_on_message_uncollected_fossils_congrats(self, client, channel, snap):
         author = someone()
