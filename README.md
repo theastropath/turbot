@@ -66,21 +66,6 @@ These commands help users buy low and sell high in the stalk market.
 - `!sell`
 - `!turnippattern`
 
-### 🦴 Fossils
-
-When a community of users tracks fossils and trades needed fossils between each
-other, everyone finishes collecting all the available fossils in the game so
-much more quickly than they would on their own.
-
-- `!allfossils`
-- `!collect`
-- `!collectedfossils`
-- `!fossilcount`
-- `!fossilsearch`
-- `!listfossils`
-- `!neededfossils`
-- `!uncollect`
-
 ### 🐟 Fish and Bugs
 
 Provides users with information on where and when to catch critters.
@@ -89,11 +74,24 @@ Provides users with information on where and when to catch critters.
 - `!fish`
 - `!new`
 
-### 🖼️ Art
+### 🦴 Fossils & 🖼️ Art
 
-Helps users tell fake art from real art and tracks your collection.
+When a community of users tracks collectables and trades them between each
+other, everyone finishes collecting everything in the game s much more quickly
+than they would on their own.
 
+These commands can also help users tell fake art from real art.
+
+- `!allart`
+- `!allfossils`
 - `!art`
+- `!collect`
+- `!collected`
+- `!count`
+- `!neededfossils`
+- `!search`
+- `!uncollect`
+- `!uncollected`
 
 ---
 

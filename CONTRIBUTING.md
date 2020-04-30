@@ -197,8 +197,9 @@ cat pyproject.toml | grep "^version" | cut -d= -f2 | sed 's/"//g;s/ //g;s/^/v/;'
 When you use the `poetry publish` command you will be prompted for your
 [PyPI](https://pypi.org/) credentials.
 
-After publishing you can view the package at https://pypi.org/project/turbot/ to
-see that everything looks good.
+After publishing you can view the package at its
+[pypi.org project page](https://pypi.org/project/turbot/) to see that everything
+looks good.
 
 [black]:            https://github.com/psf/black
 [wiki]:             https://animalcrossing.fandom.com/

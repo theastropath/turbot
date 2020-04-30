@@ -4,9 +4,6 @@ allart: '__**All Pieces of Art**__
 allfossils: '__**All Possible Fossils**__
 
   >>> $list'
-art_bad: 'Did not recognize the following pieces of art:
-
-  > $items'
 art_fake: '> **$name** can be fake.
 
   > **Description:** $desc
@@ -21,16 +18,6 @@ art_invalid: 'Did not recognize the following pieces of art:
 art_real: '> **$name** is always genuine.
 
   > **Real:** <$real_url>'
-artcount_invalid: '> $name'
-artcount_invalid_header: __**Did not recognize the following names**__
-artcount_no_params: Please provide at least one user name to search for an art count.
-artcount_valid: '> **$name** has $count pieces of art remaining.'
-artcount_valid_header: __**Art Count**__
-artsearch_header: __**Art Search**__
-artsearch_no_params: Please provide the name of a piece of art to lookup users that
-  don't have it.
-artsearch_noneed: No one currently needs this.
-artsearch_row: '> $name needs: $art'
 best: '> $name: $timestamp for $price bells'
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
@@ -48,52 +35,40 @@ buy_nonpositive_price: Buying price must be greater than zero.
 cant_find_buy: There is no recent buy price for $name.
 cant_find_user: Can not find the user named $name in this channel.
 clear: '**Cleared history for $name.**'
-collect_bad: 'Did not recognize the following fossils:
+collect_art_dupe: 'The following art had already been collected:
 
   > $items'
-collect_dupe: 'The following fossils had already been collected:
+collect_art_new: 'Marked the following art as collected:
 
   > $items'
-collect_new: 'Marked the following fossils as collected:
+collect_bugs: Collecting bugs is not supported yet.
+collect_fish: Collecting fish is not supported yet.
+collect_fossil_dupe: 'The following fossils had already been collected:
 
   > $items'
-collect_no_params: Please provide the name of a fossil to mark as collected.
-collectart_bad: 'Did not recognize the following pieces of art:
+collect_fossil_new: 'Marked the following fossils as collected:
 
   > $items'
-collectart_dupe: 'The following art had already been collected:
-
-  > $items'
-collectart_new: 'Marked the following art as collected:
-
-  > $items'
-collectart_no_params: Please provide the name of a piece of art to mark as collected.
-collectedart: '__**$count Pieces of art donated by $name**__
+collect_no_params: Please provide the name of something to mark as collected.
+collected_art: '__**$count Pieces of art donated by $name**__
 
   >>> $items'
-collectedfossils: '__**$count Fossils donated by $name**__
+collected_fossils: '__**$count Fossils donated by $name**__
 
   >>> $items'
-congrats_all_art: '**Congratulations, you''ve collected all the art!**'
+congrats_all_art: '**Congratulations, you''ve collected all art!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
+count_art_valid: '> **$name** has $count pieces of art remaining.'
+count_art_valid_header: __**Art Count**__
+count_fossil_valid: '> **$name** has $count fossils remaining.'
+count_fossil_valid_header: __**Fossil Count**__
+count_invalid: '> $name'
+count_invalid_header: __**Did not recognize the following names**__
+count_no_params: Please provide at least one user name to search for.
 day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day parameter.
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
-fossil_bad: 'Did not recognize the following fossils:
-
-  > $items'
-fossilcount_invalid: '> $name'
-fossilcount_invalid_header: __**Did not recognize the following names**__
-fossilcount_no_params: Please provide at least one user name to search for a fossil
-  count.
-fossilcount_valid: '> **$name** has $count fossils remaining.'
-fossilcount_valid_header: __**Fossil Count**__
-fossilsearch_header: __**Fossil Search**__
-fossilsearch_no_params: Please provide the name of a fossil to lookup users that don't
-  have it.
-fossilsearch_noneed: No one currently needs this.
-fossilsearch_row: '> $name needs: $fossils'
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
 hemisphere: Hemisphere preference registered for $name.
@@ -110,12 +85,11 @@ info: '__**$name**__
   > Current time: $time'
 info_no_params: Please provide a search term.
 info_not_found: No users found.
+invalid_collectable: 'Unrecognized collectable names:
+
+  > $items'
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
-listart_count: __**$count Pieces of art remaining for $name**__
-listart_remaining: '>>> $items'
-listfossils_count: __**$count Fossils remaining for $name**__
-listfossils_remaining: '>>> $items'
 neededfossils: '> **$name** needs $items'
 neededfossils_none: No fossils are known to be needed at this time, new users must
   collect at least one fossil.
@@ -126,6 +100,16 @@ oops: '**Deleting last logged price for $name.**'
 predict: '$name''s turnip prediction link: $url'
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
+search_all_not_needed: No one currently needs this.
+search_art_row: '> $name needs arts: $items'
+search_bugs: Searching for bugs is not supported yet.
+search_fish: Searching for fish is not supported yet.
+search_fossil_row: '> $name needs fossils: $items'
+search_invalid: 'Did not recognize the following collectables:
+
+  > $items'
+search_no_params: Please provide the name of a collectable to search for.
+search_not_needed: '> No one needs: $items'
 sell_higher_price: Logged selling price of $price for user $name. (Higher than last
   selling price of $last_price bells)
 sell_lower_price: Logged selling price of $price for user $name. (Lower than last
@@ -157,17 +141,22 @@ turnippattern_pattern3: '> **Small Spike**: Prices fall until a spike occurs. Th
 turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Prices
   then decrease before shooting up twice. Sell the second time prices shoot up after
   the decrease for maximum profit. Spikes only occur from Monday to Thursday.'
-uncollect_already: 'The following fossils were already marked as not collected:
+uncollect_art_already: 'The following pieces of art were already marked as not collected:
 
   > $items'
-uncollect_deleted: 'Unmarked the following fossils as collected:
+uncollect_art_deleted: 'Unmarked the following pieces of art as collected:
 
   > $items'
-uncollect_no_params: Please provide the name of a fossil to mark as uncollected.
-uncollectart_already: 'The following pieces of art were already marked as not collected:
+uncollect_bugs: Uncollecting bugs is not supported yet.
+uncollect_fish: Uncollecting fish is not supported yet.
+uncollect_fossil_already: 'The following fossils were already marked as not collected:
 
   > $items'
-uncollectart_deleted: 'Unmarked the following pieces of art as collected:
+uncollect_fossil_deleted: 'Unmarked the following fossils as collected:
 
   > $items'
-uncollectart_no_params: Please provide the name of a piece of art to mark as uncollected.
+uncollect_no_params: Please provide the name of something to mark as uncollected.
+uncollected_art_count: __**$count Pieces of art remaining for $name**__
+uncollected_art_remaining: '>>> $items'
+uncollected_fossils_count: __**$count Fossils remaining for $name**__
+uncollected_fossils_remaining: '>>> $items'
