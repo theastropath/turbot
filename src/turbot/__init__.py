@@ -65,13 +65,16 @@ LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
 with open(STRINGS_DATA_FILE) as f:
     STRINGS = load(f, Loader=Loader)
 
-with open(FOSSILS_DATA_FILE) as f:
-    FOSSILS = frozenset([line.strip().lower() for line in f.readlines()])
-
-
 FISH = pd.read_csv(FISH_DATA_FILE)
 BUGS = pd.read_csv(BUGS_DATA_FILE)
 ART = pd.read_csv(ART_DATA_FILE)
+
+with open(FOSSILS_DATA_FILE) as f:
+    FOSSILS_SET = frozenset([line.strip().lower() for line in f.readlines()])
+FISH_SET = frozenset(FISH.drop_duplicates(subset="name").name.tolist())
+BUGS_SET = frozenset(BUGS.drop_duplicates(subset="name").name.tolist())
+ART_SET = frozenset(ART.drop_duplicates(subset="name").name.tolist())
+COLLECTABLE_SET = FOSSILS_SET | FISH_SET | BUGS_SET | ART_SET
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
@@ -89,6 +92,7 @@ DAYS = {
 def s(key, **kwargs):
     """Returns a string from data/strings.yaml with subsitutions."""
     data = STRINGS.get(key, "")
+    assert data, f"error: missing strings key: {key}"
     return Template(data).substitute(kwargs)
 
 
@@ -846,125 +850,206 @@ class Turbot(discord.Client):
 
     def collect_command(self, channel, author, params):
         """
-        Mark fossils as donated to your museum. The names must match the in-game item
-        name, and more than one can be provided if separated by commas.
-        | <list of fossils>
+        Mark collectables as donated to your museum. The names must match the in-game item
+        name exactly. | <comma, separated, list, of, things>
         """
         if not params:
             return s("collect_no_params"), None
 
         items = set(item.strip().lower() for item in " ".join(params).split(","))
-        valid = items.intersection(FOSSILS)
-        invalid = items.difference(FOSSILS)
 
-        fossils = self.load_fossils()
-        yours = fossils[fossils.author == author.id]
-        dupes = yours.loc[yours.name.isin(valid)].name.values.tolist()
-        new_names = list(set(valid) - set(dupes))
-        new_data = [[author.id, name] for name in new_names]
-        new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
-        fossils = fossils.append(new_fossils, ignore_index=True)
-        yours = fossils[fossils.author == author.id]  # re-fetch for congrats
-        self.save_fossils(fossils)
+        valid_fossils = items.intersection(FOSSILS_SET)
+        valid_bugs = items.intersection(BUGS_SET)
+        valid_fish = items.intersection(FISH_SET)
+        valid_art = items.intersection(ART_SET)
+        invalid = items.difference(COLLECTABLE_SET)
 
         lines = []
-        if new_names:
-            lines.append(s("collect_new", items=", ".join(sorted(new_names))))
-        if dupes:
-            lines.append(s("collect_dupe", items=", ".join(sorted(dupes))))
+
+        if valid_fossils:
+            fossils = self.load_fossils()
+            yours = fossils[fossils.author == author.id]
+            dupes = yours.loc[yours.name.isin(valid_fossils)].name.values.tolist()
+            new_names = list(set(valid_fossils) - set(dupes))
+            new_data = [[author.id, name] for name in new_names]
+            new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
+            fossils = fossils.append(new_fossils, ignore_index=True)
+            yours = fossils[fossils.author == author.id]  # re-fetch for congrats
+            self.save_fossils(fossils)
+            if new_names:
+                lines.append(s("collect_fossil_new", items=", ".join(sorted(new_names))))
+            if dupes:
+                lines.append(s("collect_fossil_dupe", items=", ".join(sorted(dupes))))
+            if len(FOSSILS_SET) == len(yours.index):
+                lines.append(s("congrats_all_fossils"))
+
+        if valid_bugs:
+            lines.append(s("collect_bugs"))
+
+        if valid_fish:
+            lines.append(s("collect_fish"))
+
+        if valid_art:
+            art = self.load_art()
+            yours = art[art.author == author.id]
+            dupes = yours.loc[yours.name.isin(valid_art)].name.values.tolist()
+            new_names = list(set(valid_art) - set(dupes))
+            new_data = [[author.id, name] for name in new_names]
+            new_art = pd.DataFrame(columns=art.columns, data=new_data)
+            art = art.append(new_art, ignore_index=True)
+            yours = art[art.author == author.id]  # re-fetch for congrats
+            self.save_art(art)
+            if new_names:
+                lines.append(s("collect_art_new", items=", ".join(sorted(new_names))))
+            if dupes:
+                lines.append(s("collect_art_dupe", items=", ".join(sorted(dupes))))
+            if len(ART) == len(yours.index):
+                lines.append(s("congrats_all_art"))
+
         if invalid:
-            lines.append(s("collect_bad", items=", ".join(sorted(invalid))))
-        if len(FOSSILS) == len(yours.index):
-            lines.append(s("congrats_all_fossils"))
+            lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
+
         return "\n".join(lines), None
 
     def uncollect_command(self, channel, author, params):
         """
-        Unmark fossils as donated to your museum. The names must match the in-game item
-        name, and more than one can be provided if separated by commas.
-        | <list of fossils>
+        Unmark collectables as donated to your museum. The names must match the in-game
+        item name exactly. | <comma, separated, list, of, things>
         """
         if not params:
             return s("uncollect_no_params"), None
 
         items = set(item.strip().lower() for item in " ".join(params).split(","))
-        valid = items.intersection(FOSSILS)
-        invalid = items.difference(FOSSILS)
 
-        fossils = self.load_fossils()
-        yours = fossils[fossils.author == author.id]
-        previously_collected = yours.loc[yours.name.isin(valid)]
-        deleted = set(previously_collected.name.values.tolist())
-        didnt_have = valid - deleted
-        fossils = fossils.drop(previously_collected.index)
-        self.save_fossils(fossils)
+        valid_fossils = items.intersection(FOSSILS_SET)
+        valid_bugs = items.intersection(BUGS_SET)
+        valid_fish = items.intersection(FISH_SET)
+        valid_art = items.intersection(ART_SET)
+        invalid = items.difference(COLLECTABLE_SET)
 
         lines = []
-        if deleted:
-            lines.append(s("uncollect_deleted", items=", ".join(sorted(deleted))))
-        if didnt_have:
-            lines.append(s("uncollect_already", items=", ".join(sorted(didnt_have))))
+
+        if valid_fossils:
+            fossils = self.load_fossils()
+            yours = fossils[fossils.author == author.id]
+            previously_collected = yours.loc[yours.name.isin(valid_fossils)]
+            deleted = set(previously_collected.name.values.tolist())
+            didnt_have = valid_fossils - deleted
+            fossils = fossils.drop(previously_collected.index)
+            self.save_fossils(fossils)
+            if deleted:
+                lines.append(
+                    s("uncollect_fossil_deleted", items=", ".join(sorted(deleted)))
+                )
+            if didnt_have:
+                lines.append(
+                    s("uncollect_fossil_already", items=", ".join(sorted(didnt_have)))
+                )
+
+        if valid_bugs:
+            lines.append(s("uncollect_bugs"))
+
+        if valid_fish:
+            lines.append(s("uncollect_fish"))
+
+        if valid_art:
+            art = self.load_art()
+            yours = art[art.author == author.id]
+            previously_collected = yours.loc[yours.name.isin(valid_art)]
+            deleted = set(previously_collected.name.values.tolist())
+            didnt_have = valid_art - deleted
+            art = art.drop(previously_collected.index)
+            self.save_art(art)
+            if deleted:
+                lines.append(s("uncollect_art_deleted", items=", ".join(sorted(deleted))))
+            if didnt_have:
+                lines.append(
+                    s("uncollect_art_already", items=", ".join(sorted(didnt_have)))
+                )
+
         if invalid:
-            lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
+            lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
+
         return "\n".join(lines), None
 
-    def fossilsearch_command(self, channel, author, params):
+    def search_command(self, channel, author, params):
         """
-        Searches all users to see who needs the listed fossils. The names must match the
-        in-game item name, and more than one can be provided if separated by commas.
-        | <list of fossils>
+        Searches all users to see who needs the given collectables. The names must match
+        the in-game item name, and more than one can be provided if separated by commas.
+        | <list of collectables>
         """
         if not params:
-            return s("fossilsearch_no_params"), None
+            return s("search_no_params"), None
 
         items = set(item.strip().lower() for item in " ".join(params).split(","))
-        valid = items.intersection(FOSSILS)
-        invalid = items - valid
+
+        valid_fossils = items.intersection(FOSSILS_SET)
+        valid_bugs = items.intersection(BUGS_SET)
+        valid_fish = items.intersection(FISH_SET)
+        valid_art = items.intersection(ART_SET)
+        invalid = items.difference(COLLECTABLE_SET)
 
         fossils = self.load_fossils()
-        users = fossils.author.unique()
-        results = defaultdict(list)
-        for fossil in valid:
+        fossil_users = fossils.author.unique()
+        fossil_results = defaultdict(list)
+        for fossil in valid_fossils:
             havers = fossils[fossils.name == fossil].author.unique()
-            needers = np.setdiff1d(users, havers).tolist()
+            needers = np.setdiff1d(fossil_users, havers).tolist()
             for needer in needers:
                 name = discord_user_from_id(channel, needer)
-                results[name].append(fossil)
+                fossil_results[name].append(fossil)
 
-        def add_header(lines):
-            lines.insert(0, s("fossilsearch_header"))
-            return lines
+        if valid_bugs:
+            return s("search_bugs"), None
 
-        if not results and not invalid:
-            return s("fossilsearch_noneed"), None
+        if valid_fish:
+            return s("search_fish"), None
 
-        if not results and invalid:
-            lines = []
-            if valid:
-                lines.append(
-                    s("fossilsearch_row", name="No one", fossils=", ".join(sorted(valid)))
-                )
-            lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-            return "\n".join(add_header(sorted(lines))), None
+        art = self.load_art()
+        art_users = art.author.unique()
+        art_results = defaultdict(list)
+        for artpiece in valid_art:
+            havers = art[art.name == artpiece].author.unique()
+            needers = np.setdiff1d(art_users, havers).tolist()
+            for needer in needers:
+                name = discord_user_from_id(channel, needer)
+                art_results[name].append(artpiece)
+
+        if not fossil_results and not art_results and not invalid:
+            return s("search_all_not_needed"), None
+
+        searched = valid_fossils | valid_bugs | valid_fish | valid_art
+        needed = set()
+        for items in fossil_results.values():
+            needed.update(items)
+        for items in art_results.values():
+            needed.update(items)
+        not_needed = searched - needed
 
         lines = []
-        for name, needed in results.items():
-            need_list = fossils = ", ".join(sorted(needed))
-            lines.append(s("fossilsearch_row", name=name, fossils=need_list))
+        for name, items in fossil_results.items():
+            items_str = ", ".join(sorted(items))
+            lines.append(s("search_fossil_row", name=name, items=items_str))
+        for name, items in art_results.items():
+            items_str = ", ".join(sorted(items))
+            lines.append(s("search_art_row", name=name, items=items_str))
+        if not_needed:
+            items_str = ", ".join(sorted(not_needed))
+            lines.append(s("search_not_needed", items=items_str))
         if invalid:
-            lines.append(s("fossil_bad", items=", ".join(sorted(invalid))))
-        return "\n".join(add_header(sorted(lines))), None
+            lines.append(s("search_invalid", items=", ".join(sorted(invalid))))
+        return "\n".join(sorted(lines)), None
 
     def allfossils_command(self, channel, author, params):
         """
         Shows all possible fossils that you can donate to the museum.
         """
-        return s("allfossils", list=", ".join(sorted(FOSSILS))), None
+        return s("allfossils", list=", ".join(sorted(FOSSILS_SET))), None
 
-    def listfossils_command(self, channel, author, params):
+    def uncollected_command(self, channel, author, params):
         """
-        Lists all fossils that you still need to donate. If a user is provided, it gives
-        the same information for that user instead. | [user]
+        Lists all collectables that you still need to donate. If a user is provided, it
+        gives the same information for that user instead. | [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
@@ -973,16 +1058,44 @@ class Turbot(discord.Client):
             return s("cant_find_user", name=target), None
 
         fossils = self.load_fossils()
-        yours = fossils[fossils.author == target_id]
-        collected = set(yours.name.unique())
-        remaining = FOSSILS - collected
+        your_fossils = fossils[fossils.author == target_id]
+        collected_fossils = set(your_fossils.name.unique())
+        remaining_fossils = FOSSILS_SET - collected_fossils
+
+        art = self.load_art()
+        your_art = art[art.author == target_id]
+        collected_art = set(your_art.name.unique())
+        remaining_art = ART_SET - collected_art
 
         lines = []
-        if remaining:
-            lines.append(s("listfossils_count", count=len(remaining), name=target_name))
-            lines.append(s("listfossils_remaining", items=", ".join(sorted(remaining))))
+
+        if remaining_fossils:
+            lines.append(
+                s(
+                    "uncollected_fossils_count",
+                    count=len(remaining_fossils),
+                    name=target_name,
+                )
+            )
+            lines.append(
+                s(
+                    "uncollected_fossils_remaining",
+                    items=", ".join(sorted(remaining_fossils)),
+                )
+            )
         else:
             lines.append(s("congrats_all_fossils"))
+
+        if remaining_art:
+            lines.append(
+                s("uncollected_art_count", count=len(remaining_art), name=target_name)
+            )
+            lines.append(
+                s("uncollected_art_remaining", items=", ".join(sorted(remaining_art)))
+            )
+        else:
+            lines.append(s("congrats_all_art"))
+
         return "\n".join(lines), None
 
     def neededfossils_command(self, channel, author, params):
@@ -991,7 +1104,9 @@ class Turbot(discord.Client):
         """
         fossils = self.load_fossils()
         authors = [member.id for member in channel.members if member.id != self.user.id]
-        total = pd.DataFrame(list(product(authors, FOSSILS)), columns=["author", "name"])
+        total = pd.DataFrame(
+            list(product(authors, FOSSILS_SET)), columns=["author", "name"]
+        )
         merged = total.merge(fossils, indicator=True, how="outer")
         needed = merged[merged["_merge"] == "left_only"]
 
@@ -999,7 +1114,7 @@ class Turbot(discord.Client):
         for user, df in needed.groupby(by="author"):
             name = discord_user_name(channel, user)
             items_list = sorted([row["name"] for _, row in df.iterrows()])
-            if len(items_list) == len(FOSSILS):
+            if len(items_list) == len(FOSSILS_SET):
                 continue
             elif len(items_list) > 10:
                 items_str = "_more than 10 fossils..._"
@@ -1010,9 +1125,9 @@ class Turbot(discord.Client):
             return s("neededfossils_none"), None
         return "\n".join(sorted(lines)), None
 
-    def collectedfossils_command(self, channel, author, params):
+    def collected_command(self, channel, author, params):
         """
-        Lists all fossils that you have already donated. If a user is provided, it
+        Lists all collectables that you have already donated. If a user is provided, it
         gives the same information for that user instead. | [user]
         """
         target = author.id if not params else params[0]
@@ -1022,55 +1137,43 @@ class Turbot(discord.Client):
             return s("cant_find_user", name=target), None
 
         fossils = self.load_fossils()
-        yours = fossils[fossils.author == target_id]
-        collected = set(yours.name.unique())
+        your_fossils = fossils[fossils.author == target_id]
+        collected_fossils = set(your_fossils.name.unique())
+        all_fossils = len(collected_fossils) == len(FOSSILS_SET)
 
-        if len(collected) == len(FOSSILS):
-            return s("congrats_all_fossils"), None
+        art = self.load_art()
+        your_art = art[art.author == target_id]
+        collected_art = set(your_art.name.unique())
+        all_art = len(collected_art) == len(ART_SET)
 
-        return (
-            s(
-                "collectedfossils",
-                name=target_name,
-                count=len(collected),
-                items=", ".join(sorted(collected)),
-            ),
-            None,
-        )
-
-    def fossilcount_command(self, channel, author, params):
-        """
-        Provides a count of the number of fossils remaining for the comma-separated list
-        of users. | <list of users>
-        """
-        if not params:
-            return s("fossilcount_no_params"), None
-
-        users = set(item.strip().lower() for item in " ".join(params).split(","))
-
-        valid = []
-        invalid = []
-        for user in users:
-            user_name = discord_user_name(channel, user)
-            user_id = discord_user_id(channel, user_name)
-            if user_name and user_id:
-                valid.append((user_name, user_id))
-            else:
-                invalid.append(user)
+        if any([all_fossils, all_art]):
+            lines = []
+            if all_fossils:
+                lines.append(s("congrats_all_fossils"))
+            if all_art:
+                lines.append(s("congrats_all_art"))
+            if all([all_fossils, all_art]):
+                return "\n".join(lines), None
 
         lines = []
-        if valid:
-            lines.append(s("fossilcount_valid_header"))
-            fossils = self.load_fossils()
-            for user_name, user_id in sorted(valid):
-                yours = fossils[fossils.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = FOSSILS - collected
-                lines.append(s("fossilcount_valid", name=user_name, count=len(remaining)))
-        if invalid:
-            lines.append(s("fossilcount_invalid_header"))
-            for user in invalid:
-                lines.append(s("fossilcount_invalid", name=user))
+        if collected_art:
+            lines.append(
+                s(
+                    "collected_art",
+                    name=target_name,
+                    count=len(collected_art),
+                    items=", ".join(sorted(collected_art)),
+                )
+            )
+        if collected_fossils:
+            lines.append(
+                s(
+                    "collected_fossils",
+                    name=target_name,
+                    count=len(collected_fossils),
+                    items=", ".join(sorted(collected_fossils)),
+                )
+            )
         return "\n".join(lines), None
 
     def predict_command(self, channel, author, params):
@@ -1146,133 +1249,13 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
 
-    def collectart_command(self, channel, author, params):
+    def count_command(self, channel, author, params):
         """
-        Mark pieces of art as donated to your museum.  The names must match the
-        in-game item name, and more than one can be provided if separated by
-        commas. | <list of art pieces>
-        """
-        if not params:
-            return s("collectart_no_params"), None
-
-        art = self.load_art()
-        yourart = art[art.author == author.id]
-
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-        validset = items.intersection(ART["name"])
-        invalidset = items - validset
-        valid = sorted(list(validset))
-        invalid = sorted(list(invalidset))
-
-        dupes = yourart.loc[yourart.name.isin(valid)].name.values.tolist()
-        new_names = list(set(valid) - set(dupes))
-        new_data = [[author.id, name] for name in new_names]
-        new_art = pd.DataFrame(columns=art.columns, data=new_data)
-        art = art.append(new_art, ignore_index=True)
-        yourart = art[art.author == author.id]  # re-fetch for congrats
-
-        self.save_art(art)
-
-        lines = []
-        if new_names:
-            lines.append(s("collectart_new", items=", ".join(sorted(new_names))))
-        if dupes:
-            lines.append(s("collectart_dupe", items=", ".join(sorted(dupes))))
-        if invalid:
-            lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
-        if len(ART) == len(yourart.index):
-            lines.append(s("congrats_all_art"))
-        return "\n".join(lines), None
-
-    def uncollectart_command(self, channel, author, params):
-        """
-        Unmark pieces of art as donated to your museum.  The names must match the
-        in-game item name, and more than one can be provided if separated by
-        commas. | <list of art pieces>
-        """
-        if not params:
-            return s("uncollectart_no_params"), None
-
-        art = self.load_art()
-        yourart = art[art.author == author.id]
-
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-        validset = items.intersection(ART["name"])
-        invalidset = items - validset
-        valid = sorted(list(validset))
-        invalid = sorted(list(invalidset))
-
-        previously_collected = yourart.loc[yourart.name.isin(valid)]
-        deleted = set(previously_collected.name.values.tolist())
-        didnt_have = validset - deleted
-        art = art.drop(previously_collected.index)
-        self.save_art(art)
-
-        lines = []
-        if deleted:
-            lines.append(s("uncollectart_deleted", items=", ".join(sorted(deleted))))
-        if didnt_have:
-            lines.append(s("uncollectart_already", items=", ".join(sorted(didnt_have))))
-        if invalid:
-            lines.append(s("collectart_bad", items=", ".join(sorted(invalid))))
-        return "\n".join(lines), None
-
-    def listart_command(self, channel, author, params):
-        """
-        Lists all art that you still need to donate. If a user is provided, it gives
-        the same information for that user instead. | [user]
-        """
-        target = author.id if not params else params[0]
-        target_name = discord_user_name(channel, target)
-        target_id = discord_user_id(channel, target_name)
-        if not target_name or not target_id:
-            return s("cant_find_user", name=target), None
-
-        art = self.load_art()
-        yours = art[art.author == target_id]
-        collected = set(yours.name.unique())
-        allnames = set(ART.name.unique())
-        remaining = allnames - collected
-
-        lines = []
-        if remaining:
-            lines.append(s("listart_count", count=len(remaining), name=target_name))
-            lines.append(s("listart_remaining", items=", ".join(sorted(remaining))))
-        else:
-            lines.append(s("congrats_all_art"))
-        return "\n".join(lines), None
-
-    def collectedart_command(self, channel, author, params):
-        """
-        Lists all art that you have donated. If a user is provided, it gives
-        the same information for that user instead. | [user]
-        """
-        target = author.id if not params else params[0]
-        target_name = discord_user_name(channel, target)
-        target_id = discord_user_id(channel, target_name)
-        if not target_name or not target_id:
-            return s("cant_find_user", name=target), None
-
-        art = self.load_art()
-        yours = art[art.author == target_id]
-        collected = set(yours.name.unique())
-        return (
-            s(
-                "collectedart",
-                name=target_name,
-                count=len(collected),
-                items=", ".join(sorted(collected)),
-            ),
-            None,
-        )
-
-    def artcount_command(self, channel, author, params):
-        """
-        Provides a count of the number of pieces of art remaining for the comma-separated
+        Provides a count of the number of pieces of collectables for the comma-separated
         list of users. | <list of users>
         """
         if not params:
-            return s("artcount_no_params"), None
+            return s("count_no_params"), None
 
         users = set(item.strip().lower() for item in " ".join(params).split(","))
 
@@ -1288,68 +1271,31 @@ class Turbot(discord.Client):
 
         lines = []
         if valid:
-            lines.append(s("artcount_valid_header"))
+            lines.append(s("count_fossil_valid_header"))
+            fossils = self.load_fossils()
+            for user_name, user_id in sorted(valid):
+                yours = fossils[fossils.author == user_id]
+                collected = set(yours.name.unique())
+                remaining = FOSSILS_SET - collected
+                lines.append(
+                    s("count_fossil_valid", name=user_name, count=len(remaining))
+                )
+
+            lines.append(s("count_art_valid_header"))
             art = self.load_art()
             for user_name, user_id in sorted(valid):
                 yours = art[art.author == user_id]
                 collected = set(yours.name.unique())
                 allnames = set(ART.name.unique())
                 remaining = allnames - collected
-                lines.append(s("artcount_valid", name=user_name, count=len(remaining)))
+                lines.append(s("count_art_valid", name=user_name, count=len(remaining)))
+
         if invalid:
-            lines.append(s("artcount_invalid_header"))
+            lines.append(s("count_invalid_header"))
             for user in invalid:
-                lines.append(s("artcount_invalid", name=user))
+                lines.append(s("count_invalid", name=user))
+
         return "\n".join(lines), None
-
-    def artsearch_command(self, channel, author, params):
-        """
-        Searches all users to see who needs the listed pieces of art. The names must
-        match the in-game item name, and more than one can be provided if separated
-        by commas | <list of art>
-        """
-        if not params:
-            return s("artsearch_no_params"), None
-
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-        validset = items.intersection(ART["name"])
-        invalidset = items - validset
-        valid = sorted(list(validset))
-        invalid = sorted(list(invalidset))
-
-        art = self.load_art()
-        users = art.author.unique()
-        results = defaultdict(list)
-        for artpiece in valid:
-            havers = art[art.name == artpiece].author.unique()
-            needers = np.setdiff1d(users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                results[name].append(artpiece)
-
-        def add_header(lines):
-            lines.insert(0, s("artsearch_header"))
-            return lines
-
-        if not results and not invalid:
-            return s("artsearch_noneed"), None
-
-        if not results and invalid:
-            lines = []
-            if valid:
-                lines.append(
-                    s("artsearch_row", name="No one", art=", ".join(sorted(valid)))
-                )
-            lines.append(s("art_bad", items=", ".join(sorted(invalid))))
-            return "\n".join(add_header(sorted(lines))), None
-
-        lines = []
-        for name, needed in results.items():
-            need_list = art = ", ".join(sorted(needed))
-            lines.append(s("artsearch_row", name=name, art=need_list))
-        if invalid:
-            lines.append(s("art_bad", items=", ".join(sorted(invalid))))
-        return "\n".join(add_header(sorted(lines))), None
 
     def art_command(self, channel, author, params):
         """
@@ -1358,7 +1304,7 @@ class Turbot(discord.Client):
         response = ""
         if params:
             items = set(item.strip().lower() for item in " ".join(params).split(","))
-            validset = items.intersection(ART["name"])
+            validset = items.intersection(ART_SET)
             invalidset = items - validset
             valid = sorted(list(validset))
             invalid = sorted(list(invalidset))
@@ -1391,7 +1337,7 @@ class Turbot(discord.Client):
                 response += "\n" + (s("art_invalid", items=", ".join(invalid)))
 
         else:
-            response = s("allart", list=", ".join(sorted(ART["name"])))
+            response = s("allart", list=", ".join(sorted(ART_SET)))
 
         return response, None
 
@@ -1522,7 +1468,7 @@ class Turbot(discord.Client):
             if not name:
                 continue
 
-            if name.find(params[0]) != -1:
+            if name.lower().find(params[0].lower()) != -1:
                 now = self.to_usertime(user_id, datetime.now(pytz.utc))
                 return (
                     s(
