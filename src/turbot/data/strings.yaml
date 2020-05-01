@@ -18,7 +18,7 @@ art_invalid: 'Did not recognize the following pieces of art:
 art_real: '> **$name** is always genuine.
 
   > **Real:** <$real_url>'
-best: '> $name: $timestamp for $price bells'
+best: '> **$name:** $timestamp for $price bells'
 bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
 bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
