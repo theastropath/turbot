@@ -26,6 +26,7 @@ class MockMember:
         self.name = member_name
         self.id = member_id
         self.roles = roles
+        self.avatar_url = "http://example.com/avatar.png"
 
     def __repr__(self):
         return f"{self.name}#{self.id}"
@@ -1611,8 +1612,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone\n",
-                f"{author.id},southern,\n",
+                "author,hemisphere,timezone,island\n",
+                f"{author.id},southern,,\n",
             ]
 
         await client.on_message(MockMessage(author, channel, "!hemisphere NoRthErn"))
@@ -1621,8 +1622,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone\n",
-                f"{author.id},northern,\n",
+                "author,hemisphere,timezone,island\n",
+                f"{author.id},northern,,\n",
             ]
 
     async def test_on_message_fish_no_hemisphere(self, client, channel):
@@ -1697,8 +1698,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone\n",
-                f"{author.id},,America/Los_Angeles\n",
+                "author,hemisphere,timezone,island\n",
+                f"{author.id},,America/Los_Angeles,\n",
             ]
 
         await client.on_message(
@@ -1709,8 +1710,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone\n",
-                f"{author.id},,Canada/Saskatchewan\n",
+                "author,hemisphere,timezone,island\n",
+                f"{author.id},,Canada/Saskatchewan,\n",
             ]
 
     async def test_load_prices_new(self, client):
@@ -1915,18 +1916,14 @@ class TestTurbot:
         assert subject(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == ["Jan"]
         assert subject(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == []
 
-    async def test_on_message_info(self, client, channel):
-        author = someone()
+    async def test_on_message_info(self, client, channel, snap):
+        author = DUDE
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(
             MockMessage(author, channel, "!timezone America/Los_Angeles")
         )
         await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
-        assert channel.last_sent_response == (
-            f"__**{author}**__\n"
-            "> Hemisphere: Northern\n"
-            "> Current time: 04:00 PM PST"
-        )
+        snap(channel.all_sent_embeds_json)
 
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
         # Simulate the condition where a user exists in the data file,
@@ -1957,6 +1954,23 @@ class TestTurbot:
     async def test_on_message_search_fish(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!search bitterling"))
         channel.last_sent_response == "Searching for fish is not supported yet."
+
+    async def test_on_message_island_no_params(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!island"))
+        assert channel.last_sent_response == "Please provide the name of your island."
+
+    async def test_on_message_island(self, client, channel):
+        author = someone()
+        island = "Koholint Island"
+        await client.on_message(MockMessage(author, channel, f"!island {island}"))
+        assert channel.last_sent_response == (
+            f"Island name preference registered for {author}."
+        )
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone,island\n",
+                f"{author.id},,,{island}\n",
+            ]
 
 
 class TestFigures:
