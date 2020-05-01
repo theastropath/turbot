@@ -1718,6 +1718,18 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!fish"))
         snap(channel.last_sent_response)
 
+    async def test_on_message_fish_case_insensitive(self, client, channel, snap):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(author, channel, "!fish SeA"))
+        snap(channel.all_sent_embeds_json)
+
+    async def test_on_message_bugs_case_insensitive(self, client, channel, snap):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(author, channel, "!bugs TaRaNtUlA"))
+        snap(channel.all_sent_embeds_json)
+
     async def test_on_message_timezone_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!timezone"))
         assert channel.last_sent_response == ("Please provide the name of your timezone.")

@@ -1412,7 +1412,8 @@ class Turbot(discord.Client):
             return lines
 
         if params:
-            search = " ".join(params)
+            user_input = " ".join(params)
+            search = user_input.lower()
             if search == "leaving":
                 found = available[available[next_month] == 0]
             elif search == "arriving":
@@ -1421,7 +1422,7 @@ class Turbot(discord.Client):
                 found = available[available.name.str.contains(search)]
 
             if found.empty:
-                return s(f"{kind}_none_found", search=search)
+                return s(f"{kind}_none_found", search=user_input)
             elif force_text or len(found) > EMBED_LIMIT:
                 available = found  # fallback to the less detailed, text only, response
             else:
