@@ -293,6 +293,7 @@ class Turbot(discord.Client):
                         "island",
                         "friend",
                         "fruit",
+                        "nickname",
                     ]
                 )
         return self._users_data
@@ -1257,6 +1258,17 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "hemisphere", home)
         return s("hemisphere", name=author), None
 
+    def nickname_command(self, channel, author, params):
+        """
+        Set your nickname, such as your Switch user name. | <name>
+        """
+        if not params:
+            return s("nickname_no_params"), None
+
+        name = " ".join(params)  # allow spaces in nicknames
+        self.save_user_pref(author, "nickname", name)
+        return s("nickname", name=author), None
+
     def timezone_command(self, channel, author, params):
         """
         Set your timezone. You can find a list of supported TZ names at
@@ -1496,18 +1508,9 @@ class Turbot(discord.Client):
         embed = discord.Embed(title=user.name)
         embed.set_thumbnail(url=user.avatar_url)
 
-        island = prefs.get("island", "Not set")
-        embed.add_field(name="Island", value=island)
-
-        hemisphere = prefs.get("hemisphere", "Not set").title()
-        embed.add_field(name="Hemisphere", value=hemisphere)
-
-        now = self.to_usertime(user.id, datetime.now(pytz.UTC))
-        current_time = now.strftime("%I:%M %p %Z")
-        embed.add_field(name="Current time", value=current_time)
-
-        fruit = prefs.get("fruit", "Not set").title()
-        embed.add_field(name="Native fruit", value=fruit)
+        nickname = prefs.get("nickname", None)
+        if nickname:
+            embed.add_field(name="Nickname", value=nickname)
 
         code = prefs.get("friend", None)
         if code:
@@ -1515,6 +1518,19 @@ class Turbot(discord.Client):
             embed.add_field(name="Friend code", value=code_str)
         else:
             embed.add_field(name="Friend code", value="Not set")
+
+        island = prefs.get("island", "Not set")
+        embed.add_field(name="Island", value=island)
+
+        hemisphere = prefs.get("hemisphere", "Not set").title()
+        embed.add_field(name="Hemisphere", value=hemisphere)
+
+        fruit = prefs.get("fruit", "Not set").title()
+        embed.add_field(name="Native fruit", value=fruit)
+
+        now = self.to_usertime(user.id, datetime.now(pytz.UTC))
+        current_time = now.strftime("%I:%M %p %Z")
+        embed.set_footer(text=f"Current time is {current_time}")
 
         return embed
 
