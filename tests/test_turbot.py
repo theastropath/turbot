@@ -270,6 +270,16 @@ def snap(snapshot):
     return match
 
 
+@pytest.fixture
+def with_bugs_header(monkeypatch):
+    monkeypatch.setattr(random, "randint", lambda l, h: 100)  # 100% chance of bugs header
+
+
+@pytest.fixture
+def without_bugs_header(monkeypatch):
+    monkeypatch.setattr(random, "randint", lambda l, h: 0)  # 0% chance of bugs header
+
+
 ##############################
 # Test Suites
 ##############################
@@ -1825,50 +1835,44 @@ class TestTurbot:
         await client.on_message(MockMessage(FRIEND, channel, "!bugs butt"))
 
     async def test_on_message_bug_search_query_many(
-        self, client, channel, monkeypatch, snap
+        self, client, channel, without_bugs_header, snap
     ):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs butt"))
         snap(channel.last_sent_response)
 
     async def test_on_message_bug_search_query_few(
-        self, client, channel, monkeypatch, snap
+        self, client, channel, without_bugs_header, snap
     ):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs beet"))
         snap(channel.all_sent_embeds_json)
 
-    async def test_on_message_bug_header(self, client, channel, monkeypatch, snap):
-        monkeypatch.setattr(random, "randint", lambda l, h: 100)
+    async def test_on_message_bug_header(self, client, channel, with_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs butt"))
         snap(channel.last_sent_response)
 
     async def test_on_message_bug_search_leaving(
-        self, client, channel, monkeypatch, snap
+        self, client, channel, without_bugs_header, snap
     ):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs leaving"))
         snap(channel.all_sent_embeds_json)
 
     async def test_on_message_bug_search_arriving(
-        self, client, channel, monkeypatch, snap
+        self, client, channel, without_bugs_header, snap
     ):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs arriving"))
         snap(channel.last_sent_response)
 
-    async def test_on_message_new(self, client, channel, monkeypatch, snap):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
+    async def test_on_message_new(self, client, channel, without_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!new"))
@@ -1876,8 +1880,20 @@ class TestTurbot:
         snap(channel.all_sent_responses[2])
         assert len(channel.all_sent_responses) == 3
 
-    async def test_on_message_bug(self, client, channel, monkeypatch, snap):
-        monkeypatch.setattr(random, "randint", lambda l, h: 0)
+    async def test_on_message_new_first_day(
+        self, client, channel, freezer, without_bugs_header, snap
+    ):
+        first_day_of_the_month = datetime(2020, 5, 1, tzinfo=pytz.utc)
+        freezer.move_to(first_day_of_the_month)
+
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
+        await client.on_message(MockMessage(author, channel, "!new"))
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_responses) == 3
+
+    async def test_on_message_bug(self, client, channel, without_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs"))
