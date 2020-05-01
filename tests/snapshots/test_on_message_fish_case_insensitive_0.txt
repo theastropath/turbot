@@ -34,6 +34,7 @@
         "type": "rich"
     },
     {
+        "color": 3447003,
         "fields": [
             {
                 "inline": true,

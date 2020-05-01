@@ -1,0 +1,37 @@
+[
+    {
+        "color": 16776643,
+        "description": "A Discord bot for everything _Animal Crossing: New Horizons._\n\nUse the command `!help` for usage details. Having issues with Turbot? Please [report bugs](https://github.com/theastropath/turbot/issues)!\n",
+        "fields": [
+            {
+                "inline": true,
+                "name": "Version",
+                "value": "[3.1.0](https://pypi.org/project/turbot/3.1.0/)"
+            },
+            {
+                "inline": true,
+                "name": "Package",
+                "value": "[PyPI](https://pypi.org/project/turbot/)"
+            },
+            {
+                "inline": true,
+                "name": "Author",
+                "value": "[TheAstropath](https://github.com/theastropath)"
+            },
+            {
+                "inline": true,
+                "name": "Maintainer",
+                "value": "[lexicalunit](https://github.com/lexicaluit)"
+            }
+        ],
+        "footer": {
+            "text": "MIT \u00a9 TheAstropath, lexicalunit et al"
+        },
+        "thumbnail": {
+            "url": "https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png"
+        },
+        "title": "Turbot",
+        "type": "rich",
+        "url": "https://github.com/theastropath/turbot"
+    }
+]
