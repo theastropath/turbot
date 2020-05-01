@@ -52,6 +52,7 @@ user's preferred timezone.
 - `!hemisphere`: Set your island hemisphere
 - `!info`: Get a user's information
 - `!island`: Set your island name
+- `!nickname`: Set your nickname
 - `!timezone`: Set your island timezone
 
 ### 💸 Turnips

@@ -3,38 +3,9 @@
         "fields": [
             {
                 "inline": true,
-                "name": "Island",
-                "value": "Not set"
-            },
-            {
-                "inline": true,
-                "name": "Hemisphere",
-                "value": "Northern"
-            },
-            {
-                "inline": true,
-                "name": "Current time",
-                "value": "12:00 AM UTC"
-            },
-            {
-                "inline": true,
-                "name": "Native fruit",
-                "value": "Not Set"
-            },
-            {
-                "inline": true,
                 "name": "Friend code",
                 "value": "Not set"
-            }
-        ],
-        "thumbnail": {
-            "url": "http://example.com/avatar.png"
-        },
-        "title": "dude",
-        "type": "rich"
-    },
-    {
-        "fields": [
+            },
             {
                 "inline": true,
                 "name": "Island",
@@ -47,20 +18,13 @@
             },
             {
                 "inline": true,
-                "name": "Current time",
-                "value": "04:00 PM PST"
-            },
-            {
-                "inline": true,
                 "name": "Native fruit",
                 "value": "Not Set"
-            },
-            {
-                "inline": true,
-                "name": "Friend code",
-                "value": "Not set"
             }
         ],
+        "footer": {
+            "text": "Current time is 12:00 AM UTC"
+        },
         "thumbnail": {
             "url": "http://example.com/avatar.png"
         },
@@ -69,6 +33,43 @@
     },
     {
         "fields": [
+            {
+                "inline": true,
+                "name": "Friend code",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Island",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Hemisphere",
+                "value": "Northern"
+            },
+            {
+                "inline": true,
+                "name": "Native fruit",
+                "value": "Not Set"
+            }
+        ],
+        "footer": {
+            "text": "Current time is 04:00 PM PST"
+        },
+        "thumbnail": {
+            "url": "http://example.com/avatar.png"
+        },
+        "title": "dude",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "Friend code",
+                "value": "Not set"
+            },
             {
                 "inline": true,
                 "name": "Island",
@@ -81,20 +82,13 @@
             },
             {
                 "inline": true,
-                "name": "Current time",
-                "value": "04:00 PM PST"
-            },
-            {
-                "inline": true,
                 "name": "Native fruit",
                 "value": "Not Set"
-            },
-            {
-                "inline": true,
-                "name": "Friend code",
-                "value": "Not set"
             }
         ],
+        "footer": {
+            "text": "Current time is 04:00 PM PST"
+        },
         "thumbnail": {
             "url": "http://example.com/avatar.png"
         },
@@ -103,40 +97,11 @@
     },
     {
         "fields": [
-            {
-                "inline": true,
-                "name": "Island",
-                "value": "Kriti"
-            },
-            {
-                "inline": true,
-                "name": "Hemisphere",
-                "value": "Northern"
-            },
-            {
-                "inline": true,
-                "name": "Current time",
-                "value": "04:00 PM PST"
-            },
-            {
-                "inline": true,
-                "name": "Native fruit",
-                "value": "Not Set"
-            },
             {
                 "inline": true,
                 "name": "Friend code",
                 "value": "SW-1111-2222-3333"
-            }
-        ],
-        "thumbnail": {
-            "url": "http://example.com/avatar.png"
-        },
-        "title": "dude",
-        "type": "rich"
-    },
-    {
-        "fields": [
+            },
             {
                 "inline": true,
                 "name": "Island",
@@ -149,20 +114,82 @@
             },
             {
                 "inline": true,
-                "name": "Current time",
-                "value": "04:00 PM PST"
+                "name": "Native fruit",
+                "value": "Not Set"
+            }
+        ],
+        "footer": {
+            "text": "Current time is 04:00 PM PST"
+        },
+        "thumbnail": {
+            "url": "http://example.com/avatar.png"
+        },
+        "title": "dude",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "Friend code",
+                "value": "SW-1111-2222-3333"
+            },
+            {
+                "inline": true,
+                "name": "Island",
+                "value": "Kriti"
+            },
+            {
+                "inline": true,
+                "name": "Hemisphere",
+                "value": "Northern"
             },
             {
                 "inline": true,
                 "name": "Native fruit",
                 "value": "Peach"
+            }
+        ],
+        "footer": {
+            "text": "Current time is 04:00 PM PST"
+        },
+        "thumbnail": {
+            "url": "http://example.com/avatar.png"
+        },
+        "title": "dude",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "Nickname",
+                "value": "Ph\u00e8dre n\u00f3 Delaunay de Montr\u00e8ve"
             },
             {
                 "inline": true,
                 "name": "Friend code",
                 "value": "SW-1111-2222-3333"
+            },
+            {
+                "inline": true,
+                "name": "Island",
+                "value": "Kriti"
+            },
+            {
+                "inline": true,
+                "name": "Hemisphere",
+                "value": "Northern"
+            },
+            {
+                "inline": true,
+                "name": "Native fruit",
+                "value": "Peach"
             }
         ],
+        "footer": {
+            "text": "Current time is 04:00 PM PST"
+        },
         "thumbnail": {
             "url": "http://example.com/avatar.png"
         },

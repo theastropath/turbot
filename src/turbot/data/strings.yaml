@@ -96,6 +96,8 @@ lastweek_none: No graph from last week.
 neededfossils: '> **$name** needs $items'
 neededfossils_none: No fossils are known to be needed at this time, new users must
   collect at least one fossil.
+nickname: Nickname preference registered for $name.
+nickname_no_params: Please provide a nickname, for example your Switch user name.
 no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
 not_a_command: Sorry, there is no command named "$request"
 not_admin: User is not a Turbot Admin
