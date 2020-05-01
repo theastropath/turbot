@@ -1,6 +1,7 @@
 import inspect
 import logging
 import random
+import re
 import sys
 from collections import defaultdict
 from contextlib import redirect_stdout
@@ -284,7 +285,14 @@ class Turbot(discord.Client):
                 self._users_data = pd.read_csv(self.users_file)
             except FileNotFoundError:
                 self._users_data = pd.DataFrame(
-                    columns=["author", "hemisphere", "timezone", "island"]
+                    columns=[
+                        "author",
+                        "hemisphere",
+                        "timezone",
+                        "island",
+                        "friend",
+                        "fruit",
+                    ]
                 )
         return self._users_data
 
@@ -1206,6 +1214,34 @@ class Turbot(discord.Client):
         url = f"{self.base_prophet_url}{query}"
         return s("predict", name=target_name, url=url), None
 
+    def friend_command(self, channel, author, params):
+        """
+        Set your friend code. | <code>
+        """
+        if not params:
+            return s("friend_no_params"), None
+
+        code = re.sub("[^0-9]", "", "".join(params).replace("-", ""))
+        if len(code) != 12 or not code.isdigit():
+            return s("friend_invalid"), None
+
+        self.save_user_pref(author, "friend", code)
+        return s("friend", name=author), None
+
+    def fruit_command(self, channel, author, params):
+        """
+        Set your island's native fruit. | [apple|cherry|orange|peach|pear]
+        """
+        if not params:
+            return s("fruit_no_params"), None
+
+        fruit = params[0].lower()
+        if fruit not in ["apple", "cherry", "orange", "peach", "pear"]:
+            return s("fruit_invalid"), None
+
+        self.save_user_pref(author, "fruit", fruit)
+        return s("fruit", name=author), None
+
     def hemisphere_command(self, channel, author, params):
         """
         Set your hemisphere. | [Northern|Southern]
@@ -1452,16 +1488,31 @@ class Turbot(discord.Client):
         )
 
     def _info_embed(self, user):
-        now = self.to_usertime(user.id, datetime.now(pytz.UTC))
         prefs = self.get_user_prefs(user.id)
-        island = prefs.get("island", "Not set")
-        hemisphere = prefs.get("hemisphere", "Not set").title()
-        current_time = now.strftime("%I:%M %p %Z")
+
         embed = discord.Embed(title=user.name)
         embed.set_thumbnail(url=user.avatar_url)
+
+        island = prefs.get("island", "Not set")
         embed.add_field(name="Island", value=island)
+
+        hemisphere = prefs.get("hemisphere", "Not set").title()
         embed.add_field(name="Hemisphere", value=hemisphere)
+
+        now = self.to_usertime(user.id, datetime.now(pytz.UTC))
+        current_time = now.strftime("%I:%M %p %Z")
         embed.add_field(name="Current time", value=current_time)
+
+        fruit = prefs.get("fruit", "Not set").title()
+        embed.add_field(name="Native fruit", value=fruit)
+
+        code = prefs.get("friend", None)
+        if code:
+            code_str = f"SW-{code[0:4]}-{code[4:8]}-{code[8:]}"
+            embed.add_field(name="Friend code", value=code_str)
+        else:
+            embed.add_field(name="Friend code", value="Not set")
+
         return embed
 
     def info_command(self, channel, author, params):

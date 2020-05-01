@@ -1612,8 +1612,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island\n",
-                f"{author.id},southern,,\n",
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},southern,,,,\n",
             ]
 
         await client.on_message(MockMessage(author, channel, "!hemisphere NoRthErn"))
@@ -1622,8 +1622,52 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island\n",
-                f"{author.id},northern,,\n",
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},northern,,,,\n",
+            ]
+
+    async def test_on_message_friend_no_params(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!friend"))
+        assert channel.last_sent_response == ("Please provide your switch friend code.")
+
+    async def test_on_message_friend_bad_friend(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!friend upwards"))
+        assert channel.last_sent_response == (
+            "Your switch friend code should be 12 numbers."
+        )
+
+    async def test_on_message_friend(self, client, channel):
+        author = someone()
+        await client.on_message(
+            MockMessage(author, channel, f"!friend sw-1234-5678-9012")
+        )
+        assert channel.last_sent_response == f"Friend code registered for {author}."
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},,,,123456789012,\n",
+            ]
+
+    async def test_on_message_fruit_no_params(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!fruit"))
+        assert channel.last_sent_response == (
+            "Please provide your island's native fruit."
+        )
+
+    async def test_on_message_fruit_bad_fruit(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!fruit upwards"))
+        assert channel.last_sent_response == (
+            "Your native fruit can be apple, cherry, orange, peach, or pear."
+        )
+
+    async def test_on_message_fruit(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, f"!fruit apple"))
+        assert channel.last_sent_response == f"Native fruit registered for {author}."
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},,,,,apple\n",
             ]
 
     async def test_on_message_fish_no_hemisphere(self, client, channel):
@@ -1698,8 +1742,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island\n",
-                f"{author.id},,America/Los_Angeles,\n",
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},,America/Los_Angeles,,,\n",
             ]
 
         await client.on_message(
@@ -1710,8 +1754,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island\n",
-                f"{author.id},,Canada/Saskatchewan,\n",
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},,Canada/Saskatchewan,,,\n",
             ]
 
     async def test_load_prices_new(self, client):
@@ -1918,11 +1962,16 @@ class TestTurbot:
 
     async def test_on_message_info(self, client, channel, snap):
         author = DUDE
-        await client.on_message(MockMessage(author, channel, "!hemisphere northern"))
-        await client.on_message(
-            MockMessage(author, channel, "!timezone America/Los_Angeles")
-        )
-        await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
+        prefs = {
+            "hemisphere": "norTHErn",
+            "timezone": "America/Los_Angeles",
+            "island": "Kriti",
+            "friend": "Sw-1111----2222-3333",
+            "fruit": "pEaCh",
+        }
+        for command, value in prefs.items():
+            await client.on_message(MockMessage(author, channel, f"!{command} {value}"))
+            await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
         snap(channel.all_sent_embeds_json)
 
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
@@ -1968,8 +2017,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island\n",
-                f"{author.id},,,{island}\n",
+                "author,hemisphere,timezone,island,friend,fruit\n",
+                f"{author.id},,,{island},,\n",
             ]
 
 
