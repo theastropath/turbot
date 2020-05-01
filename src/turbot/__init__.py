@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytz
+from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
 from yaml import load
 
@@ -1382,8 +1383,9 @@ class Turbot(discord.Client):
 
         now = self.to_usertime(author.id, datetime.now(pytz.utc))
         this_month = now.strftime("%b").lower()
-        next_month = (now + timedelta(days=33)).strftime("%b").lower()
-        last_month = (now - timedelta(days=33)).strftime("%b").lower()
+        first_this_month = now.replace(day=1)
+        last_month = (first_this_month - timedelta(days=1)).strftime("%b").lower()
+        next_month = (first_this_month + relativedelta(months=1)).strftime("%b").lower()
         available = source[(source.hemisphere == hemisphere) & (source[this_month] == 1)]
 
         def details(row):
