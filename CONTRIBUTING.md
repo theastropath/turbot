@@ -189,7 +189,7 @@ poetry publish
 ```
 
 > **Note:** The reason you have to run `pytest` after running the
-> `poetry version` command you will need to update some tests snapshots as the
+> `poetry version` command is because we must update some test snapshots as the
 > version number can appear in them. Failure to do this will result in a
 > failing build on `master`.
 
