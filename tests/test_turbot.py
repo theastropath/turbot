@@ -2003,6 +2003,10 @@ class TestTurbot:
             await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
         snap(channel.all_sent_embeds_json)
 
+    async def test_on_message_about(self, client, channel, snap):
+        await client.on_message(MockMessage(someone(), channel, f"!about"))
+        snap(channel.all_sent_embeds_json)
+
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
         # Simulate the condition where a user exists in the data file,
         # but is no longer on the server.

@@ -39,7 +39,8 @@ More usage help can be found by running `turbot --help`.
 Once you've connected the bot to your server, you can interact with it over
 Discord via the following commands in any of the authorized channels.
 
-- `!help` - Provides detailed help about all of the following commands.
+- `!help` - Provides detailed help about all of the following commands
+- `!about` - Get information about Turbot
 
 ### 🤔 User Preferences
 

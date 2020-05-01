@@ -1,5 +1,6 @@
 [
     {
+        "color": 15105570,
         "fields": [
             {
                 "inline": true,

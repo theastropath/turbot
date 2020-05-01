@@ -1,5 +1,6 @@
 [
     {
+        "color": 15105570,
         "fields": [
             {
                 "inline": true,
@@ -39,6 +40,7 @@
         "type": "rich"
     },
     {
+        "color": 15105570,
         "fields": [
             {
                 "inline": true,
@@ -78,6 +80,7 @@
         "type": "rich"
     },
     {
+        "color": 15105570,
         "fields": [
             {
                 "inline": true,

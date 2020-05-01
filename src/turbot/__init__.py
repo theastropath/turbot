@@ -1452,6 +1452,10 @@ class Turbot(discord.Client):
                     embed.add_field(name="during", value=info["months"])
                     if info["alert"]:
                         embed.add_field(name="alert", value=info["alert"])
+                        if "GONE" in info["alert"]:
+                            embed.color = discord.Color.orange()
+                        else:
+                            embed.color = discord.Color.blue()
                     response.append(embed)
                 return add_header(response)
 
@@ -1552,6 +1556,36 @@ class Turbot(discord.Client):
                 return self._info_embed(user), None
 
         return s("info_not_found"), None
+
+    def about_command(self, channel, author, params):
+        """
+        Get information about Turbot.
+        """
+        embed = discord.Embed(title="Turbot")
+        embed.set_thumbnail(
+            url="https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png"
+        )
+        embed.add_field(
+            name="Version",
+            value=f"[{__version__}](https://pypi.org/project/turbot/{__version__}/)",
+        )
+        embed.add_field(name="Package", value="[PyPI](https://pypi.org/project/turbot/)")
+        embed.add_field(
+            name="Author", value="[TheAstropath](https://github.com/theastropath)"
+        )
+        embed.add_field(
+            name="Maintainer", value="[lexicalunit](https://github.com/lexicaluit)"
+        )
+        embed.description = (
+            "A Discord bot for everything _Animal Crossing: New Horizons._\n"
+            "\n"
+            "Use the command `!help` for usage details. Having issues with Turbot? "
+            "Please [report bugs](https://github.com/theastropath/turbot/issues)!\n"
+        )
+        embed.url = "https://github.com/theastropath/turbot"
+        embed.set_footer(text="MIT © TheAstropath, lexicalunit et al")
+        embed.color = discord.Color(0xFFFDC3)
+        return embed, None
 
 
 def get_token(token_file):  # pragma: no cover
