@@ -10,7 +10,7 @@
 
 A Discord bot for everything _Animal Crossing: New Horizons_.
 
-![screenshot](https://user-images.githubusercontent.com/1903876/80298832-e784fe00-8744-11ea-8c0f-dbbf81bb5fb7.png)
+![screenshot](https://user-images.githubusercontent.com/1903876/80841531-787c2f00-8bb4-11ea-8975-cc619b978635.png)
 
 ## 🤖 Running the bot
 
