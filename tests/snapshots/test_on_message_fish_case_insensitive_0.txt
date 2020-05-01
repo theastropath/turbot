@@ -1,0 +1,75 @@
+[
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "400"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "sea"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "5"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "the entire year"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/22/NH-Icon-seabass.png/revision/latest/scale-to-width-down/64?cb=20200401003130"
+        },
+        "title": "Sea bass",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "1100"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "sea"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "1"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Apr - Nov"
+            },
+            {
+                "inline": true,
+                "name": "alert",
+                "value": "_New this month_"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/55/NH-Icon-seahorse.png/revision/latest/scale-to-width-down/64?cb=20200401003129"
+        },
+        "title": "Sea horse",
+        "type": "rich"
+    }
+]
