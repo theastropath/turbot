@@ -3,6 +3,7 @@
 # Turbot
 
 [![build][build-badge]][build]
+[![pypi][pypi-badge]][pypi]
 [![python][python-badge]][python]
 [![codecov][codecov-badge]][codecov]
 [![black][black-badge]][black]
@@ -115,3 +116,5 @@ These commands can also help users tell fake art from real art.
 [python-badge]:     https://img.shields.io/badge/python-3.7+-blue.svg
 [python]:           https://www.python.org/
 [theastropath]:     https://github.com/theastropath
+[pypi]:             https://pypi.org/project/turbot/
+[pypi-badge]:       https://img.shields.io/pypi/v/turbot
