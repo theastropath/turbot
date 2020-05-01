@@ -47,34 +47,36 @@ These commands allow users to set their preferences. These preferences are used
 to make other commands more relevant, for example by converting times to the
 user's preferred timezone.
 
-- `!hemisphere`
-- `!info`
-- `!island`
-- `!timezone`
+- `!friend`: Set your friend code
+- `!fruit`: Set your native fruit
+- `!hemisphere`: Set your island hemisphere
+- `!info`: Get a user's information
+- `!island`: Set your island name
+- `!timezone`: Set your island timezone
 
 ### 💸 Turnips
 
 These commands help users buy low and sell high in the stalk market.
 
-- `!bestsell`
-- `!buy`
-- `!clear`
-- `!graph`
-- `!history`
-- `!lastweek`
-- `!oops`
-- `!predict`
-- `!reset`
-- `!sell`
-- `!turnippattern`
+- `!bestsell`: Look for the best buy
+- `!buy`: Save a buy price
+- `!clear`: Clear your price data
+- `!graph`: Graph price data
+- `!history`: Get price history
+- `!lastweek`: Get graph for last week's price data
+- `!oops`: Undo the last price data
+- `!predict`: Predict your price data for the rest of the week
+- `!reset`: Reset all users' data
+- `!sell`: Save a sell price
+- `!turnippattern`: Determine your turnip price pattern for the week
 
 ### 🐟 Fish and Bugs
 
 Provides users with information on where and when to catch critters.
 
-- `!bugs`
-- `!fish`
-- `!new`
+- `!bugs`: Get information on bugs
+- `!fish`: Get information on fish
+- `!new`: Get information on newly available fish and bugs
 
 ### 🦴 Fossils & 🖼️ Art
 
@@ -84,16 +86,15 @@ than they would on their own.
 
 These commands can also help users tell fake art from real art.
 
-- `!allart`
-- `!allfossils`
-- `!art`
-- `!collect`
-- `!collected`
-- `!count`
-- `!neededfossils`
-- `!search`
-- `!uncollect`
-- `!uncollected`
+- `!allfossils`: Get a list of all possible fossils
+- `!art`: Get information on an art piece
+- `!collect`: Collect fossils or art
+- `!collected`: Show collected fossils and art
+- `!count`: Count the number of collected fossils and art
+- `!neededfossils`: Get what fossils are needed by users
+- `!search`: Search for someone who needs a fossil or art
+- `!uncollect`: Remove a fossil or art from your collection
+- `!uncollected`: Get fossils and art not yet collected
 
 ---
 

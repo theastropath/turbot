@@ -69,6 +69,12 @@ day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day para
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** is available $time at $location (sells for $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
+friend: Friend code registered for $name.
+friend_invalid: Your switch friend code should be 12 numbers.
+friend_no_params: Please provide your switch friend code.
+fruit: Native fruit registered for $name.
+fruit_invalid: Your native fruit can be apple, cherry, orange, peach, or pear.
+fruit_no_params: Please provide your island's native fruit.
 graph_all_users: __**Historical Graph for All Users**__
 graph_user: __**Historical Graph for $name**__
 hemisphere: Hemisphere preference registered for $name.
