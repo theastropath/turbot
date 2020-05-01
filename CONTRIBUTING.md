@@ -198,7 +198,7 @@ the `poetry version` command. On a *NIX shell you could also get automatically
 it like so:
 
 ```shell
-cat pyproject.toml | grep "^version" | cut -d= -f2 | sed 's/"//g;s/ //g;s/^/v/;'
+grep "^version" < pyproject.toml | cut -d= -f2 | sed 's/"//g;s/ //g;s/^/v/;'
 ```
 
 When you use the `poetry publish` command you will be prompted for your
@@ -207,6 +207,11 @@ When you use the `poetry publish` command you will be prompted for your
 After publishing you can view the package at its
 [pypi.org project page](https://pypi.org/project/turbot/) to see that everything
 looks good.
+
+> **Note:** If you want to do this release process automatically there is a
+> *NIX script available in the `scripts` directory to help. To use it you will
+> need to have non-interactive `poetry publish` enabled by running:
+> `poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"`.
 
 [black]:            https://github.com/psf/black
 [wiki]:             https://animalcrossing.fandom.com/
