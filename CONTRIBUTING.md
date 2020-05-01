@@ -181,10 +181,17 @@ To release a new version of `turbot`, use `poetry`:
 
 ```shell
 poetry version [major|minor|patch]
+poetry run pytest -k test_on_message_about --snapshot-update
 git commit -am "Release vM.M.P"
 git push
+poetry build
 poetry publish
 ```
+
+> **Note:** The reason you have to run `pytest` after running the
+> `poetry version` command you will need to update some tests snapshots as the
+> version number can appear in them. Failure to do this will result in a
+> failing build on `master`.
 
 You can get the `M.M.P` version numbers from `pyproject.toml` after you've run
 the `poetry version` command. On a *NIX shell you could also get automatically
