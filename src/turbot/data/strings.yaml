@@ -78,16 +78,13 @@ hemisphere_no_params: Please provide the name of your hemisphere, northern or so
 history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp'
-info: '__**$name**__
-
-  > Hemisphere: $hemisphere
-
-  > Current time: $time'
 info_no_params: Please provide a search term.
 info_not_found: No users found.
 invalid_collectable: 'Unrecognized collectable names:
 
   > $items'
+island: Island name preference registered for $name.
+island_no_params: Please provide the name of your island.
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
 neededfossils: '> **$name** needs $items'

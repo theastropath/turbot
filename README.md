@@ -48,6 +48,8 @@ to make other commands more relevant, for example by converting times to the
 user's preferred timezone.
 
 - `!hemisphere`
+- `!info`
+- `!island`
 - `!timezone`
 
 ### 💸 Turnips

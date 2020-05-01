@@ -284,7 +284,7 @@ class Turbot(discord.Client):
                 self._users_data = pd.read_csv(self.users_file)
             except FileNotFoundError:
                 self._users_data = pd.DataFrame(
-                    columns=["author", "hemisphere", "timezone"]
+                    columns=["author", "hemisphere", "timezone", "island"]
                 )
         return self._users_data
 
@@ -410,40 +410,27 @@ class Turbot(discord.Client):
         )
         return last.iloc[0] if last.any() else None
 
-    def _get_user_prefs(self, author_id):
+    def get_user_prefs(self, author_id):
         users = self.load_users()
         row = users[users.author == author_id].tail(1)
         if row.empty:
             return {}
-        return row.to_dict(orient="records")[0]
-
-    def get_user_hemisphere(self, author_id):
-        prefs = self._get_user_prefs(author_id)
-        if (
-            not prefs
-            or "hemisphere" not in prefs
-            or not prefs["hemisphere"]
-            or not isinstance(prefs["hemisphere"], str)
-        ):
-            return None
-        return prefs["hemisphere"]
-
-    def get_user_timezone(self, author_id):
-        prefs = self._get_user_prefs(author_id)
-        if (
-            not prefs
-            or "timezone" not in prefs
-            or not prefs["timezone"]
-            or not isinstance(prefs["timezone"], str)
-        ):
-            return pytz.UTC
-        return pytz.timezone(prefs["timezone"])
+        data = row.to_dict(orient="records")[0]
+        prefs = {}
+        for column in users.columns:
+            if data and column in data and data[column] and isinstance(data[column], str):
+                if column == "timezone":
+                    prefs[column] = pytz.timezone(data[column])
+                else:
+                    prefs[column] = data[column]
+        return prefs
 
     def to_usertime(self, author_id, dt):
+        user_timezone = self.get_user_prefs(author_id).get("timezone", pytz.UTC)
         if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
-            return dt.tz_convert(self.get_user_timezone(author_id))
+            return dt.tz_convert(user_timezone)
         elif hasattr(dt, "astimezone"):  # python-datetime-like objects
-            return dt.astimezone(self.get_user_timezone(author_id))
+            return dt.astimezone(user_timezone)
         else:  # pragma: no cover
             logging.warning(f"can't convert tz on {dt} for user {author_id}")
             return dt
@@ -1191,7 +1178,7 @@ class Turbot(discord.Client):
         yours = yours.sort_values(by=["timestamp"])
 
         # convert all timestamps to the target user's timezone
-        target_timezone = self.get_user_timezone(target_id)
+        target_timezone = self.get_user_prefs(target_id).get("timezone", pytz.UTC)
         yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
 
         recent_buy = yours[yours.kind == "buy"].tail(1)
@@ -1247,6 +1234,17 @@ class Turbot(discord.Client):
 
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
+
+    def island_command(self, channel, author, params):
+        """
+        Set your island name. | <name>
+        """
+        if not params:
+            return s("island_no_params"), None
+
+        island = " ".join(params)  # allow spaces in island names
+        self.save_user_pref(author, "island", island)
+        return s("island", name=author), None
 
     def count_command(self, channel, author, params):
         """
@@ -1342,7 +1340,7 @@ class Turbot(discord.Client):
 
     def _creatures(self, *_, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""
-        hemisphere = self.get_user_hemisphere(author.id)
+        hemisphere = self.get_user_prefs(author.id).get("hemisphere", None)
         if not hemisphere:
             return s("no_hemisphere")
 
@@ -1453,6 +1451,19 @@ class Turbot(discord.Client):
             None,
         )
 
+    def _info_embed(self, user):
+        now = self.to_usertime(user.id, datetime.now(pytz.UTC))
+        prefs = self.get_user_prefs(user.id)
+        island = prefs.get("island", "Not set")
+        hemisphere = prefs.get("hemisphere", "Not set").title()
+        current_time = now.strftime("%I:%M %p %Z")
+        embed = discord.Embed(title=user.name)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.add_field(name="Island", value=island)
+        embed.add_field(name="Hemisphere", value=hemisphere)
+        embed.add_field(name="Current time", value=current_time)
+        return embed
+
     def info_command(self, channel, author, params):
         """
         Gives you information on a user. | [user]
@@ -1463,21 +1474,12 @@ class Turbot(discord.Client):
         users = self.load_users()
         for _, row in users.iterrows():
             user_id = row["author"]
-            name = discord_user_name(channel, user_id)
-            if not name:
+            user_name = discord_user_name(channel, user_id)
+            if not user_name:
                 continue
-
-            if name.lower().find(params[0].lower()) != -1:
-                now = self.to_usertime(user_id, datetime.now(pytz.utc))
-                return (
-                    s(
-                        "info",
-                        hemisphere=self.get_user_hemisphere(user_id).title(),
-                        time=now.strftime("%I:%M %p %Z"),
-                        name=name,
-                    ),
-                    None,
-                )
+            if user_name.lower().find(params[0].lower()) != -1:
+                user = discord_user_from_name(channel, user_name)
+                return self._info_embed(user), None
 
         return s("info_not_found"), None
 
