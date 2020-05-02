@@ -85,7 +85,7 @@ DAYS = {
     "monday": 1,
     "tuesday": 2,
     "wednesday": 3,
-    "thrusday": 4,
+    "thursday": 4,
     "friday": 5,
     "saturday": 6,
 }
