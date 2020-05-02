@@ -76,7 +76,7 @@ fruit: Native fruit registered for $name.
 fruit_invalid: Your native fruit can be apple, cherry, orange, peach, or pear.
 fruit_no_params: Please provide your island's native fruit.
 graph_all_users: __**Historical Graph for All Users**__
-graph_user: __**Historical Graph for $name**__
+graph_user: __**Predictive Graph for $name**__
 hemisphere: Hemisphere preference registered for $name.
 hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere
   name.
