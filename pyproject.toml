@@ -51,6 +51,7 @@ pyyaml = "*"
 dunamai = "^1.1.0"
 humanize = "^2.4.0"
 python-dateutil = "^2.8.1"
+turnips = {git = "https://gitlab.com/nanoNago/turnips.git"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
@@ -68,6 +69,7 @@ tox = "^3.14.6"
 lxml = "^4.5.0"
 isort = "^4.3.21"
 coverage = "^5.1"
+ipython = "^7.14.0"
 
 [tool.poetry.scripts]
 turbot = 'turbot:main'

@@ -1,4 +1,5 @@
 import inspect
+import json
 import logging
 import random
 import re
@@ -24,6 +25,8 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
+from turnips.archipelago import Archipelago
+from turnips.plots import plot_models_range
 from yaml import load
 
 try:
@@ -165,6 +168,8 @@ def humanize_months(row):
 
 def discord_user_from_name(channel, name):
     """Returns the discord user from the given channel and name."""
+    if name is None:
+        return None
     lname = name.lower()
     members = channel.members
     return next(filter(lambda member: lname in str(member).lower(), members), None)
@@ -326,14 +331,49 @@ class Turbot(discord.Client):
                 self._fossils_data = pd.DataFrame(columns=["author", "name"])
         return self._fossils_data
 
-    def generate_graph(self, channel, user, graphname):  # pragma: no cover
-        """Generates a nice looking graph of user data."""
-        plt = self.get_graph(channel, user, graphname)
-        if plt:
-            plt.close("all")
+    def _get_island_data(self, user):
+        timeline = self.get_user_timeline(user.id)
+        timeline_data = dict(
+            zip(
+                [
+                    "Sunday_AM",
+                    "Monday_AM",
+                    "Monday_PM",
+                    "Tuesday_AM",
+                    "Tuesday_PM",
+                    "Wednesday_AM",
+                    "Wednesday_PM",
+                    "Thursday_AM",
+                    "Thursday_PM",
+                    "Friday_AM",
+                    "Friday_PM",
+                    "Saturday_AM",
+                    "Saturday_PM",
+                ],
+                timeline,
+            )
+        )
+        timeline_data = {k: v for k, v in timeline_data.items() if v is not None}
+        # TODO: Incorporate information about user's pattern from last week
+        return {"initial_week": False, "timeline": timeline_data}
 
-    def get_graph(self, channel, user, graphname):
-        """Returns a graph of user data; the call site is responsible for closing."""
+    def _get_predictive_graph(self, target_user, graphname):
+        """Builds a predictive graph of a user's price data."""
+        islands = {"islands": {}}
+        island_data = self._get_island_data(target_user)
+        if "Sunday_AM" not in island_data["timeline"]:
+            return None
+        islands["islands"][target_user.name] = island_data
+        arch = Archipelago.load_json(json.dumps(islands))
+        island = next(arch.islands)  # there should only be one island
+        plot_models_range(
+            island.name, list(island.model_group.models), island.previous_week, True
+        )
+        plt.savefig(graphname)
+        return plt
+
+    def _get_historical_graph(self, channel, graphname):
+        """Builds a historical graph of everyone's price data."""
         HOURS = mdates.HourLocator()
         HOURS_FMT = mdates.DateFormatter("%b %d %H:%M")
         TWELVEHOUR = mdates.HourLocator(interval=12)
@@ -349,39 +389,23 @@ class Turbot(discord.Client):
         priceList = self.load_prices()
         legendElems = []
 
-        if user:  # graph specific user
+        found_at_least_one_user = False
+        for user_id, df in priceList.groupby(by="author"):
             dates = []
             prices = []
-            userId = discord_user_id(channel, user)
-            userName = discord_user_name(channel, userId)
-            if not userId or not userName:
-                return None
-            legendElems.append(userName)
-            yours = priceList.loc[priceList.author == userId]
-            for _, row in yours.iterrows():
+            user_name = discord_user_name(channel, user_id)
+            if not user_name:
+                continue
+            found_at_least_one_user = True
+            legendElems.append(user_name)
+            for _, row in df.iterrows():
                 if row.kind == "sell":
                     prices.append(row.price)
                     dates.append(row.timestamp)
             if dates:
-                plt.plot(dates, prices, linestyle="-", marker="o", label=userName)
-        else:  # graph all users
-            found_at_least_one_user = False
-            for user_id, df in priceList.groupby(by="author"):
-                dates = []
-                prices = []
-                user_name = discord_user_name(channel, user_id)
-                if not user_name:
-                    continue
-                found_at_least_one_user = True
-                legendElems.append(user_name)
-                for _, row in df.iterrows():
-                    if row.kind == "sell":
-                        prices.append(row.price)
-                        dates.append(row.timestamp)
-                if dates:
-                    plt.plot(dates, prices, linestyle="-", marker="o", label=user_name)
-            if not found_at_least_one_user:
-                return None
+                plt.plot(dates, prices, linestyle="-", marker="o", label=user_name)
+        if not found_at_least_one_user:
+            return None
 
         plt.xticks(rotation=45, ha="right", rotation_mode="anchor")
         plt.subplots_adjust(left=0.05, bottom=0.2, right=0.85)
@@ -397,6 +421,19 @@ class Turbot(discord.Client):
 
         plt.savefig(graphname, dpi=100)
         return plt
+
+    def get_graph(self, channel, target_user, graphname):
+        """Returns a graph of user data; the call site is responsible for closing."""
+        if target_user:
+            return self._get_predictive_graph(target_user, graphname)
+        else:
+            return self._get_historical_graph(channel, graphname)
+
+    def generate_graph(self, channel, target_user, graphname):  # pragma: no cover
+        """Generates a nice looking graph of user data."""
+        fig = self.get_graph(channel, target_user, graphname)
+        if fig:
+            plt.close("all")
 
     def append_price(self, author, kind, price, at):
         """Adds a price to the prices data file for the given author and kind."""
@@ -420,9 +457,9 @@ class Turbot(discord.Client):
         )
         return last.iloc[0] if last.any() else None
 
-    def get_user_prefs(self, author_id):
+    def get_user_prefs(self, user_id):
         users = self.load_users()
-        row = users[users.author == author_id].tail(1)
+        row = users[users.author == user_id].tail(1)
         if row.empty:
             return {}
         data = row.to_dict(orient="records")[0]
@@ -434,6 +471,45 @@ class Turbot(discord.Client):
                 else:
                     prefs[column] = data[column]
         return prefs
+
+    def get_user_timeline(self, user_id):
+        prices = self.load_prices()
+        past = datetime.now(pytz.utc) - timedelta(days=12)
+        yours = prices[(prices.author == user_id) & (prices.timestamp > past)]
+        yours = yours.sort_values(by=["timestamp"])
+
+        # convert all timestamps to the target user's timezone
+        target_timezone = self.get_user_prefs(user_id).get("timezone", pytz.UTC)
+        yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
+
+        recent_buy = yours[yours.kind == "buy"].tail(1)
+        if recent_buy.empty:
+            return [None] * 13
+
+        buy_date = recent_buy.timestamp.iloc[0]
+        buy_price = int(recent_buy.price.iloc[0])
+
+        sells = yours[yours.kind == "sell"]
+        groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
+        sell_data = {}
+        for day, df in groups:
+            days_since_buy = (day - buy_date).days
+            sell_data[days_since_buy] = df.price.iloc[0:2]
+
+        timeline = [buy_price]
+        for day in range(0, 6):
+            if day in sell_data and sell_data[day].any():
+                am_price = int(sell_data[day][0])
+                timeline.append(am_price)
+                if len(sell_data[day]) > 1:
+                    pm_price = int(sell_data[day][1])
+                    timeline.append(pm_price)
+                else:
+                    timeline.append(None)
+            else:
+                timeline.extend([None, None])
+
+        return timeline
 
     def to_usertime(self, author_id, dt):
         user_timezone = self.get_user_prefs(author_id).get("timezone", pytz.UTC)
@@ -721,16 +797,18 @@ class Turbot(discord.Client):
         Generates a graph of turnip prices for all users. If a user is specified, only
         graph that users prices. | [user]
         """
+
         if not params:
             self.generate_graph(channel, None, GRAPHCMD_FILE)
             return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
 
         user_id = discord_user_id(channel, params[0])
         user_name = discord_user_name(channel, user_id)
-        if not user_id or not user_name:
+        user = discord_user_from_name(channel, user_name)
+        if not user:
             return s("cant_find_user", name=params[0]), None
 
-        self.generate_graph(channel, user_name, GRAPHCMD_FILE)
+        self.generate_graph(channel, user, GRAPHCMD_FILE)
         return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
 
     def turnippattern_command(self, channel, author, params):
@@ -1182,37 +1260,11 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        prices = self.load_prices()
-        past = datetime.now(pytz.utc) - timedelta(days=12)
-        yours = prices[(prices.author == target_id) & (prices.timestamp > past)]
-        yours = yours.sort_values(by=["timestamp"])
-
-        # convert all timestamps to the target user's timezone
-        target_timezone = self.get_user_prefs(target_id).get("timezone", pytz.UTC)
-        yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
-
-        recent_buy = yours[yours.kind == "buy"].tail(1)
-        if recent_buy.empty:
+        timeline = self.get_user_timeline(target_id)
+        if not timeline[0]:
             return s("cant_find_buy", name=target_name), None
 
-        buy_date = recent_buy.timestamp.iloc[0]
-        buy_price = recent_buy.price.iloc[0]
-
-        sells = yours[yours.kind == "sell"]
-        groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
-        sell_data = {}
-        for day, df in groups:
-            days_since_buy = (day - buy_date).days
-            sell_data[days_since_buy] = df.price.iloc[0:2]
-
-        sequence = [""] * 12
-        for day in range(0, 6):
-            if day in sell_data and sell_data[day].any():
-                sequence[day * 2] = sell_data[day][0]
-                if len(sell_data[day]) > 1:
-                    sequence[day * 2 + 1] = sell_data[day][1]
-
-        query = f"{buy_price}.{'.'.join(str(i) for i in sequence)}".rstrip(".")
+        query = ".".join((str(price) if price else "") for price in timeline).rstrip(".")
         url = f"{self.base_prophet_url}{query}"
         return s("predict", name=target_name, url=url), None
 
