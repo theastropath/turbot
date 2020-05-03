@@ -84,7 +84,7 @@ Provides users with information on where and when to catch critters.
 ### 🦴 Fossils & 🖼️ Art
 
 When a community of users tracks collectables and trades them between each
-other, everyone finishes collecting everything in the game s much more quickly
+other, everyone finishes collecting everything in the game so much more quickly
 than they would on their own.
 
 These commands can also help users tell fake art from real art.
