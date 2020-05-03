@@ -1597,15 +1597,22 @@ class Turbot(discord.Client):
         if len(params) < 1:
             return s("info_no_params"), None
 
+        query = " ".join(params).lower()  # allow spaces in names
+
         users = self.load_users()
         for _, row in users.iterrows():
             user_id = row["author"]
             user_name = discord_user_name(channel, user_id)
             if not user_name:
                 continue
-            if user_name.lower().find(params[0].lower()) != -1:
+            if user_name.lower().find(query) != -1:
                 user = discord_user_from_name(channel, user_name)
                 return self._info_embed(user), None
+
+        # check if user exists, they just don't have any info
+        for member in channel.members:
+            if member.name.lower().find(query) != -1:
+                return s("info_no_prefs", user=member), None
 
         return s("info_not_found"), None
 
