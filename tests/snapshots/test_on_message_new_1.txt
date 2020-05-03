@@ -1,10 +1,10 @@
-> **Butterfly fish** is available all day at sea (sells for 1000 bells) _New this month_
-> **Clown fish** is available all day at sea (sells for 650 bells) _New this month_
-> **Crawfish** is available all day at pond (sells for 200 bells) _New this month_
-> **Guppy** is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_
-> **Killifish** is available all day at pond (sells for 300 bells) _New this month_
-> **Neon tetra** is available 9 am - 4 pm at river (sells for 500 bells) _New this month_
-> **Sea horse** is available all day at sea (sells for 1100 bells) _New this month_
-> **Snapping turtle** is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_
-> **Surgeonfish** is available all day at sea (sells for 1000 bells) _New this month_
-> **Zebra turkeyfish** is available all day at sea (sells for 500 bells) _New this month_
+> **Butterfly fish** (shadow size 2) is available all day at sea (sells for 1000 bells) _New this month_
+> **Clown fish** (shadow size 1) is available all day at sea (sells for 650 bells) _New this month_
+> **Crawfish** (shadow size 2) is available all day at pond (sells for 200 bells) _New this month_
+> **Guppy** (shadow size 1) is available 9 am - 4 pm at river (sells for 1300 bells) _New this month_
+> **Killifish** (shadow size 1) is available all day at pond (sells for 300 bells) _New this month_
+> **Neon tetra** (shadow size 1) is available 9 am - 4 pm at river (sells for 500 bells) _New this month_
+> **Sea horse** (shadow size 1) is available all day at sea (sells for 1100 bells) _New this month_
+> **Snapping turtle** (shadow size 5) is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_
+> **Surgeonfish** (shadow size 2) is available all day at sea (sells for 1000 bells) _New this month_
+> **Zebra turkeyfish** (shadow size 3) is available all day at sea (sells for 500 bells) _New this month_
