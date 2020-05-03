@@ -85,6 +85,7 @@ history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp'
 info_no_params: Please provide a search term.
+info_no_prefs: '> **$user** has no preferences.'
 info_not_found: No users found.
 invalid_collectable: 'Unrecognized collectable names:
 

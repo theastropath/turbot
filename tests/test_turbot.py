@@ -2006,6 +2006,12 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
         assert channel.last_sent_response == "No users found."
 
+    async def test_on_message_info_no_prefs(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, f"!buy 100"))
+        await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
+        assert channel.last_sent_response == f"> **{author}** has no preferences."
+
     async def test_on_message_info_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!info"))
         assert channel.last_sent_response == "Please provide a search term."
