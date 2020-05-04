@@ -49,6 +49,7 @@ These commands allow users to set their preferences. These preferences are used
 to make other commands more relevant, for example by converting times to the
 user's preferred timezone.
 
+- `!creator`: Set your creator code
 - `!friend`: Set your friend code
 - `!fruit`: Set your native fruit
 - `!hemisphere`: Set your island hemisphere
