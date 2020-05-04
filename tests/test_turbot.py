@@ -2184,6 +2184,16 @@ class TestTurbot:
 
         assert client.get_user_prefs(PUNK.id) == {}
 
+    async def test_get_user_prefs_friend_code(self, client, channel, snap):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, f"!friend 1111 2222 3333"))
+        assert client.get_user_prefs(author.id) == {"friend": "111122223333"}
+
+        # unload in-memory users data
+        client._users_data = None
+
+        assert client.get_user_prefs(author.id) == {"friend": "111122223333"}
+
     async def test_on_message_about(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, f"!about"))
         snap(channel.all_sent_embeds_json)
