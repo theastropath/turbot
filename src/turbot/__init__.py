@@ -483,32 +483,41 @@ class Turbot(discord.Client):
         yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
 
         recent_buy = yours[yours.kind == "buy"].tail(1)
-        if recent_buy.empty:
+        if recent_buy.empty:  # no buy found
             return [None] * 13
 
         buy_date = recent_buy.timestamp.iloc[0]
-        buy_price = int(recent_buy.price.iloc[0])
+        if buy_date.to_pydatetime().isoweekday() != 7:  # buy isn't on a sunday
+            return [None] * 13
 
-        sells = yours[yours.kind == "sell"]
+        buy_price = int(recent_buy.price.iloc[0])
+        sells = yours[(yours.kind == "sell") & (yours.timestamp > buy_date)]
+        if sells.empty:  # no sells found after buy date
+            return [buy_price] + [None] * 12
+
+        sell_data = [
+            [None, None],  # monday
+            [None, None],  # tuesday
+            [None, None],  # wednesday
+            [None, None],  # friday
+            [None, None],  # thrusday
+            [None, None],  # saturday
+        ]
+
         groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
-        sell_data = {}
         for day, df in groups:
-            days_since_buy = (day - buy_date).days
-            sell_data[days_since_buy] = df.price.iloc[0:2]
+            day_of_week = day.to_pydatetime().isoweekday()
+            if day_of_week == 7:  # no sells allowed on sundays
+                continue
+            for ts, row in df.iterrows():
+                if ts.hour < 12:  # am
+                    sell_data[day_of_week - 1][0] = int(row["price"])
+                else:  # pm
+                    sell_data[day_of_week - 1][1] = int(row["price"])
 
         timeline = [buy_price]
-        for day in range(0, 6):
-            if day in sell_data and sell_data[day].any():
-                am_price = int(sell_data[day][0])
-                timeline.append(am_price)
-                if len(sell_data[day]) > 1:
-                    pm_price = int(sell_data[day][1])
-                    timeline.append(pm_price)
-                else:
-                    timeline.append(None)
-            else:
-                timeline.extend([None, None])
-
+        for day in sell_data:
+            timeline.extend(day)
         return timeline
 
     def to_usertime(self, author_id, dt):

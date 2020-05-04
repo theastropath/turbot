@@ -358,6 +358,139 @@ class TestTurbot:
             f"{author.id},sell,{amount},{monday_evening_adjust}\n",
         ]
 
+    async def test_get_user_timeline(self, client, channel, lines, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+
+        amount = 100
+        monday_am = sunday_am + timedelta(days=1)
+        for offset in range(0, 50):
+            freezer.move_to(monday_am + timedelta(hours=offset))
+            await client.on_message(
+                MockMessage(author, channel, f"!sell {amount} monday morning")
+            )
+            amount += 5
+
+        assert client.get_user_timeline(author.id) == [
+            90,
+            345,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+
+    async def test_get_user_timeline_buy_monday(self, client, channel, lines, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        sunday_am = datetime(2020, 4, 27, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+
+        amount = 100
+        monday_am = sunday_am + timedelta(days=1)
+        for offset in range(0, 50):
+            freezer.move_to(monday_am + timedelta(hours=offset))
+            await client.on_message(MockMessage(author, channel, f"!sell {amount}"))
+            amount += 5
+
+        assert client.get_user_timeline(author.id) == [
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+
+    async def test_get_user_timeline_no_sells(self, client, channel, lines, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+
+        assert client.get_user_timeline(author.id) == [
+            90,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+
+    async def test_get_user_timeline_sunday_sells(self, client, channel, lines, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!timezone {author_tz.zone}")
+        )
+
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+
+        amount = 100
+        monday_am = sunday_am + timedelta(days=1)
+        for offset in range(0, 50):
+            freezer.move_to(monday_am + timedelta(hours=offset))
+            await client.on_message(MockMessage(author, channel, f"!sell {amount}"))
+            amount += 5
+
+        await client.on_message(MockMessage(author, channel, f"!sell 50 sunday evening"))
+
+        assert client.get_user_timeline(author.id) == [
+            90,
+            145,
+            205,
+            265,
+            325,
+            345,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+
     async def test_on_message_sell_at_time(self, client, channel, lines, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
         monday_evening = monday_morning + timedelta(hours=13)
@@ -1436,7 +1569,7 @@ class TestTurbot:
         )
 
     async def test_on_message_uncollected_fossils_congrats(self, client, channel, snap):
-        author = someone()
+        author = DUDE
         everything = ", ".join(sorted(turbot.FOSSILS_SET))
         await client.on_message(MockMessage(author, channel, f"!collect {everything}"))
 
@@ -1529,26 +1662,31 @@ class TestTurbot:
 
     async def test_on_message_predict(self, client, channel, freezer):
         author = someone()
+
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
         await client.on_message(MockMessage(author, channel, "!buy 110"))
 
-        freezer.move_to(NOW + timedelta(days=1))
+        freezer.move_to(sunday_am + timedelta(days=1))
         await client.on_message(MockMessage(author, channel, "!sell 100"))
+        freezer.move_to(sunday_am + timedelta(days=1, hours=12))
         await client.on_message(MockMessage(author, channel, "!sell 95"))
 
-        freezer.move_to(NOW + timedelta(days=2))
+        freezer.move_to(sunday_am + timedelta(days=2))
         await client.on_message(MockMessage(author, channel, "!sell 90"))
+        freezer.move_to(sunday_am + timedelta(days=2, hours=12))
         await client.on_message(MockMessage(author, channel, "!sell 85"))
 
-        freezer.move_to(NOW + timedelta(days=4))
+        freezer.move_to(sunday_am + timedelta(days=4))
         await client.on_message(MockMessage(author, channel, "!sell 90"))
 
-        freezer.move_to(NOW + timedelta(days=5))
+        freezer.move_to(sunday_am + timedelta(days=5))
         await client.on_message(MockMessage(author, channel, "!sell 120"))
 
         await client.on_message(MockMessage(author, channel, "!predict"))
         assert channel.last_sent_response == (
             f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110...100.95.90.85...90..120"
+            "https://turnipprophet.io/?prices=110.100.95.90.85...90..120"
         )
 
     async def test_on_message_predict_with_timezone(self, client, channel, freezer):
@@ -1557,7 +1695,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!timezone {user_tz.zone}"))
 
         # sunday morning buy
-        sunday_morning = datetime(year=2020, month=4, day=21, hour=6, tzinfo=user_tz)
+        sunday_morning = datetime(year=2020, month=4, day=19, hour=6, tzinfo=user_tz)
         freezer.move_to(sunday_morning)
         await client.on_message(MockMessage(author, channel, "!buy 110"))
 
@@ -2065,32 +2203,32 @@ class TestFigures:
     # Some realistic price data sampled from the wild.
     PRICES = [
         "author,kind,price,timestamp\n",
-        f"{FRIEND.id},buy,103,2020-04-04 09:00:00+00:00\n",  # Sunday_AM
-        f"{FRIEND.id},sell,112,2020-04-05 09:00:00+00:00\n",  # Monday_AM
-        f"{FRIEND.id},sell,116,2020-04-05 13:00:00+00:00\n",  # Monday_PM
-        f"{FRIEND.id},sell,80,2020-04-06 09:00:00+00:00\n",  # Tuesday_AM
-        # f"{FRIEND.id},sell,None,2020-04-06 13:00:00+00:00\n",  # Tuesday_PM
-        f"{FRIEND.id},sell,100,2020-04-07 09:00:00+00:00\n",  # Wednesday_AM
-        # f"{FRIEND.id},sell,None,2020-04-07 13:00:00+00:00\n",  # Wednesday_PM
-        f"{FRIEND.id},sell,95,2020-04-08 09:00:00+00:00\n",  # Thursday_AM
-        # f"{FRIEND.id},sell,None,2020-04-08 13:00:00+00:00\n",  # Thursday_PM
-        f"{FRIEND.id},sell,80,2020-04-09 09:00:00+00:00\n",  # Friday_AM
-        # f"{FRIEND.id},sell,None,2020-04-09 13:00:00+00:00\n",  # Friday_PM
-        # f"{FRIEND.id},sell,None,2020-04-10 09:00:00+00:00\n",  # Saturday_AM
-        # f"{FRIEND.id},sell,None,2020-04-10 13:00:00+00:00\n",  # Saturday_PM
-        f"{DUDE.id},buy,98,2020-04-04 09:00:00+00:00\n",  # Sunday_AM
-        f"{DUDE.id},sell,88,2020-04-05 09:00:00+00:00\n",  # Monday_AM
-        f"{DUDE.id},sell,84,2020-04-05 13:00:00+00:00\n",  # Monday_PM
-        f"{DUDE.id},sell,81,2020-04-06 09:00:00+00:00\n",  # Tuesday_AM
-        f"{DUDE.id},sell,76,2020-04-06 13:00:00+00:00\n",  # Tuesday_PM
-        # f"{DUDE.id},sell,None,2020-04-07 09:00:00+00:00\n",# Wednesday_AM
-        # f"{DUDE.id},sell,None,2020-04-07 13:00:00+00:00\n",# Wednesday_PM
-        f"{DUDE.id},sell,138,2020-04-08 09:00:00+00:00\n",  # Thursday_AM
-        f"{DUDE.id},sell,336,2020-04-08 13:00:00+00:00\n",  # Thursday_PM
-        f"{DUDE.id},sell,191,2020-04-09 09:00:00+00:00\n",  # Friday_AM
-        f"{DUDE.id},sell,108,2020-04-09 13:00:00+00:00\n",  # Friday_PM
-        # f"{DUDE.id},sell,None,2020-04-10 09:00:00+00:00\n",  # Saturday_AM
-        # f"{DUDE.id},sell,None,2020-04-10 13:00:00+00:00\n",  # Saturday_PM
+        f"{FRIEND.id},buy,103,2020-04-05 09:00:00+00:00\n",  # Sunday_AM
+        f"{FRIEND.id},sell,112,2020-04-06 09:00:00+00:00\n",  # Monday_AM
+        f"{FRIEND.id},sell,116,2020-04-06 13:00:00+00:00\n",  # Monday_PM
+        f"{FRIEND.id},sell,80,2020-04-07 09:00:00+00:00\n",  # Tuesday_AM
+        # f"{FRIEND.id},sell,None,2020-04-07 13:00:00+00:00\n",  # Tuesday_PM
+        f"{FRIEND.id},sell,100,2020-04-08 09:00:00+00:00\n",  # Wednesday_AM
+        # f"{FRIEND.id},sell,None,2020-04-08 13:00:00+00:00\n",  # Wednesday_PM
+        f"{FRIEND.id},sell,95,2020-04-09 09:00:00+00:00\n",  # Thursday_AM
+        # f"{FRIEND.id},sell,None,2020-04-09 13:00:00+00:00\n",  # Thursday_PM
+        f"{FRIEND.id},sell,80,2020-04-10 09:00:00+00:00\n",  # Friday_AM
+        # f"{FRIEND.id},sell,None,2020-04-10 13:00:00+00:00\n",  # Friday_PM
+        # f"{FRIEND.id},sell,None,2020-04-11 09:00:00+00:00\n",  # Saturday_AM
+        # f"{FRIEND.id},sell,None,2020-04-11 13:00:00+00:00\n",  # Saturday_PM
+        f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",  # Sunday_AM
+        f"{DUDE.id},sell,88,2020-04-06 09:00:00+00:00\n",  # Monday_AM
+        f"{DUDE.id},sell,84,2020-04-06 13:00:00+00:00\n",  # Monday_PM
+        f"{DUDE.id},sell,81,2020-04-07 09:00:00+00:00\n",  # Tuesday_AM
+        f"{DUDE.id},sell,76,2020-04-07 13:00:00+00:00\n",  # Tuesday_PM
+        # f"{DUDE.id},sell,None,2020-04-08 09:00:00+00:00\n",# Wednesday_AM
+        # f"{DUDE.id},sell,None,2020-04-08 13:00:00+00:00\n",# Wednesday_PM
+        f"{DUDE.id},sell,138,2020-04-09 09:00:00+00:00\n",  # Thursday_AM
+        f"{DUDE.id},sell,336,2020-04-09 13:00:00+00:00\n",  # Thursday_PM
+        f"{DUDE.id},sell,191,2020-04-10 09:00:00+00:00\n",  # Friday_AM
+        f"{DUDE.id},sell,108,2020-04-10 13:00:00+00:00\n",  # Friday_PM
+        # f"{DUDE.id},sell,None,2020-04-11 09:00:00+00:00\n",  # Saturday_AM
+        # f"{DUDE.id},sell,None,2020-04-11 13:00:00+00:00\n",  # Saturday_PM
     ]
 
     def set_example_prices(self, client):
