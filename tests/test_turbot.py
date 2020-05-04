@@ -2186,13 +2186,23 @@ class TestTurbot:
 
     async def test_get_user_prefs_friend_code(self, client, channel, snap):
         author = someone()
-        await client.on_message(MockMessage(author, channel, f"!friend 1111 2222 3333"))
-        assert client.get_user_prefs(author.id) == {"friend": "111122223333"}
-
-        # unload in-memory users data
-        client._users_data = None
-
-        assert client.get_user_prefs(author.id) == {"friend": "111122223333"}
+        with open(client.users_file, "w") as f:
+            f.writelines(
+                [
+                    "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                    f"{author.id},,,,111122223333.0,,,\n",
+                ]
+            )
+        assert client.get_user_prefs(author.id) == {"friend": "111122223333.0"}
+        await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
+        assert (
+            next(
+                f["value"]
+                for f in channel.last_sent_embed["fields"]
+                if f["name"] == "Friend code"
+            )
+            == "SW-1111-2222-3333"
+        )
 
     async def test_on_message_about(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, f"!about"))
