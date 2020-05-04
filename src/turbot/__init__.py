@@ -17,6 +17,7 @@ from string import Template
 import click
 import discord
 import dunamai as _dunamai
+import hupper
 import matplotlib
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -1730,6 +1731,12 @@ def get_channels(channels_file):  # pragma: no cover
     help="read users preferences data from this file",
 )
 @click.version_option(version=__version__)
+@click.option(
+    "--dev",
+    default=False,
+    is_flag=True,
+    help="Development mode, automatically reload bot when source changes",
+)
 def main(
     log_level,
     verbose,
@@ -1740,11 +1747,16 @@ def main(
     art_file,
     fossils_file,
     users_file,
+    dev,
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
         print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
+
+    if dev:
+        reloader = hupper.start_reloader("turbot.main")
+        reloader.watch_files([ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE])
 
     # ensure transient application directories exist
     DB_DIR.mkdir(exist_ok=True)
