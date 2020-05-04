@@ -59,5 +59,6 @@ if ! poetry publish -n; then
     exit 1
 fi
 
-# push changes to origin/master
-git push origin master
+# tag and push changes to origin/master
+git tag "$VERSION"
+git push --tags origin master
