@@ -51,12 +51,12 @@ poetry build
 # commit changes
 git commit -am "Release $VERSION"
 
-# push changes to origin/master
-git push origin master
-
 # publish the release; assumes you've set up non-interactive publishing by
 # previously having run: `poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"`
 if ! poetry publish -n; then
     echo "error: publish command failed, see log for details" 1>&2
     git reset --hard HEAD~1
 fi
+
+# push changes to origin/master
+git push origin master
