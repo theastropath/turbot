@@ -1,6 +1,7 @@
 import inspect
 import json
 import logging
+import math
 import random
 import re
 import sys
@@ -474,8 +475,8 @@ class Turbot(discord.Client):
                     prefs[column] = pytz.timezone(datum)
                 else:
                     prefs[column] = datum
-            elif isinstance(datum, int):
-                if column in ["friend", "creator"]:
+            elif column in ["friend", "creator"]:
+                if not math.isnan(datum) and not math.isinf(datum):
                     prefs[column] = str(datum)
         return prefs
 
@@ -1640,7 +1641,7 @@ class Turbot(discord.Client):
 
         users = self.load_users()
         for _, row in users.iterrows():
-            user_id = row["author"]
+            user_id = int(row["author"])
             user_name = discord_user_name(channel, user_id)
             if not user_name:
                 continue
