@@ -14,8 +14,8 @@ tree = BeautifulSoup(page.content, "lxml")
 
 
 class ArtType(Enum):
-    PAINTING = 1
-    SCULPTURE = 2
+    PAINTING = 0
+    SCULPTURE = 1
 
 
 def clean(item):
