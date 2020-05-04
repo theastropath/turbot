@@ -1760,8 +1760,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},southern,,,,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},southern,,,,,,\n",
             ]
 
         await client.on_message(MockMessage(author, channel, "!hemisphere NoRthErn"))
@@ -1770,8 +1770,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},northern,,,,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},northern,,,,,,\n",
             ]
 
     async def test_on_message_friend_no_params(self, client, channel):
@@ -1792,8 +1792,32 @@ class TestTurbot:
         assert channel.last_sent_response == f"Friend code registered for {author}."
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,,,123456789012,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,,,123456789012,,,\n",
+            ]
+
+    async def test_on_message_creator_no_params(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!creator"))
+        assert channel.last_sent_response == (
+            "Please provide your Animal Crossing creator creator code."
+        )
+
+    async def test_on_message_creator_bad_creator(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!creator upwards"))
+        assert channel.last_sent_response == (
+            "Your Animal Crossing creator code should be 12 numbers."
+        )
+
+    async def test_on_message_creator(self, client, channel):
+        author = someone()
+        await client.on_message(
+            MockMessage(author, channel, f"!creator mA-1234-5678-9012")
+        )
+        assert channel.last_sent_response == f"Creator code registered for {author}."
+        with open(client.users_file) as f:
+            assert f.readlines() == [
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,,,,,,123456789012\n",
             ]
 
     async def test_on_message_fruit_no_params(self, client, channel):
@@ -1814,8 +1838,8 @@ class TestTurbot:
         assert channel.last_sent_response == f"Native fruit registered for {author}."
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,,,,apple,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,,,,apple,,\n",
             ]
 
     async def test_on_message_fish_no_hemisphere(self, client, channel):
@@ -1902,8 +1926,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,America/Los_Angeles,,,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,America/Los_Angeles,,,,,\n",
             ]
 
         await client.on_message(
@@ -1914,8 +1938,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,Canada/Saskatchewan,,,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,Canada/Saskatchewan,,,,,\n",
             ]
 
     async def test_load_prices_new(self, client):
@@ -2116,6 +2140,7 @@ class TestTurbot:
             "friend": "Sw-1111----2222-3333",
             "fruit": "pEaCh",
             "nickname": "Phèdre nó Delaunay de Montrève",
+            "creator": "ma---  4444----555 5-6666--",
         }
         for command, value in prefs.items():
             await client.on_message(MockMessage(author, channel, f"!{command} {value}"))
@@ -2131,6 +2156,7 @@ class TestTurbot:
             "friend": "Sw-1111----2222-3333",
             # "fruit": Not Set,
             "nickname": "Phèdre nó Delaunay de Montrève",
+            "creator": "ma---  4444----555 5-6666--",
         }
         for command, value in prefs.items():
             await client.on_message(MockMessage(author, channel, f"!{command} {value}"))
@@ -2141,6 +2167,7 @@ class TestTurbot:
             "island": "Kriti",
             "nickname": "Phèdre nó Delaunay de Montrève",
             "timezone": pytz.timezone(prefs["timezone"]),
+            "creator": "444455556666",
         }
 
         # unload in-memory users data
@@ -2152,6 +2179,7 @@ class TestTurbot:
             "island": "Kriti",
             "nickname": "Phèdre nó Delaunay de Montrève",
             "timezone": pytz.timezone(prefs["timezone"]),
+            "creator": "444455556666",
         }
 
         assert client.get_user_prefs(PUNK.id) == {}
@@ -2209,8 +2237,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,,{island},,,\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,,{island},,,,\n",
             ]
 
     async def test_on_message_nickname_no_params(self, client, channel):
@@ -2228,8 +2256,8 @@ class TestTurbot:
         )
         with open(client.users_file) as f:
             assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname\n",
-                f"{author.id},,,,,,{name}\n",
+                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
+                f"{author.id},,,,,,{name},\n",
             ]
 
 

@@ -300,6 +300,7 @@ class Turbot(discord.Client):
                         "friend",
                         "fruit",
                         "nickname",
+                        "creator",
                     ]
                 )
         return self._users_data
@@ -474,7 +475,7 @@ class Turbot(discord.Client):
                 else:
                     prefs[column] = datum
             elif isinstance(datum, int):
-                if column == "friend":
+                if column in ["friend", "creator"]:
                     prefs[column] = str(datum)
         return prefs
 
@@ -1297,6 +1298,20 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "friend", code)
         return s("friend", name=author), None
 
+    def creator_command(self, channel, author, params):
+        """
+        Set your creator code. | <code>
+        """
+        if not params:
+            return s("creator_no_params"), None
+
+        code = re.sub("[^0-9]", "", "".join(params).replace("-", ""))
+        if len(code) != 12 or not code.isdigit():
+            return s("creator_invalid"), None
+
+        self.save_user_pref(author, "creator", code)
+        return s("creator", name=author), None
+
     def fruit_command(self, channel, author, params):
         """
         Set your island's native fruit. | [apple|cherry|orange|peach|pear]
@@ -1591,6 +1606,13 @@ class Turbot(discord.Client):
             embed.add_field(name="Friend code", value=code_str)
         else:
             embed.add_field(name="Friend code", value="Not set")
+
+        code = prefs.get("creator", None)
+        if code:
+            code_str = f"MA-{code[0:4]}-{code[4:8]}-{code[8:]}"
+            embed.add_field(name="Creator code", value=code_str)
+        else:
+            embed.add_field(name="Creator code", value="Not set")
 
         island = prefs.get("island", "Not set")
         embed.add_field(name="Island", value=island)

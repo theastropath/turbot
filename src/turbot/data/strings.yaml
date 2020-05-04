@@ -65,6 +65,9 @@ count_fossil_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
 count_invalid_header: __**Did not recognize the following names**__
 count_no_params: Please provide at least one user name to search for.
+creator: Creator code registered for $name.
+creator_invalid: Your Animal Crossing creator code should be 12 numbers.
+creator_no_params: Please provide your Animal Crossing creator creator code.
 day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day parameter.
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** (shadow size $shadow) is available $time at $location (sells for
