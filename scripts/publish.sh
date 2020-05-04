@@ -56,6 +56,7 @@ git commit -am "Release $VERSION"
 if ! poetry publish -n; then
     echo "error: publish command failed, see log for details" 1>&2
     git reset --hard HEAD~1
+    exit 1
 fi
 
 # push changes to origin/master
