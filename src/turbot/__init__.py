@@ -1,7 +1,6 @@
 import inspect
 import json
 import logging
-import math
 import random
 import re
 import sys
@@ -288,22 +287,29 @@ class Turbot(discord.Client):
 
     def load_users(self):
         """Returns a DataFrame of user data or creates an empty one."""
-        if self._users_data is None:
-            try:
-                self._users_data = pd.read_csv(self.users_file)
-            except FileNotFoundError:
-                self._users_data = pd.DataFrame(
-                    columns=[
-                        "author",
-                        "hemisphere",
-                        "timezone",
-                        "island",
-                        "friend",
-                        "fruit",
-                        "nickname",
-                        "creator",
-                    ]
-                )
+        if self._users_data is not None:
+            self._users_data = self._users_data.fillna("")
+            return self._users_data
+
+        cols = [
+            "author",
+            "hemisphere",
+            "timezone",
+            "island",
+            "friend",
+            "fruit",
+            "nickname",
+            "creator",
+        ]
+        dtypes = ["int64", "str", "str", "str", "str", "str", "str", "str"]
+        if Path(self.users_file).exists():
+            self._users_data = pd.read_csv(self.users_file, names=cols, skiprows=1)
+        else:
+            self._users_data = pd.read_csv(
+                StringIO(""), names=cols, dtype=dict(zip(cols, dtypes))
+            )
+        self._users_data = self._users_data.fillna("")
+        self._users_data = self._users_data.astype(dict(zip(cols, dtypes)))
         return self._users_data
 
     def save_art(self, data):
@@ -468,16 +474,13 @@ class Turbot(discord.Client):
 
         prefs = {}
         data = row.to_dict(orient="records")[0]
-        for column in users.columns:
-            datum = data[column]
-            if isinstance(datum, str):
-                if column == "timezone":
-                    prefs[column] = pytz.timezone(datum)
-                else:
-                    prefs[column] = datum
-            elif column in ["friend", "creator"]:
-                if not math.isnan(datum) and not math.isinf(datum):
-                    prefs[column] = str(datum)
+        for column in users.columns[1:]:
+            if not data[column]:
+                continue
+            if column == "timezone":
+                prefs[column] = pytz.timezone(data[column])
+            else:
+                prefs[column] = data[column]
         return prefs
 
     def get_user_timeline(self, user_id):
@@ -1603,14 +1606,14 @@ class Turbot(discord.Client):
 
         code = prefs.get("friend", None)
         if code:
-            code_str = f"SW-{code[0:4]}-{code[4:8]}-{code[8:]}"
+            code_str = f"SW-{code[0:4]}-{code[4:8]}-{code[8:12]}"
             embed.add_field(name="Friend code", value=code_str)
         else:
             embed.add_field(name="Friend code", value="Not set")
 
         code = prefs.get("creator", None)
         if code:
-            code_str = f"MA-{code[0:4]}-{code[4:8]}-{code[8:]}"
+            code_str = f"MA-{code[0:4]}-{code[4:8]}-{code[8:12]}"
             embed.add_field(name="Creator code", value=code_str)
         else:
             embed.add_field(name="Creator code", value="Not set")
