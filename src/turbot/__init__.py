@@ -218,12 +218,12 @@ class Turbot(discord.Client):
 
     def __init__(
         self,
-        token,
-        channels,
-        prices_file,
-        art_file,
-        fossils_file,
-        users_file,
+        token="",
+        channels=[],
+        prices_file=DEFAULT_DB_PRICES,
+        art_file=DEFAULT_DB_ART,
+        fossils_file=DEFAULT_DB_FOSSILS,
+        users_file=DEFAULT_DB_USERS,
         log_level=None,
     ):
         if log_level:  # pragma: no cover
@@ -372,6 +372,23 @@ class Turbot(discord.Client):
         plot_models_range(
             island.name, list(island.model_group.models), island.previous_week, True
         )
+
+        # fit the y-axis to the plotted data
+        maximum = 0
+        ax = plt.gca()
+        for line in ax.lines:
+            for price in line.get_ydata():
+                if price > maximum:
+                    maximum = price
+        for collection in ax.collections:
+            for point in collection.get_offsets():
+                _, y = point
+                if y > maximum:
+                    maximum = y
+        ax.set_ylim(0, maximum + 50)
+        ax.autoscale_view()
+        plt.draw()
+
         plt.savefig(graphname)
         return plt
 
