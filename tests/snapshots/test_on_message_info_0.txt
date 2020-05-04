@@ -3,6 +3,11 @@
         "fields": [
             {
                 "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
                 "name": "Friend code",
                 "value": "Not set"
             },
@@ -35,6 +40,11 @@
         "fields": [
             {
                 "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
                 "name": "Friend code",
                 "value": "Not set"
             },
@@ -65,6 +75,11 @@
     },
     {
         "fields": [
+            {
+                "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
             {
                 "inline": true,
                 "name": "Friend code",
@@ -97,6 +112,11 @@
     },
     {
         "fields": [
+            {
+                "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
             {
                 "inline": true,
                 "name": "Friend code",
@@ -129,6 +149,11 @@
     },
     {
         "fields": [
+            {
+                "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
             {
                 "inline": true,
                 "name": "Friend code",

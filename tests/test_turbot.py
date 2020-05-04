@@ -2122,6 +2122,40 @@ class TestTurbot:
             await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
         snap(channel.all_sent_embeds_json)
 
+    async def test_get_user_prefs(self, client, channel, snap):
+        author = DUDE
+        prefs = {
+            "hemisphere": "norTHErn",
+            "timezone": "America/Los_Angeles",
+            "island": "Kriti",
+            "friend": "Sw-1111----2222-3333",
+            # "fruit": Not Set,
+            "nickname": "Phèdre nó Delaunay de Montrève",
+        }
+        for command, value in prefs.items():
+            await client.on_message(MockMessage(author, channel, f"!{command} {value}"))
+
+        assert client.get_user_prefs(author.id) == {
+            "friend": "111122223333",
+            "hemisphere": "northern",
+            "island": "Kriti",
+            "nickname": "Phèdre nó Delaunay de Montrève",
+            "timezone": pytz.timezone(prefs["timezone"]),
+        }
+
+        # unload in-memory users data
+        client._users_data = None
+
+        assert client.get_user_prefs(author.id) == {
+            "friend": "111122223333",
+            "hemisphere": "northern",
+            "island": "Kriti",
+            "nickname": "Phèdre nó Delaunay de Montrève",
+            "timezone": pytz.timezone(prefs["timezone"]),
+        }
+
+        assert client.get_user_prefs(PUNK.id) == {}
+
     async def test_on_message_about(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, f"!about"))
         snap(channel.all_sent_embeds_json)

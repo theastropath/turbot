@@ -463,14 +463,19 @@ class Turbot(discord.Client):
         row = users[users.author == user_id].tail(1)
         if row.empty:
             return {}
-        data = row.to_dict(orient="records")[0]
+
         prefs = {}
+        data = row.to_dict(orient="records")[0]
         for column in users.columns:
-            if data and column in data and data[column] and isinstance(data[column], str):
+            datum = data[column]
+            if isinstance(datum, str):
                 if column == "timezone":
-                    prefs[column] = pytz.timezone(data[column])
+                    prefs[column] = pytz.timezone(datum)
                 else:
-                    prefs[column] = data[column]
+                    prefs[column] = datum
+            elif isinstance(datum, int):
+                if column == "friend":
+                    prefs[column] = str(datum)
         return prefs
 
     def get_user_timeline(self, user_id):
@@ -1577,6 +1582,8 @@ class Turbot(discord.Client):
         nickname = prefs.get("nickname", None)
         if nickname:
             embed.add_field(name="Nickname", value=nickname)
+        else:
+            embed.add_field(name="Nickname", value="Not set")
 
         code = prefs.get("friend", None)
         if code:
