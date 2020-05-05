@@ -1,6 +1,7 @@
 import inspect
 import json
 import random
+import re
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -851,35 +852,6 @@ class TestTurbot:
             f"> **{BUDDY}:** {turbot.h(buddy_now)} for 60 bells\n"
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells"
         )
-
-    async def test_on_message_turnippattern_happy_paths(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 86"))
-        snap(channel.last_sent_response)
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 99"))
-        snap(channel.last_sent_response)
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 22"))
-        snap(channel.last_sent_response)
-
-    async def test_on_message_turnippattern_invalid_params(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100"))
-        assert channel.last_sent_response == (
-            "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>"
-        )
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 1 2 3"))
-        assert channel.last_sent_response == (
-            "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>"
-        )
-
-    async def test_on_message_turnippattern_nonnumeric_prices(self, client, channel):
-        await client.on_message(
-            MockMessage(someone(), channel, "!turnippattern something nothing")
-        )
-        assert channel.last_sent_response == ("Prices must be numbers.")
 
     async def test_on_message_graph_without_user(self, client, channel, graph):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
@@ -2408,6 +2380,16 @@ class TestCodebase:
                 "snapshots are harder to reason about when they fail. Whenever possilbe "
                 "a test with inline data is much easier to reason about and refactor."
             )
+
+    def test_readme_commands(self, client):
+        """Checks that all commands are documented in our readme."""
+        with open(REPO_ROOT / "README.md") as f:
+            readme = f.read()
+
+        documented = set(re.findall("^- `!([a-z]+)`: .*$", readme, re.MULTILINE))
+        implemented = set(client.commands)
+
+        assert documented == implemented
 
 
 # These tests will fail in isolation, you must run the full test suite for them to pass.

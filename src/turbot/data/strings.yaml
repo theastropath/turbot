@@ -135,22 +135,6 @@ timezone: Timezone preference registered for $name.
 timezone_bad_params: Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   for the complete list of TZ names.
 timezone_no_params: Please provide the name of your timezone.
-turnippattern_bad_params: 'Please provide Daisy Mae''s price and your Monday morning
-  price
-
-  eg. !turnippattern <buy price> <Monday morning sell price>'
-turnippattern_header: 'Based on your prices, you will see one of the following patterns
-  this week:'
-turnippattern_nonnumeric_price: Prices must be numbers.
-turnippattern_pattern1: '> **Random**: Prices are completely random. Sell when it
-  goes over your buying price.'
-turnippattern_pattern2: '> **Decreasing**: Prices will continuously fall.'
-turnippattern_pattern3: '> **Small Spike**: Prices fall until a spike occurs. The
-  price will go up three more times. Sell on the third increase for maximum profit.
-  Spikes only occur from Monday to Thursday.'
-turnippattern_pattern4: '> **Big Spike**: Prices fall until a small spike. Prices
-  then decrease before shooting up twice. Sell the second time prices shoot up after
-  the decrease for maximum profit. Spikes only occur from Monday to Thursday.'
 uncollect_art_already: 'The following pieces of art were already marked as not collected:
 
   > $items'

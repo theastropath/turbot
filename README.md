@@ -40,8 +40,8 @@ More usage help can be found by running `turbot --help`.
 Once you've connected the bot to your server, you can interact with it over
 Discord via the following commands in any of the authorized channels.
 
-- `!help` - Provides detailed help about all of the following commands
-- `!about` - Get information about Turbot
+- `!about`: Get information about Turbot
+- `!help`: Provides detailed help about all of the following commands
 
 ### 🤔 User Preferences
 
@@ -62,7 +62,8 @@ user's preferred timezone.
 
 These commands help users buy low and sell high in the stalk market.
 
-- `!bestsell`: Look for the best buy
+- `!bestbuy`: Look for the best buy
+- `!bestsell`: Look for the best sell
 - `!buy`: Save a buy price
 - `!clear`: Clear your price data
 - `!graph`: Graph price data
@@ -72,7 +73,6 @@ These commands help users buy low and sell high in the stalk market.
 - `!predict`: Predict your price data for the rest of the week
 - `!reset`: Reset all users' data
 - `!sell`: Save a sell price
-- `!turnippattern`: Determine your turnip price pattern for the week
 
 ### 🐟 Fish and Bugs
 

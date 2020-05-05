@@ -1,3 +1,0 @@
-Based on your prices, you will see one of the following patterns this week:
-> **Random**: Prices are completely random. Sell when it goes over your buying price.
-> **Big Spike**: Prices fall until a small spike. Prices then decrease before shooting up twice. Sell the second time prices shoot up after the decrease for maximum profit. Spikes only occur from Monday to Thursday.
