@@ -1,0 +1,65 @@
+__**Turbot Help!**__
+> **!about**
+>    Get information about Turbot.
+> 
+> **!allfossils**
+>    Shows all possible fossils that you can donate to the museum.
+> 
+> **!art [List of art pieces]**
+>    Get info about pieces of art that are available 
+> 
+> **!bestbuy**
+>    Finds the best (and most recent) buying prices logged in the last 12 hours.
+> 
+> **!bestsell**
+>    Finds the best (and most recent) selling prices logged in the last 12 hours.
+> 
+> **!bugs [name, leaving, arriving]**
+>    Tells you what bugs are available now in your hemisphere.
+> 
+> **!buy <price> [day time]**
+>    Log the price that you can buy turnips from Daisy Mae on your island.
+> 
+> **!clear**
+>    Clears all of your own historical turnip prices.
+> 
+> **!collect <comma, separated, list, of, things>**
+>    Mark collectables as donated to your museum. The names must match the in-game item name exactly. 
+> 
+> **!collected [user]**
+>    Lists all collectables that you have already donated. If a user is provided, it gives the same information for that user instead. 
+> 
+> **!count <list of users>**
+>    Provides a count of the number of pieces of collectables for the comma-separated list of users. 
+> 
+> **!creator <code>**
+>    Set your creator code. 
+> 
+> **!fish [name, leaving, arriving]**
+>    Tells you what fish are available now in your hemisphere.
+> 
+> **!friend <code>**
+>    Set your friend code. 
+> 
+> **!fruit [apple, cherry, orange, peach, pear]**
+>    Set your island's native fruit. 
+> 
+> **!graph**
+>    Generates a historical graph of turnip prices for all users.
+> 
+> **!help**
+>    Shows this help screen.
+> 
+> **!hemisphere [Northern, Southern]**
+>    Set your hemisphere. 
+> 
+> **!history [user]**
+>    Show the historical turnip prices for a user. If no user is specified, it will display your own prices. 
+> 
+> **!info [user]**
+>    Gives you information on a user. 
+> 
+> **!island <name>**
+>    Set your island name. 
+> 
+> **!lastweek**

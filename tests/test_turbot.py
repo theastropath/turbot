@@ -1,6 +1,7 @@
 import inspect
 import json
 import random
+import re
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -12,7 +13,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
-from callee import Matching, String
+from callee import Matching
 
 import turbot
 
@@ -682,9 +683,10 @@ class TestTurbot:
             f"{author.id},buy,{amount},{NOW}\n",
         ]
 
-    async def test_on_message_help(self, client, channel):
+    async def test_on_message_help(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!help"))
-        assert channel.last_sent_response == (String())  # TODO: Verify help response?
+        for response in channel.all_sent_responses:
+            snap(response)
 
     async def test_on_message_clear(self, client, channel, lines):
         author = someone()
@@ -852,36 +854,7 @@ class TestTurbot:
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells"
         )
 
-    async def test_on_message_turnippattern_happy_paths(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 86"))
-        snap(channel.last_sent_response)
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 99"))
-        snap(channel.last_sent_response)
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100 22"))
-        snap(channel.last_sent_response)
-
-    async def test_on_message_turnippattern_invalid_params(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 100"))
-        assert channel.last_sent_response == (
-            "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>"
-        )
-
-        await client.on_message(MockMessage(someone(), channel, "!turnippattern 1 2 3"))
-        assert channel.last_sent_response == (
-            "Please provide Daisy Mae's price and your Monday morning price\n"
-            "eg. !turnippattern <buy price> <Monday morning sell price>"
-        )
-
-    async def test_on_message_turnippattern_nonnumeric_prices(self, client, channel):
-        await client.on_message(
-            MockMessage(someone(), channel, "!turnippattern something nothing")
-        )
-        assert channel.last_sent_response == ("Prices must be numbers.")
-
-    async def test_on_message_graph_without_user(self, client, channel, graph):
+    async def test_on_message_graph(self, client, channel, graph):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
@@ -895,36 +868,6 @@ class TestTurbot:
         )
         graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
-
-    async def test_on_message_graph_with_user(self, client, channel, graph):
-        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
-        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
-
-        await client.on_message(MockMessage(someone(), channel, f"!graph {BUDDY.name}"))
-        channel.sent.assert_called_with(
-            f"__**Predictive Graph for {BUDDY}**__", file=Matching(is_discord_file)
-        )
-        graph.assert_called_with(channel, BUDDY, turbot.GRAPHCMD_FILE)
-        assert Path(turbot.GRAPHCMD_FILE).exists()
-
-    async def test_on_message_graph_with_bad_name(self, client, channel, graph):
-        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
-        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
-
-        await client.on_message(MockMessage(someone(), channel, f"!graph {PUNK.name}"))
-        assert channel.last_sent_response == (
-            f"Can not find the user named {PUNK.name} in this channel."
-        )
-        graph.assert_not_called()
-        assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     async def test_on_message_lastweek_none(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!lastweek"))
@@ -1684,9 +1627,10 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!sell 120"))
 
         await client.on_message(MockMessage(author, channel, "!predict"))
-        assert channel.last_sent_response == (
-            f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110.100.95.90.85...90..120"
+        channel.sent.assert_called_with(
+            f"__**Predictive Graph for {author}**__\n"
+            "Details: <https://turnipprophet.io/?prices=110.100.95.90.85...90..120>",
+            file=Matching(is_discord_file),
         )
 
     async def test_on_message_predict_with_timezone(self, client, channel, freezer):
@@ -1710,9 +1654,10 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!sell 72"))
 
         await client.on_message(MockMessage(author, channel, "!predict"))
-        assert channel.last_sent_response == (
-            f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110.87.72"
+        channel.sent.assert_called_with(
+            f"__**Predictive Graph for {author}**__\n"
+            "Details: <https://turnipprophet.io/?prices=110.87.72>",
+            file=Matching(is_discord_file),
         )
 
     async def test_get_last_price(self, client, channel, freezer):
@@ -2408,6 +2353,16 @@ class TestCodebase:
                 "snapshots are harder to reason about when they fail. Whenever possilbe "
                 "a test with inline data is much easier to reason about and refactor."
             )
+
+    def test_readme_commands(self, client):
+        """Checks that all commands are documented in our readme."""
+        with open(REPO_ROOT / "README.md") as f:
+            readme = f.read()
+
+        documented = set(re.findall("^- `!([a-z]+)`: .*$", readme, re.MULTILINE))
+        implemented = set(client.commands)
+
+        assert documented == implemented
 
 
 # These tests will fail in isolation, you must run the full test suite for them to pass.

@@ -178,6 +178,8 @@ def discord_user_from_name(channel, name):
 
 def discord_user_from_id(channel, user_id):
     """Returns the discord user from the given channel and user id."""
+    if user_id is None:
+        return None
     iid = int(user_id)
     members = channel.members
     return next(filter(lambda member: iid == member.id, members), None)
@@ -212,6 +214,11 @@ def is_turbot_admin(channel, user_or_member):
     return any(role.name == "Turbot Admin" for role in member.roles) if member else False
 
 
+def command(f):
+    f.is_command = True
+    return f
+
+
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
@@ -240,6 +247,14 @@ class Turbot(discord.Client):
         self._fossils_data = None  # do not use directly, load it from load_fossils()
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
+
+        # build a list of commands supported by this bot by fetching @command methods
+        members = inspect.getmembers(self, predicate=inspect.ismethod)
+        self._commands = [
+            member[0]
+            for member in members
+            if hasattr(member[1], "is_command") and member[1].is_command
+        ]
 
     def run(self):  # pragma: no cover
         super().run(self.token)
@@ -596,6 +611,11 @@ class Turbot(discord.Client):
 
         yield remaining
 
+    @property
+    def commands(self):
+        """Returns a list of commands supported by this bot."""
+        return self._commands
+
     async def process(self, message):
         """Process a command message."""
         tokens = message.content.split(" ")
@@ -603,18 +623,15 @@ class Turbot(discord.Client):
         params = list(filter(None, params))  # ignore any empty string parameters
         if not request:
             return
-        members = inspect.getmembers(self, predicate=inspect.ismethod)
-        commands = [member[0] for member in members if member[0].endswith("_command")]
-        matching = [command for command in commands if command.startswith(request)]
+        matching = [command for command in self.commands if command.startswith(request)]
         if not matching:
             await message.channel.send(s("not_a_command", request=request), file=None)
             return
-        exact = f"{request}_command"
-        if len(matching) > 1 and exact not in matching:
-            possible = ", ".join(f"!{m.replace('_command', '')}" for m in matching)
+        if len(matching) > 1 and request not in matching:
+            possible = ", ".join(f"!{m}" for m in matching)
             await message.channel.send(s("did_you_mean", possible=possible), file=None)
         else:
-            command = exact if exact in matching else matching[0]
+            command = request if request in matching else matching[0]
             logging.debug("%s (author=%s, params=%s)", command, message.author, params)
             method = getattr(self, command)
             async with message.channel.typing():
@@ -661,10 +678,11 @@ class Turbot(discord.Client):
     # Bot Command Functions
     ##############################
 
-    # Any method of this class with a name that ends in _command is automatically
-    # detected as a bot command. These methods should have a signature like:
+    # Any method of this class with a name that is decorated by @command is detected as a
+    # bot command. These methods should have a signature like:
     #
-    #     def your_command(self, channel, author, params)
+    #     @command
+    #     def command_name(self, channel, author, params)
     #
     # - `channel` is the Discord channel where the command message was sent.
     # - `author` is the Discord author who sent the command.
@@ -692,20 +710,20 @@ class Turbot(discord.Client):
     #
     # A [parameter] is optional whereas a <parameter> is required.
 
-    def help_command(self, channel, author, params):
+    @command
+    def help(self, channel, author, params):
         """
         Shows this help screen.
         """
-        members = inspect.getmembers(self, predicate=inspect.ismethod)
-        commands = [member[1] for member in members if member[0].endswith("_command")]
         usage = "__**Turbot Help!**__"
-        for command in commands:
-            doc = command.__doc__.split("|")
+        for command in self.commands:
+            method = getattr(self, command)
+            doc = method.__doc__.split("|")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
             use = inspect.cleandoc(use)
             use = use.replace("\n", " ")
 
-            title = f"!{command.__name__.replace('_command', '')}"
+            title = f"!{command}"
             if params:
                 title = f"{title} {params}"
             usage += f"\n> **{title}**"
@@ -740,7 +758,8 @@ class Turbot(discord.Client):
         hour_offset = 13 if time_of_day == "evening" else 0
         return start + timedelta(days=day_offset, hours=hour_offset)
 
-    def sell_command(self, channel, author, params):
+    @command
+    def sell(self, channel, author, params):
         """
         Log the price that you can sell turnips for on your island.
         | <price> [day time]
@@ -777,7 +796,8 @@ class Turbot(discord.Client):
         )
         return s(key, price=price, name=author, last_price=last_price), None
 
-    def buy_command(self, channel, author, params):
+    @command
+    def buy(self, channel, author, params):
         """
         Log the price that you can buy turnips from Daisy Mae on your island.
         | <price> [day time]
@@ -803,7 +823,8 @@ class Turbot(discord.Client):
 
         return s("buy", price=price, name=author), None
 
-    def reset_command(self, channel, author, params):
+    @command
+    def reset(self, channel, author, params):
         """
         Only Turbot Admin members can run this command. Generates a final graph for use
         with !lastweek and resets all data for all users.
@@ -821,7 +842,8 @@ class Turbot(discord.Client):
         self.save_prices(prices)
         return s("reset"), None
 
-    def lastweek_command(self, channel, author, params):
+    @command
+    def lastweek(self, channel, author, params):
         """
         Displays the final graph from the last week before the data was reset.
         """
@@ -829,62 +851,16 @@ class Turbot(discord.Client):
             return s("lastweek_none"), None
         return s("lastweek"), discord.File(LASTWEEKCMD_FILE)
 
-    def graph_command(self, channel, author, params):
+    @command
+    def graph(self, channel, author, params):
         """
-        Generates a graph of turnip prices for all users. If a user is specified, only
-        graph that users prices. | [user]
+        Generates a historical graph of turnip prices for all users.
         """
+        self.generate_graph(channel, None, GRAPHCMD_FILE)
+        return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
 
-        if not params:
-            self.generate_graph(channel, None, GRAPHCMD_FILE)
-            return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
-
-        user_id = discord_user_id(channel, params[0])
-        user_name = discord_user_name(channel, user_id)
-        user = discord_user_from_name(channel, user_name)
-        if not user:
-            return s("cant_find_user", name=params[0]), None
-
-        self.generate_graph(channel, user, GRAPHCMD_FILE)
-        return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
-
-    def turnippattern_command(self, channel, author, params):
-        """
-        Calculates the patterns you will see in your shop based on Daisy Mae's price
-        on your island and your Monday morning sell price. |
-        <Sunday Buy Price> <Monday Morning Sell Price>
-        """
-        if len(params) != 2:
-            return s("turnippattern_bad_params"), None
-
-        buyprice, mondayprice = params
-        if not buyprice.isnumeric() or not mondayprice.isnumeric():
-            return s("turnippattern_nonnumeric_price"), None
-
-        buyprice, mondayprice = int(buyprice), int(mondayprice)
-        xval = mondayprice / buyprice
-        patterns = (
-            [1, 4]
-            if xval >= 0.91
-            else [2, 3, 4]
-            if xval >= 0.85
-            else [3, 4]
-            if xval >= 0.80
-            else [1, 4]
-            if xval >= 0.60
-            else [4]
-        )
-        lines = [s("turnippattern_header")]
-        if 1 in patterns:
-            lines.append(s("turnippattern_pattern1"))
-        if 2 in patterns:
-            lines.append(s("turnippattern_pattern2"))
-        if 3 in patterns:
-            lines.append(s("turnippattern_pattern3"))
-        lines.append(s("turnippattern_pattern4"))  # pattern 4 is always possible
-        return "\n".join(lines), None
-
-    def history_command(self, channel, author, params):
+    @command
+    def history(self, channel, author, params):
         """
         Show the historical turnip prices for a user. If no user is specified, it will
         display your own prices. | [user]
@@ -908,7 +884,8 @@ class Turbot(discord.Client):
             )
         return "\n".join(lines), None
 
-    def oops_command(self, channel, author, params):
+    @command
+    def oops(self, channel, author, params):
         """
         Remove your last logged turnip price.
         """
@@ -919,7 +896,8 @@ class Turbot(discord.Client):
         self.save_prices(prices)
         return s("oops", name=target_name), None
 
-    def clear_command(self, channel, author, params):
+    @command
+    def clear(self, channel, author, params):
         """
         Clears all of your own historical turnip prices.
         """
@@ -948,19 +926,22 @@ class Turbot(discord.Client):
             )
         return "\n".join(lines), None
 
-    def bestbuy_command(self, channel, author, params):
+    @command
+    def bestbuy(self, channel, author, params):
         """
         Finds the best (and most recent) buying prices logged in the last 12 hours.
         """
         return self._best(channel, author, "buy")
 
-    def bestsell_command(self, channel, author, params):
+    @command
+    def bestsell(self, channel, author, params):
         """
         Finds the best (and most recent) selling prices logged in the last 12 hours.
         """
         return self._best(channel, author, "sell")
 
-    def collect_command(self, channel, author, params):
+    @command
+    def collect(self, channel, author, params):
         """
         Mark collectables as donated to your museum. The names must match the in-game item
         name exactly. | <comma, separated, list, of, things>
@@ -1023,7 +1004,8 @@ class Turbot(discord.Client):
 
         return "\n".join(lines), None
 
-    def uncollect_command(self, channel, author, params):
+    @command
+    def uncollect(self, channel, author, params):
         """
         Unmark collectables as donated to your museum. The names must match the in-game
         item name exactly. | <comma, separated, list, of, things>
@@ -1084,7 +1066,8 @@ class Turbot(discord.Client):
 
         return "\n".join(lines), None
 
-    def search_command(self, channel, author, params):
+    @command
+    def search(self, channel, author, params):
         """
         Searches all users to see who needs the given collectables. The names must match
         the in-game item name, and more than one can be provided if separated by commas.
@@ -1152,13 +1135,15 @@ class Turbot(discord.Client):
             lines.append(s("search_invalid", items=", ".join(sorted(invalid))))
         return "\n".join(sorted(lines)), None
 
-    def allfossils_command(self, channel, author, params):
+    @command
+    def allfossils(self, channel, author, params):
         """
         Shows all possible fossils that you can donate to the museum.
         """
         return s("allfossils", list=", ".join(sorted(FOSSILS_SET))), None
 
-    def uncollected_command(self, channel, author, params):
+    @command
+    def uncollected(self, channel, author, params):
         """
         Lists all collectables that you still need to donate. If a user is provided, it
         gives the same information for that user instead. | [user]
@@ -1210,7 +1195,8 @@ class Turbot(discord.Client):
 
         return "\n".join(lines), None
 
-    def neededfossils_command(self, channel, author, params):
+    @command
+    def neededfossils(self, channel, author, params):
         """
         Lists all the needed fossils for all the channel members.
         """
@@ -1237,7 +1223,8 @@ class Turbot(discord.Client):
             return s("neededfossils_none"), None
         return "\n".join(sorted(lines)), None
 
-    def collected_command(self, channel, author, params):
+    @command
+    def collected(self, channel, author, params):
         """
         Lists all collectables that you have already donated. If a user is provided, it
         gives the same information for that user instead. | [user]
@@ -1287,13 +1274,15 @@ class Turbot(discord.Client):
             )
         return "\n".join(lines), None
 
-    def predict_command(self, channel, author, params):
+    @command
+    def predict(self, channel, author, params):
         """
-        Get a link to a prediction calulator for a price history. | [user]
+        Get a link to a prediction calculator for a price history. | [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
+        target_user = discord_user_from_id(channel, target_id)
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
@@ -1301,11 +1290,13 @@ class Turbot(discord.Client):
         if not timeline[0]:
             return s("cant_find_buy", name=target_name), None
 
+        self.generate_graph(channel, target_user, GRAPHCMD_FILE)
         query = ".".join((str(price) if price else "") for price in timeline).rstrip(".")
         url = f"{self.base_prophet_url}{query}"
-        return s("predict", name=target_name, url=url), None
+        return s("predict", name=target_name, url=url), discord.File(GRAPHCMD_FILE)
 
-    def friend_command(self, channel, author, params):
+    @command
+    def friend(self, channel, author, params):
         """
         Set your friend code. | <code>
         """
@@ -1319,7 +1310,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "friend", code)
         return s("friend", name=author), None
 
-    def creator_command(self, channel, author, params):
+    @command
+    def creator(self, channel, author, params):
         """
         Set your creator code. | <code>
         """
@@ -1333,7 +1325,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "creator", code)
         return s("creator", name=author), None
 
-    def fruit_command(self, channel, author, params):
+    @command
+    def fruit(self, channel, author, params):
         """
         Set your island's native fruit. | [apple|cherry|orange|peach|pear]
         """
@@ -1347,7 +1340,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "fruit", fruit)
         return s("fruit", name=author), None
 
-    def hemisphere_command(self, channel, author, params):
+    @command
+    def hemisphere(self, channel, author, params):
         """
         Set your hemisphere. | [Northern|Southern]
         """
@@ -1361,7 +1355,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "hemisphere", home)
         return s("hemisphere", name=author), None
 
-    def nickname_command(self, channel, author, params):
+    @command
+    def nickname(self, channel, author, params):
         """
         Set your nickname, such as your Switch user name. | <name>
         """
@@ -1372,7 +1367,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "nickname", name)
         return s("nickname", name=author), None
 
-    def timezone_command(self, channel, author, params):
+    @command
+    def timezone(self, channel, author, params):
         """
         Set your timezone. You can find a list of supported TZ names at
         <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> | <zone>
@@ -1387,7 +1383,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "timezone", zone)
         return s("timezone", name=author), None
 
-    def island_command(self, channel, author, params):
+    @command
+    def island(self, channel, author, params):
         """
         Set your island name. | <name>
         """
@@ -1398,7 +1395,8 @@ class Turbot(discord.Client):
         self.save_user_pref(author, "island", island)
         return s("island", name=author), None
 
-    def count_command(self, channel, author, params):
+    @command
+    def count(self, channel, author, params):
         """
         Provides a count of the number of pieces of collectables for the comma-separated
         list of users. | <list of users>
@@ -1446,7 +1444,8 @@ class Turbot(discord.Client):
 
         return "\n".join(lines), None
 
-    def art_command(self, channel, author, params):
+    @command
+    def art(self, channel, author, params):
         """
         Get info about pieces of art that are available | [List of art pieces]
         """
@@ -1565,7 +1564,8 @@ class Turbot(discord.Client):
         lines = [s(kind, **details(row)) for _, row in available.iterrows()]
         return "\n".join(add_header(sorted(lines)))
 
-    def fish_command(self, channel, author, params):
+    @command
+    def fish(self, channel, author, params):
         """
         Tells you what fish are available now in your hemisphere.
         | [name|leaving|arriving]
@@ -1575,7 +1575,8 @@ class Turbot(discord.Client):
             None,
         )
 
-    def bugs_command(self, channel, author, params):
+    @command
+    def bugs(self, channel, author, params):
         """
         Tells you what bugs are available now in your hemisphere.
         | [name|leaving|arriving]
@@ -1585,7 +1586,8 @@ class Turbot(discord.Client):
             None,
         )
 
-    def new_command(self, channel, author, params):
+    @command
+    def new(self, channel, author, params):
         """
         Tells you what new things available in your hemisphere right now.
         """
@@ -1650,7 +1652,8 @@ class Turbot(discord.Client):
 
         return embed
 
-    def info_command(self, channel, author, params):
+    @command
+    def info(self, channel, author, params):
         """
         Gives you information on a user. | [user]
         """
@@ -1676,7 +1679,8 @@ class Turbot(discord.Client):
 
         return s("info_not_found"), None
 
-    def about_command(self, channel, author, params):
+    @command
+    def about(self, channel, author, params):
         """
         Get information about Turbot.
         """
@@ -1806,7 +1810,9 @@ def main(
 
     if dev:
         reloader = hupper.start_reloader("turbot.main")
-        reloader.watch_files([ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE])
+        reloader.watch_files(
+            [ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE, STRINGS_DATA_FILE]
+        )
 
     # ensure transient application directories exist
     DB_DIR.mkdir(exist_ok=True)
