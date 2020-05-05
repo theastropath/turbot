@@ -32,17 +32,8 @@ __**Turbot Help!**__
 > **!count <list of users>**
 >    Provides a count of the number of pieces of collectables for the comma-separated list of users. 
 > 
-> **!creator <code>**
->    Set your creator code. 
-> 
 > **!fish [name, leaving, arriving]**
 >    Tells you what fish are available now in your hemisphere.
-> 
-> **!friend <code>**
->    Set your friend code. 
-> 
-> **!fruit [apple, cherry, orange, peach, pear]**
->    Set your island's native fruit. 
 > 
 > **!graph**
 >    Generates a historical graph of turnip prices for all users.
@@ -50,16 +41,22 @@ __**Turbot Help!**__
 > **!help**
 >    Shows this help screen.
 > 
-> **!hemisphere [Northern, Southern]**
->    Set your hemisphere. 
-> 
 > **!history [user]**
 >    Show the historical turnip prices for a user. If no user is specified, it will display your own prices. 
 > 
 > **!info [user]**
 >    Gives you information on a user. 
 > 
-> **!island <name>**
->    Set your island name. 
-> 
 > **!lastweek**
+>    Displays the final graph from the last week before the data was reset.
+> 
+> **!neededfossils**
+>    Lists all the needed fossils for all the channel members.
+> 
+> **!new**
+>    Tells you what new things available in your hemisphere right now.
+> 
+> **!oops**
+>    Remove your last logged turnip price.
+> 
+> **!predict [user]**

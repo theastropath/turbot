@@ -49,14 +49,8 @@ These commands allow users to set their preferences. These preferences are used
 to make other commands more relevant, for example by converting times to the
 user's preferred timezone.
 
-- `!creator`: Set your creator code
-- `!friend`: Set your friend code
-- `!fruit`: Set your native fruit
-- `!hemisphere`: Set your island hemisphere
 - `!info`: Get a user's information
-- `!island`: Set your island name
-- `!nickname`: Set your nickname
-- `!timezone`: Set your island timezone
+- `!pref`: Set a user preference; use command to get a list of available options
 
 ### 💸 Turnips
 
