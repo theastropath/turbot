@@ -80,7 +80,6 @@ fruit: Native fruit registered for $name.
 fruit_invalid: Your native fruit can be apple, cherry, orange, peach, or pear.
 fruit_no_params: Please provide your island's native fruit.
 graph_all_users: __**Historical Graph for All Users**__
-graph_user: __**Predictive Graph for $name**__
 hemisphere: Hemisphere preference registered for $name.
 hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere
   name.
@@ -107,7 +106,9 @@ no_hemisphere: Please enter your hemisphere choice first using the !hemisphere c
 not_a_command: Sorry, there is no command named "$request"
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
-predict: '$name''s turnip prediction link: $url'
+predict: '__**Predictive Graph for $name**__
+
+  Details: <$url>'
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
 search_all_not_needed: No one currently needs this.

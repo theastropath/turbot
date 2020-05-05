@@ -178,6 +178,8 @@ def discord_user_from_name(channel, name):
 
 def discord_user_from_id(channel, user_id):
     """Returns the discord user from the given channel and user id."""
+    if user_id is None:
+        return None
     iid = int(user_id)
     members = channel.members
     return next(filter(lambda member: iid == member.id, members), None)
@@ -713,16 +715,15 @@ class Turbot(discord.Client):
         """
         Shows this help screen.
         """
-        members = inspect.getmembers(self, predicate=inspect.ismethod)
-        commands = [member[1] for member in members if member[0].endswith("_command")]
         usage = "__**Turbot Help!**__"
-        for command in commands:
-            doc = command.__doc__.split("|")
+        for command in self.commands:
+            method = getattr(self, command)
+            doc = method.__doc__.split("|")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
             use = inspect.cleandoc(use)
             use = use.replace("\n", " ")
 
-            title = f"!{command.__name__.replace('_command', '')}"
+            title = f"!{command}"
             if params:
                 title = f"{title} {params}"
             usage += f"\n> **{title}**"
@@ -853,22 +854,10 @@ class Turbot(discord.Client):
     @command
     def graph(self, channel, author, params):
         """
-        Generates a graph of turnip prices for all users. If a user is specified, only
-        graph that users prices. | [user]
+        Generates a historical graph of turnip prices for all users.
         """
-
-        if not params:
-            self.generate_graph(channel, None, GRAPHCMD_FILE)
-            return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
-
-        user_id = discord_user_id(channel, params[0])
-        user_name = discord_user_name(channel, user_id)
-        user = discord_user_from_name(channel, user_name)
-        if not user:
-            return s("cant_find_user", name=params[0]), None
-
-        self.generate_graph(channel, user, GRAPHCMD_FILE)
-        return s("graph_user", name=user_name), discord.File(GRAPHCMD_FILE)
+        self.generate_graph(channel, None, GRAPHCMD_FILE)
+        return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
 
     @command
     def history(self, channel, author, params):
@@ -1288,11 +1277,12 @@ class Turbot(discord.Client):
     @command
     def predict(self, channel, author, params):
         """
-        Get a link to a prediction calulator for a price history. | [user]
+        Get a link to a prediction calculator for a price history. | [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
         target_id = discord_user_id(channel, target_name)
+        target_user = discord_user_from_id(channel, target_id)
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
@@ -1300,9 +1290,10 @@ class Turbot(discord.Client):
         if not timeline[0]:
             return s("cant_find_buy", name=target_name), None
 
+        self.generate_graph(channel, target_user, GRAPHCMD_FILE)
         query = ".".join((str(price) if price else "") for price in timeline).rstrip(".")
         url = f"{self.base_prophet_url}{query}"
-        return s("predict", name=target_name, url=url), None
+        return s("predict", name=target_name, url=url), discord.File(GRAPHCMD_FILE)
 
     @command
     def friend(self, channel, author, params):
@@ -1819,7 +1810,9 @@ def main(
 
     if dev:
         reloader = hupper.start_reloader("turbot.main")
-        reloader.watch_files([ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE])
+        reloader.watch_files(
+            [ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE, STRINGS_DATA_FILE]
+        )
 
     # ensure transient application directories exist
     DB_DIR.mkdir(exist_ok=True)

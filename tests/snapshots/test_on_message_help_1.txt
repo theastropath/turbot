@@ -1,0 +1,36 @@
+>    Displays the final graph from the last week before the data was reset.
+> 
+> **!neededfossils**
+>    Lists all the needed fossils for all the channel members.
+> 
+> **!new**
+>    Tells you what new things available in your hemisphere right now.
+> 
+> **!nickname <name>**
+>    Set your nickname, such as your Switch user name. 
+> 
+> **!oops**
+>    Remove your last logged turnip price.
+> 
+> **!predict [user]**
+>    Get a link to a prediction calculator for a price history. 
+> 
+> **!reset**
+>    Only Turbot Admin members can run this command. Generates a final graph for use with !lastweek and resets all data for all users.
+> 
+> **!search <list of collectables>**
+>    Searches all users to see who needs the given collectables. The names must match the in-game item name, and more than one can be provided if separated by commas.
+> 
+> **!sell <price> [day time]**
+>    Log the price that you can sell turnips for on your island.
+> 
+> **!timezone <zone>**
+>    Set your timezone. You can find a list of supported TZ names at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> 
+> 
+> **!uncollect <comma, separated, list, of, things>**
+>    Unmark collectables as donated to your museum. The names must match the in-game item name exactly. 
+> 
+> **!uncollected [user]**
+>    Lists all collectables that you still need to donate. If a user is provided, it gives the same information for that user instead. 
+> 
+> turbot created by TheAstropath

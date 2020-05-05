@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 import pytz
-from callee import Matching, String
+from callee import Matching
 
 import turbot
 
@@ -683,9 +683,10 @@ class TestTurbot:
             f"{author.id},buy,{amount},{NOW}\n",
         ]
 
-    async def test_on_message_help(self, client, channel):
+    async def test_on_message_help(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!help"))
-        assert channel.last_sent_response == (String())  # TODO: Verify help response?
+        for response in channel.all_sent_responses:
+            snap(response)
 
     async def test_on_message_clear(self, client, channel, lines):
         author = someone()
@@ -853,7 +854,7 @@ class TestTurbot:
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells"
         )
 
-    async def test_on_message_graph_without_user(self, client, channel, graph):
+    async def test_on_message_graph(self, client, channel, graph):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
@@ -867,36 +868,6 @@ class TestTurbot:
         )
         graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
-
-    async def test_on_message_graph_with_user(self, client, channel, graph):
-        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
-        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
-
-        await client.on_message(MockMessage(someone(), channel, f"!graph {BUDDY.name}"))
-        channel.sent.assert_called_with(
-            f"__**Predictive Graph for {BUDDY}**__", file=Matching(is_discord_file)
-        )
-        graph.assert_called_with(channel, BUDDY, turbot.GRAPHCMD_FILE)
-        assert Path(turbot.GRAPHCMD_FILE).exists()
-
-    async def test_on_message_graph_with_bad_name(self, client, channel, graph):
-        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
-        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
-
-        await client.on_message(MockMessage(someone(), channel, f"!graph {PUNK.name}"))
-        assert channel.last_sent_response == (
-            f"Can not find the user named {PUNK.name} in this channel."
-        )
-        graph.assert_not_called()
-        assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     async def test_on_message_lastweek_none(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!lastweek"))
@@ -1656,9 +1627,10 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!sell 120"))
 
         await client.on_message(MockMessage(author, channel, "!predict"))
-        assert channel.last_sent_response == (
-            f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110.100.95.90.85...90..120"
+        channel.sent.assert_called_with(
+            f"__**Predictive Graph for {author}**__\n"
+            "Details: <https://turnipprophet.io/?prices=110.100.95.90.85...90..120>",
+            file=Matching(is_discord_file),
         )
 
     async def test_on_message_predict_with_timezone(self, client, channel, freezer):
@@ -1682,9 +1654,10 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!sell 72"))
 
         await client.on_message(MockMessage(author, channel, "!predict"))
-        assert channel.last_sent_response == (
-            f"{author}'s turnip prediction link: "
-            "https://turnipprophet.io/?prices=110.87.72"
+        channel.sent.assert_called_with(
+            f"__**Predictive Graph for {author}**__\n"
+            "Details: <https://turnipprophet.io/?prices=110.87.72>",
+            file=Matching(is_discord_file),
         )
 
     async def test_get_last_price(self, client, channel, freezer):
