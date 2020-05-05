@@ -84,6 +84,16 @@ COLLECTABLE_SET = FOSSILS_SET | FISH_SET | BUGS_SET | ART_SET
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
+USER_PREFRENCES = [
+    "hemisphere",
+    "timezone",
+    "island",
+    "friend",
+    "fruit",
+    "nickname",
+    "creator",
+]
+
 DAYS = {
     "sunday": 0,
     "monday": 1,
@@ -93,6 +103,43 @@ DAYS = {
     "friday": 5,
     "saturday": 6,
 }
+
+
+class Validate:
+    FRUITS = ["apple", "cherry", "orange", "peach", "pear"]
+    HEMISPHERES = ["northern", "southern"]
+
+    @classmethod
+    def friend(cls, value):
+        code = re.sub("[^0-9]", "", value)
+        return code if len(code) == 12 and code.isdigit() else None
+
+    @classmethod
+    def creator(cls, value):
+        code = re.sub("[^0-9]", "", value)
+        return code if len(code) == 12 and code.isdigit() else None
+
+    @classmethod
+    def fruit(cls, value):
+        fruit = value.lower()
+        return fruit if fruit in cls.FRUITS else None
+
+    @classmethod
+    def hemisphere(cls, value):
+        home = value.lower()
+        return home if home in cls.HEMISPHERES else None
+
+    @classmethod
+    def nickname(cls, value):
+        return value
+
+    @classmethod
+    def timezone(cls, value):
+        return value if value in pytz.all_timezones_set else None
+
+    @classmethod
+    def island(cls, value):
+        return value
 
 
 def s(key, **kwargs):
@@ -306,16 +353,7 @@ class Turbot(discord.Client):
             self._users_data = self._users_data.fillna("")
             return self._users_data
 
-        cols = [
-            "author",
-            "hemisphere",
-            "timezone",
-            "island",
-            "friend",
-            "fruit",
-            "nickname",
-            "creator",
-        ]
+        cols = ["author", *USER_PREFRENCES]
         dtypes = ["int64", "str", "str", "str", "str", "str", "str", "str"]
         if Path(self.users_file).exists():
             self._users_data = pd.read_csv(self.users_file, names=cols, skiprows=1)
@@ -1296,104 +1334,26 @@ class Turbot(discord.Client):
         return s("predict", name=target_name, url=url), discord.File(GRAPHCMD_FILE)
 
     @command
-    def friend(self, channel, author, params):
+    def pref(self, channel, author, params):
         """
-        Set your friend code. | <code>
-        """
-        if not params:
-            return s("friend_no_params"), None
-
-        code = re.sub("[^0-9]", "", "".join(params).replace("-", ""))
-        if len(code) != 12 or not code.isdigit():
-            return s("friend_invalid"), None
-
-        self.save_user_pref(author, "friend", code)
-        return s("friend", name=author), None
-
-    @command
-    def creator(self, channel, author, params):
-        """
-        Set your creator code. | <code>
+        Set one of your user preferences. | <preference> <value>
         """
         if not params:
-            return s("creator_no_params"), None
+            return s("pref_no_params", prefs=", ".join(USER_PREFRENCES)), None
 
-        code = re.sub("[^0-9]", "", "".join(params).replace("-", ""))
-        if len(code) != 12 or not code.isdigit():
-            return s("creator_invalid"), None
+        pref = params[0].lower()
+        if pref not in USER_PREFRENCES:
+            return s("pref_invalid_pref", prefs=", ".join(USER_PREFRENCES)), None
+        if len(params) <= 1:
+            return s("pref_no_value", pref=pref), None
 
-        self.save_user_pref(author, "creator", code)
-        return s("creator", name=author), None
+        value = " ".join(params[1:])
+        validated_value = getattr(Validate, pref)(value)
+        if not validated_value:
+            return s(f"{pref}_invalid"), None
 
-    @command
-    def fruit(self, channel, author, params):
-        """
-        Set your island's native fruit. | [apple|cherry|orange|peach|pear]
-        """
-        if not params:
-            return s("fruit_no_params"), None
-
-        fruit = params[0].lower()
-        if fruit not in ["apple", "cherry", "orange", "peach", "pear"]:
-            return s("fruit_invalid"), None
-
-        self.save_user_pref(author, "fruit", fruit)
-        return s("fruit", name=author), None
-
-    @command
-    def hemisphere(self, channel, author, params):
-        """
-        Set your hemisphere. | [Northern|Southern]
-        """
-        if not params:
-            return s("hemisphere_no_params"), None
-
-        home = params[0].lower()
-        if home not in ["northern", "southern"]:
-            return s("hemisphere_bad_params"), None
-
-        self.save_user_pref(author, "hemisphere", home)
-        return s("hemisphere", name=author), None
-
-    @command
-    def nickname(self, channel, author, params):
-        """
-        Set your nickname, such as your Switch user name. | <name>
-        """
-        if not params:
-            return s("nickname_no_params"), None
-
-        name = " ".join(params)  # allow spaces in nicknames
-        self.save_user_pref(author, "nickname", name)
-        return s("nickname", name=author), None
-
-    @command
-    def timezone(self, channel, author, params):
-        """
-        Set your timezone. You can find a list of supported TZ names at
-        <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones> | <zone>
-        """
-        if not params:
-            return s("timezone_no_params"), None
-
-        zone = params[0]
-        if zone not in pytz.all_timezones_set:
-            return s("timezone_bad_params"), None
-
-        self.save_user_pref(author, "timezone", zone)
-        return s("timezone", name=author), None
-
-    @command
-    def island(self, channel, author, params):
-        """
-        Set your island name. | <name>
-        """
-        if not params:
-            return s("island_no_params"), None
-
-        island = " ".join(params)  # allow spaces in island names
-        self.save_user_pref(author, "island", island)
-        return s("island", name=author), None
+        self.save_user_pref(author, pref, validated_value)
+        return s("pref", pref=pref, name=author), None
 
     @command
     def count(self, channel, author, params):

@@ -65,25 +65,17 @@ count_fossil_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
 count_invalid_header: __**Did not recognize the following names**__
 count_no_params: Please provide at least one user name to search for.
-creator: Creator code registered for $name.
 creator_invalid: Your Animal Crossing creator code should be 12 numbers.
-creator_no_params: Please provide your Animal Crossing creator creator code.
 day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day parameter.
 did_you_mean: 'Did you mean: $possible?'
 fish: '> **$name** (shadow size $shadow) is available $time at $location (sells for
   $price bells) $alert'
 fish_none_found: Did not find any fish searching for "$search".
-friend: Friend code registered for $name.
 friend_invalid: Your switch friend code should be 12 numbers.
-friend_no_params: Please provide your switch friend code.
-fruit: Native fruit registered for $name.
 fruit_invalid: Your native fruit can be apple, cherry, orange, peach, or pear.
-fruit_no_params: Please provide your island's native fruit.
 graph_all_users: __**Historical Graph for All Users**__
-hemisphere: Hemisphere preference registered for $name.
-hemisphere_bad_params: Please provide either "northern" or "southern" as your hemisphere
+hemisphere_invalid: Please provide either "northern" or "southern" as your hemisphere
   name.
-hemisphere_no_params: Please provide the name of your hemisphere, northern or southern.
 history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp'
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp'
@@ -93,22 +85,25 @@ info_not_found: No users found.
 invalid_collectable: 'Unrecognized collectable names:
 
   > $items'
-island: Island name preference registered for $name.
-island_no_params: Please provide the name of your island.
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
 neededfossils: '> **$name** needs $items'
 neededfossils_none: No fossils are known to be needed at this time, new users must
   collect at least one fossil.
-nickname: Nickname preference registered for $name.
-nickname_no_params: Please provide a nickname, for example your Switch user name.
-no_hemisphere: Please enter your hemisphere choice first using the !hemisphere command.
+no_hemisphere: Please enter your hemisphere choice first using the !pref hemisphere
+  command.
 not_a_command: Sorry, there is no command named "$request"
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
 predict: '__**Predictive Graph for $name**__
 
   Details: <$url>'
+pref: Registered $pref preference for $name.
+pref_invalid_pref: Please provide a valid preference name, possible preferences include
+  $prefs.
+pref_no_params: Please provide a preference and a value, possible preferences include
+  $prefs.
+pref_no_value: Please provide the value for your $pref preference.
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
 search_all_not_needed: No one currently needs this.
@@ -132,10 +127,8 @@ sell_nonpositive_price: Selling price must be greater than zero.
 sell_same_price: Logged selling price of $price for user $name. (Same as last selling
   price)
 time_of_day_invalid: Please use either morning or evening as the time parameter.
-timezone: Timezone preference registered for $name.
-timezone_bad_params: Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+timezone_invalid: Please provide a valid timezone name, see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   for the complete list of TZ names.
-timezone_no_params: Please provide the name of your timezone.
 uncollect_art_already: 'The following pieces of art were already marked as not collected:
 
   > $items'
