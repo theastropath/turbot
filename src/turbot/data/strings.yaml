@@ -76,9 +76,9 @@ fruit_invalid: Your native fruit can be apple, cherry, orange, peach, or pear.
 graph_all_users: __**Historical Graph for All Users**__
 hemisphere_invalid: Please provide either "northern" or "southern" as your hemisphere
   name.
-history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp'
+history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp ($day_and_time)'
 history_header: __**Historical info for $name**__
-history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp'
+history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp ($day_and_time)'
 info_no_params: Please provide a search term.
 info_no_prefs: '> **$user** has no preferences.'
 info_not_found: No users found.

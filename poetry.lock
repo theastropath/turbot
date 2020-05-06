@@ -641,13 +641,13 @@ description = "Pytest support for asyncio."
 name = "pytest-asyncio"
 optional = false
 python-versions = ">= 3.5"
-version = "0.11.0"
+version = "0.12.0"
 
 [package.dependencies]
 pytest = ">=5.4.0"
 
 [package.extras]
-testing = ["async-generator (>=1.3)", "coverage", "hypothesis (>=5.7.1)"]
+testing = ["async_generator (>=1.3)", "coverage", "hypothesis (>=5.7.1)"]
 
 [[package]]
 category = "dev"
@@ -695,7 +695,7 @@ description = "A plugin to enable snapshot testing with pytest."
 name = "pytest-snapshot"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
-version = "0.3.0"
+version = "0.4.0"
 
 [package.dependencies]
 packaging = "*"
@@ -886,7 +886,7 @@ description = "Virtual Python Environment builder"
 name = "virtualenv"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
-version = "20.0.19"
+version = "20.0.20"
 
 [package.dependencies]
 appdirs = ">=1.4.3,<2"
@@ -944,8 +944,8 @@ docs = ["sphinx", "jaraco.packaging (>=3.2)", "rst.linker (>=1.9)"]
 testing = ["jaraco.itertools", "func-timeout"]
 
 [metadata]
-content-hash = "4ac302be66b96ad45e52d30fc1c137689a6fdc5b5e99850c623d3b1e1aafc917"
-python-versions = '^3.7'
+content-hash = "ccad29b0b92c109f354e19acccc06a0c41f6f9edea50a9f68473b00f0fd178be"
+python-versions = '>=3.7,<4'
 
 [metadata.files]
 aiohttp = [
@@ -1351,8 +1351,7 @@ pytest = [
     {file = "pytest-5.4.1.tar.gz", hash = "sha256:84dde37075b8805f3d1f392cc47e38a0e59518fb46a431cfdaf7cf1ce805f970"},
 ]
 pytest-asyncio = [
-    {file = "pytest-asyncio-0.11.0.tar.gz", hash = "sha256:c54866f3cf5dd2063992ba2c34784edae11d3ed19e006d220a3cf0bfc4191fcb"},
-    {file = "pytest_asyncio-0.11.0-py3-none-any.whl", hash = "sha256:6096d101a1ae350d971df05e25f4a8b4d3cd13ffb1b32e42d902ac49670d2bfa"},
+    {file = "pytest-asyncio-0.12.0.tar.gz", hash = "sha256:475bd2f3dc0bc11d2463656b3cbaafdbec5a47b47508ea0b329ee693040eebd2"},
 ]
 pytest-freezegun = [
     {file = "pytest-freezegun-0.4.1.zip", hash = "sha256:060cdf192848e50a4a681a5e73f8b544c4ee5ebc1fab3cb7223a0097bac2f83f"},
@@ -1367,8 +1366,8 @@ pytest-mpl = [
     {file = "pytest_mpl-0.11-py2.py3-none-any.whl", hash = "sha256:d9b8d7cbb9848cacb6aa291c14fdf61b6f8f585c8b1d2fb16b431a7404a3a5f6"},
 ]
 pytest-snapshot = [
-    {file = "pytest-snapshot-0.3.0.tar.gz", hash = "sha256:95726da8275ac5028bc6efe40709d2f57fae07a717788aaf398ec9d9227840ff"},
-    {file = "pytest_snapshot-0.3.0-py3-none-any.whl", hash = "sha256:5893b7f622bade1f6f1c001ac34a3081a5609e2855e17fb0e2326560e4c333cb"},
+    {file = "pytest-snapshot-0.4.0.tar.gz", hash = "sha256:02038e91aa350c07379829bdaadc540941b5af1b1748f54f6a330f79908da7c4"},
+    {file = "pytest_snapshot-0.4.0-py3-none-any.whl", hash = "sha256:d862f9f74533f2503e28f18bf0feec309dd46c96015b87c595028c11093c1044"},
 ]
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
@@ -1484,8 +1483,8 @@ urllib3 = [
     {file = "urllib3-1.25.9.tar.gz", hash = "sha256:3018294ebefce6572a474f0604c2021e33b3fd8006ecd11d62107a5d2a963527"},
 ]
 virtualenv = [
-    {file = "virtualenv-20.0.19-py2.py3-none-any.whl", hash = "sha256:b86480fc1fe3908a85d7377eee8dc9644a58090b9d3a3701b347c69c308f3e72"},
-    {file = "virtualenv-20.0.19.tar.gz", hash = "sha256:8bb59b586fea2eb3bb5600f7ef53d11fd4a64806cdf1a7217b29e7d943dbd8dc"},
+    {file = "virtualenv-20.0.20-py2.py3-none-any.whl", hash = "sha256:b4c14d4d73a0c23db267095383c4276ef60e161f94fde0427f2f21a0132dde74"},
+    {file = "virtualenv-20.0.20.tar.gz", hash = "sha256:fd0e54dec8ac96c1c7c87daba85f0a59a7c37fe38748e154306ca21c73244637"},
 ]
 wcwidth = [
     {file = "wcwidth-0.1.9-py2.py3-none-any.whl", hash = "sha256:cafe2186b3c009a04067022ce1dcd79cb38d8d65ee4f4791b8888d6599d1bbe1"},
