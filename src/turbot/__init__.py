@@ -94,14 +94,15 @@ USER_PREFRENCES = [
     "creator",
 ]
 
+# Based on values from datetime.isoweekday()
 DAYS = {
-    "sunday": 0,
     "monday": 1,
     "tuesday": 2,
     "wednesday": 3,
     "thursday": 4,
     "friday": 5,
     "saturday": 6,
+    "sunday": 7,
 }
 
 
@@ -684,15 +685,21 @@ class Turbot(discord.Client):
                     for i, page in enumerate(pages):
                         file = (
                             attachment
-                            if attachment
+                            if attachment is not None
                             and i == last_page_index
                             and n == last_reply_index
                             else None
                         )
                         await message.channel.send(page, file=file)
                 elif isinstance(reply, discord.embeds.Embed):
-                    file = attachment if attachment and n == last_reply_index else None
+                    file = (
+                        attachment
+                        if attachment is not None and n == last_reply_index
+                        else None
+                    )
                     await message.channel.send(embed=reply, file=file)
+                else:
+                    raise RuntimeError("non-string non-embed reply not supported")
 
     ##############################
     # Discord Client Behavior

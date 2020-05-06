@@ -22,6 +22,11 @@ import turbot
 ##############################
 
 
+class MockFile:
+    def __init__(self, fp):
+        self.fp = fp
+
+
 class MockMember:
     def __init__(self, member_name, member_id, roles=[]):
         self.name = member_name
@@ -92,6 +97,14 @@ class MockChannel:
             sent_call["kwargs"]["embed"].to_dict()
             for sent_call in self.all_sent_calls
             if "embed" in sent_call["kwargs"]
+        ]
+
+    @property
+    def all_sent_files(self):
+        return [
+            sent_call["kwargs"]["file"]
+            for sent_call in self.all_sent_calls
+            if "file" in sent_call["kwargs"]
         ]
 
     @property
@@ -330,6 +343,27 @@ class TestTurbot:
         assert channel.last_sent_response == (
             'Sorry, there is no command named "xenomorph"'
         )
+
+    async def test_process_long_response_with_file(self, client, channel, monkeypatch):
+        file = MockFile("file")
+
+        @turbot.command
+        def mock_help(channel, author, params):
+            return "What? " * 1000, file
+
+        monkeypatch.setattr(client, "help", mock_help)
+        await client.on_message(MockMessage(someone(), channel, "!help"))
+        assert len(channel.all_sent_responses) == 3
+        assert channel.all_sent_files == [file]
+
+    async def test_process_weird_response(self, client, channel, monkeypatch):
+        @turbot.command
+        def mock_help(channel, author, params):
+            return 42, None  # can't send int as a response
+
+        monkeypatch.setattr(client, "help", mock_help)
+        with pytest.raises(RuntimeError):
+            await client.on_message(MockMessage(someone(), channel, "!help"))
 
     async def test_on_message_sell_at_time_with_tz(self, client, channel, lines, freezer):
         author = someone()
@@ -1911,6 +1945,13 @@ class TestTurbot:
             assert all(len(page) <= 2000 for page in pages)
             assert pages == [text[0:2000], text[2000:]]
 
+        with open(Path(DAT_ROOT) / "quotes.txt") as f:
+            text = f.read()
+            pages = subject(text)
+            assert len(pages) == 2
+            assert all(len(page) <= 2000 for page in pages)
+            assert pages == [text[0:1926], text[1926:]]
+
     async def test_humanize_months(self):
         def subject(*args):
             row = dict(
@@ -2054,6 +2095,12 @@ class TestTurbot:
     async def test_on_message_search_fish(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!search bitterling"))
         channel.last_sent_response == "Searching for fish is not supported yet."
+
+    async def test_discord_user_from_name_guard(self, channel):
+        assert turbot.discord_user_from_name(channel, None) == None
+
+    async def test_discord_user_name_guard(self, channel):
+        assert turbot.discord_user_name(channel, None) == None
 
     async def test_on_message_pref_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref"))
@@ -2265,35 +2312,47 @@ class TestFigures:
             f.writelines(
                 [
                     "author,kind,price,timestamp\n",
-                    f"{FRIEND.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                    # user that's not in the channel:
+                    f"{PUNK.id},buy,100,1982-04-24 01:00:00+00:00\n",
+                    # some actually valid data:
+                    f"{FRIEND.id},buy,103,2020-04-05 09:00:00+00:00\n",
+                    f"{FRIEND.id},sell,112,2020-04-06 09:00:00+00:00\n",
+                    # a user with only buy data, no sell data:
+                    f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",
                 ]
             )
 
-    def test_get_graph_single_bad_user(self, client, channel):
+    def test_get_graph_predictive_bad_user(self, client, channel):
         self.set_example_prices(client)
         client.get_graph(channel, PUNK, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
-    def test_get_graph_all_no_users(self, client, channel):
+    def test_get_graph_historical_no_users(self, client, channel):
         client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
-    def test_get_graph_single_no_data(self, client, channel):
+    def test_get_graph_predictive_no_data(self, client, channel):
         client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_all(self, client, channel):
+    def test_get_graph_historical_with_bogus_data(self, client, channel):
+        self.set_bogus_prices(client)
+        client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
+        return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
+
+    @pytest.mark.mpl_image_compare
+    def test_get_graph_historical(self, client, channel):
         self.set_example_prices(client)
         return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_single_friend(self, client, channel):
+    def test_get_graph_predictive_friend(self, client, channel):
         self.set_example_prices(client)
         return client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_single_dude(self, client, channel):
+    def test_get_graph_predictive_dude(self, client, channel):
         self.set_example_prices(client)
         return client.get_graph(channel, DUDE, turbot.GRAPHCMD_FILE)
 
