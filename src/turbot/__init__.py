@@ -1564,6 +1564,55 @@ class Turbot(discord.Client):
 
         return response, None
 
+    def creatures_available_now(self, now, df):
+        """Returns the names of creatures in df that are available right now."""
+        for _, row in df.iterrows():
+            time = row["time"]
+            if time.lower() == "all day":
+                yield row["name"]
+            else:
+                ranges = time.lower().split("&")
+                for r in ranges:
+                    lhs, rhs = [t.strip().lower() for t in r.split("-")]
+                    lhs_hour, lhs_ampm = lhs.split(" ")
+                    rhs_hour, rhs_ampm = rhs.split(" ")
+                    lhs_hour, rhs_hour = int(lhs_hour), int(rhs_hour)
+                    now_hour = now.hour
+                    now_ampm = "am" if now_hour < 12 else "pm"
+
+                    # | lhs_ampm | rhs_ampm | now_ampm | yield if (use _hour vars) |
+                    # | -------- | -------- | -------- | ------------------------- |
+                    # | am       | am       | am       | lhs <= now <= rhs         |
+                    # | am       | am       | pm       | False                     |
+                    # | am       | pm       | am       | lhs <= now <= rhs + 12    |
+                    # | am       | pm       | pm       | lhs <= now <= rhs + 12    |
+                    # | pm       | am       | am       | now <= rhs                |
+                    # | pm       | am       | pm       | now >= lhs                |
+                    # | pm       | pm       | am       | False                     |
+                    # | pm       | pm       | pm       | lhs <= now <= rhs         |
+                    if lhs_ampm == "am" and rhs_ampm == "am" and now_ampm == "am":
+                        if lhs_hour <= now_hour <= rhs_hour:
+                            yield row["name"]
+                    elif lhs_ampm == "am" and rhs_ampm == "am" and now_ampm == "pm":
+                        continue
+                    elif lhs_ampm == "am" and rhs_ampm == "pm" and now_ampm == "am":
+                        if lhs_hour <= now_hour <= rhs_hour + 12:
+                            yield row["name"]
+                    elif lhs_ampm == "am" and rhs_ampm == "pm" and now_ampm == "pm":
+                        if lhs_hour <= now_hour <= rhs_hour + 12:
+                            yield row["name"]
+                    elif lhs_ampm == "pm" and rhs_ampm == "am" and now_ampm == "am":
+                        if now_hour <= rhs_hour:
+                            yield row["name"]
+                    elif lhs_ampm == "pm" and rhs_ampm == "am" and now_ampm == "pm":
+                        if now_hour >= lhs_hour:
+                            yield row["name"]
+                    elif lhs_ampm == "pm" and rhs_ampm == "pm" and now_ampm == "am":
+                        continue
+                    else:  # lhs_ampm == "pm" and rhs_ampm == "pm" and now_ampm == "pm"
+                        if lhs_hour <= now_hour <= rhs_hour:
+                            yield row["name"]
+
     def _creatures(self, *_, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""
         hemisphere = self.get_user_prefs(author.id).get("hemisphere", None)
@@ -1593,13 +1642,6 @@ class Turbot(discord.Client):
                 "alert": alert,
             }
 
-        def add_header(lines):
-            if kind != "bugs":
-                return lines
-            if random.randint(0, 100) > 70:
-                lines.insert(0, s("bugs_header"))
-            return lines
-
         if params:
             user_input = " ".join(params)
             search = user_input.lower()
@@ -1612,32 +1654,78 @@ class Turbot(discord.Client):
 
             if found.empty:
                 return s(f"{kind}_none_found", search=user_input)
-            elif force_text or len(found) > EMBED_LIMIT:
-                available = found  # fallback to the less detailed, text only, response
-            else:
-                response = []
-                rows = [row for _, row in found.iterrows()]
-                for row in sorted(rows, key=lambda r: r["name"]):
-                    info = details(row)
-                    embed = discord.Embed(title=info["name"])
-                    embed.set_thumbnail(url=info["image"])
-                    embed.add_field(name="price", value=info["price"])
-                    embed.add_field(name="location", value=info["location"])
-                    if "shadow" in info:
-                        embed.add_field(name="shadow size", value=info["shadow"])
-                    embed.add_field(name="available", value=info["time"])
-                    embed.add_field(name="during", value=info["months"])
-                    if info["alert"]:
-                        embed.add_field(name="alert", value=info["alert"])
-                        if "GONE" in info["alert"]:
-                            embed.color = discord.Color.orange()
-                        else:
-                            embed.color = discord.Color.blue()
-                    response.append(embed)
-                return add_header(response)
+        else:
+            if kind == "fish":
+                caught = self.load_fish()
+                caught = caught[caught.author == author.id]
+            else:  # kind == "bugs"
+                caught = None  # not supported yet
 
-        lines = [s(kind, **details(row)) for _, row in available.iterrows()]
-        return "\n".join(add_header(sorted(lines)))
+            if caught is not None and not caught.empty:
+                already = available.loc[available.name.isin(caught.name)]
+                available = available.drop(already.index)
+
+            found = available
+
+            if found.empty:
+                return s(f"{kind}_none_available")
+
+        now_names = set(self.creatures_available_now(now, found))
+        found_now = found[found.name.isin(now_names)]
+        found_this_month = found[~found.name.isin(now_names)]
+
+        def get_response(df, force_text):
+            if force_text or len(df) > EMBED_LIMIT:
+                lines = [s(kind, **details(row)) for _, row in df.iterrows()]
+                return "\n".join(sorted(lines))
+
+            response = []
+            rows = [row for _, row in df.iterrows()]
+            for row in sorted(rows, key=lambda r: r["name"]):
+                info = details(row)
+                embed = discord.Embed(title=info["name"])
+                embed.set_thumbnail(url=info["image"])
+                embed.add_field(name="price", value=info["price"])
+                embed.add_field(name="location", value=info["location"])
+                if "shadow" in info:
+                    embed.add_field(name="shadow size", value=info["shadow"])
+                embed.add_field(name="available", value=info["time"])
+                embed.add_field(name="during", value=info["months"])
+                if info["alert"]:
+                    embed.add_field(name="alert", value=info["alert"])
+                    if "GONE" in info["alert"]:
+                        embed.color = discord.Color.orange()
+                    else:
+                        embed.color = discord.Color.blue()
+                response.append(embed)
+            return response
+
+        response_now = get_response(found_now, force_text=force_text)
+        response_this_month = get_response(found_this_month, force_text=True)
+
+        responses = []
+
+        if response_now:
+            header = s("creature_available_now", kind=kind.title())
+            if isinstance(response_now, str):
+                responses.append(f"{header}\n{response_now}")
+            else:
+                responses.append(header)
+                responses.extend(response_now)
+
+        if response_this_month:
+            # response_this_month is always forced to be text
+            header = s("creature_available_this_month", kind=kind.title())
+            responses.append(f"{header}\n{response_this_month}")
+
+        def add_header(responses):
+            if kind != "bugs":
+                return responses
+            if random.randint(0, 100) > 70:
+                responses.insert(0, s("bugs_header"))
+            return responses
+
+        return add_header(responses)
 
     @command
     def fish(self, channel, author, params):
@@ -1668,14 +1756,14 @@ class Turbot(discord.Client):
         """
         return (
             [
-                self._creatures(
+                *self._creatures(
                     author=author,
                     params=["arriving"],
                     kind="bugs",
                     source=BUGS,
                     force_text=True,
                 ),
-                self._creatures(
+                *self._creatures(
                     author=author,
                     params=["arriving"],
                     kind="fish",

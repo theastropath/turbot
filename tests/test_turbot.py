@@ -721,6 +721,7 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!help"))
         for response in channel.all_sent_responses:
             snap(response)
+        assert len(channel.all_sent_calls) == 2
 
     async def test_on_message_clear(self, client, channel, lines):
         author = someone()
@@ -1225,6 +1226,7 @@ class TestTurbot:
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
         await client.on_message(MockMessage(author, channel, f"!count {users}"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_collected_some(self, client, channel):
         author = someone()
@@ -1286,6 +1288,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
         for response in channel.all_sent_responses:
             snap(response)
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_collected_art_with_name(self, client, channel):
         art = "sinking painting, academic painting, great statue"
@@ -1373,6 +1376,7 @@ class TestTurbot:
             MockMessage(BUDDY, channel, f"!collect {', '.join(rest)}")
         )
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_collected_bad_name(self, client, channel):
         art = "academic painting, sinking painting"
@@ -1413,7 +1417,7 @@ class TestTurbot:
         )
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_responses) == 3
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_uncollected_with_name(self, client, channel, snap):
         art = "academic painting, sinking painting"
@@ -1426,7 +1430,7 @@ class TestTurbot:
         )
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_responses) == 3
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_search_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!search"))
@@ -1554,6 +1558,7 @@ class TestTurbot:
     async def test_on_message_allfossils(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!allfossils"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
 
     async def test_on_message_collected_fossils_congrats(self, client, channel):
         author = someone()
@@ -1572,6 +1577,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!uncollected"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 2
 
     async def test_on_message_neededfossils(self, client, channel):
         everything = sorted(list(turbot.FOSSILS_SET))
@@ -1774,37 +1780,103 @@ class TestTurbot:
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!fish ch"))
-        snap(channel.last_sent_response)
+        assert channel.all_sent_responses == [
+            f"Registered hemisphere preference for {author}.",
+            "__**Fish available right now**__",
+            None,
+            None,
+            None,
+            "__**Fish available this month**__\n"
+            "> **Anchovy** (shadow size 2) is available 4 am - 9 pm at sea "
+            "(sells for 200 bells) \n"
+            "> **Pale chub** (shadow size 1) is available 9 am - 4 pm at river "
+            "(sells for 200 bells) \n"
+            "> **Ranchu goldfish** (shadow size 2) is available 9 am - 4 pm at pond "
+            "(sells for 4500 bells) ",
+        ]
+        snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 6
 
     async def test_on_message_fish_search_leaving(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!fish leaving"))
+        assert channel.all_sent_responses == [
+            f"Registered hemisphere preference for {author}.",
+            "__**Fish available right now**__",
+            None,
+            None,
+            None,
+        ]
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 5
 
     async def test_on_message_fish_search_arriving(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!fish arriving"))
-        snap(channel.last_sent_response)
+        assert channel.all_sent_responses[0] == (
+            f"Registered hemisphere preference for {author}."
+        )
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_calls) == 3
+
+    async def test_on_message_fish_few(self, client, channel, snap):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
+        most_fish = turbot.FISH_SET - {"snapping turtle", "guppy"}
+        await client.on_message(
+            MockMessage(author, channel, f"!collect {','.join(most_fish)}")
+        )
+        await client.on_message(MockMessage(author, channel, "!fish"))
+        assert channel.all_sent_responses[0] == (
+            f"Registered hemisphere preference for {author}."
+        )
+        snap(channel.all_sent_responses[1])
+        assert channel.all_sent_responses[2] == "__**Fish available right now**__"
+        assert channel.all_sent_responses[3] is None
+        assert channel.all_sent_responses[4] == (
+            "__**Fish available this month**__\n"
+            "> **Guppy** (shadow size 1) is available 9 am - 4 pm at river "
+            "(sells for 1300 bells) _New this month_"
+        )
+        snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 5
 
     async def test_on_message_fish(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!fish"))
-        snap(channel.last_sent_response)
+        assert channel.all_sent_responses[0] == (
+            f"Registered hemisphere preference for {author}."
+        )
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        snap(channel.all_sent_responses[3])
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_fish_case_insensitive(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!fish SeA"))
+        assert channel.all_sent_responses == [
+            f"Registered hemisphere preference for {author}.",
+            "__**Fish available right now**__",
+            None,
+            None,
+        ]
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_bugs_case_insensitive(self, client, channel, snap):
+    async def test_on_message_bugs_case_insensitive(
+        self, client, channel, snap, without_bugs_header
+    ):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs TaRaNtUlA"))
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 3
 
     async def test_load_prices_new(self, client):
         prices = client.load_prices()
@@ -1868,6 +1940,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs butt"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 2
 
     async def test_on_message_bug_search_query_few(
         self, client, channel, without_bugs_header, snap
@@ -1875,21 +1948,45 @@ class TestTurbot:
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs beet"))
+        assert channel.all_sent_responses == [
+            f"Registered hemisphere preference for {author}.",
+            "__**Bugs available right now**__",
+            None,
+            None,
+            None,
+        ]
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 5
 
     async def test_on_message_bug_header(self, client, channel, with_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs butt"))
-        snap(channel.last_sent_response)
+        assert channel.all_sent_responses[0] == (
+            f"Registered hemisphere preference for {author}."
+        )
+        assert channel.all_sent_responses[1] == (
+            "```diff\n"
+            "-Eeek! What wretched things. Alas, I am obliged to respond...\n"
+            "```"
+        )
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_bug_search_leaving(
-        self, client, channel, without_bugs_header, snap
+        self, client, channel, without_bugs_header, freezer, snap
     ):
         author = someone()
+        freezer.move_to(datetime(2020, 5, 6, 11, 30))
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs leaving"))
+        assert channel.all_sent_responses[0] == (
+            f"Registered hemisphere preference for {author}."
+        )
+        assert channel.all_sent_responses[1] == "__**Bugs available right now**__"
+        assert channel.all_sent_responses[2] is None
         snap(channel.all_sent_embeds_json)
+        len(channel.all_sent_calls) == 3
 
     async def test_on_message_bug_search_arriving(
         self, client, channel, without_bugs_header, snap
@@ -1897,7 +1994,14 @@ class TestTurbot:
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(author, channel, "!bugs arriving"))
-        snap(channel.last_sent_response)
+        assert channel.all_sent_responses[1] == "__**Bugs available right now**__"
+        assert channel.all_sent_responses[2] is None
+        assert channel.all_sent_responses[3] is None
+        assert channel.all_sent_responses[4] is None
+        assert channel.all_sent_responses[5] is None
+        snap(channel.all_sent_responses[6])
+        snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 7
 
     async def test_on_message_new(self, client, channel, without_bugs_header, snap):
         author = someone()
@@ -1905,7 +2009,9 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!new"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_responses) == 3
+        snap(channel.all_sent_responses[3])
+        snap(channel.all_sent_responses[4])
+        assert len(channel.all_sent_calls) == 5
 
     async def test_on_message_new_first_day(
         self, client, channel, freezer, without_bugs_header, snap
@@ -1918,7 +2024,9 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!new"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_responses) == 3
+        snap(channel.all_sent_responses[3])
+        snap(channel.all_sent_responses[4])
+        assert len(channel.all_sent_calls) == 5
 
     async def test_on_message_bug(self, client, channel, without_bugs_header, snap):
         author = someone()
@@ -1926,23 +2034,26 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!bugs"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_responses) == 3
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_art_fulllist(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!art"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
 
     async def test_on_message_art_correctnames(self, client, channel, snap):
         await client.on_message(
             MockMessage(someone(), channel, "!art amazing painting, proper painting",)
         )
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
 
     async def test_on_message_art_invalidnames(self, client, channel, snap):
         await client.on_message(
             MockMessage(someone(), channel, "!art academic painting, asdf",)
         )
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
 
     async def test_paginate(self, client):
         def subject(text):
@@ -2018,8 +2129,9 @@ class TestTurbot:
             await client.on_message(MockMessage(author, channel, f"!pref {pref} {value}"))
             await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == len(prefs) * 2
 
-    async def test_get_user_prefs(self, client, channel, snap):
+    async def test_get_user_prefs(self, client, channel):
         author = DUDE
         prefs = {
             "hemisphere": "norTHErn",
@@ -2056,7 +2168,7 @@ class TestTurbot:
 
         assert client.get_user_prefs(PUNK.id) == {}
 
-    async def test_get_user_prefs_friend_code(self, client, channel, snap):
+    async def test_get_user_prefs_friend_code(self, client, channel):
         author = someone()
         with open(client.users_file, "w") as f:
             f.writelines(
@@ -2079,6 +2191,7 @@ class TestTurbot:
     async def test_on_message_about(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, f"!about"))
         snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 1
 
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
         # Simulate the condition where a user exists in the data file,
@@ -2404,6 +2517,7 @@ class TestTurbot:
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
         await client.on_message(MockMessage(author, channel, f"!count {users}"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_collected_fish_no_name(self, client, channel):
         author = DUDE
@@ -2429,6 +2543,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 2
 
     async def test_on_message_collected_fish_with_name(self, client, channel):
         fish = "snapping turtle, bluegill, giant snakehead"
@@ -2508,6 +2623,95 @@ class TestTurbot:
             MockMessage(BUDDY, channel, f"!collect {', '.join(rest)}")
         )
         snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
+
+    async def test_on_message_fish_none_available(self, client, channel):
+        everything = ",".join(turbot.FISH_SET)
+        await client.on_message(MockMessage(BUDDY, channel, f"!pref hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!fish"))
+        assert channel.last_sent_response == (
+            "No fish that you haven't already caught are available at this time."
+        )
+        assert len(channel.all_sent_calls) == 3
+
+    async def test_creatures_available_now(self, client):
+        def creature(name, time):
+            return ["northern", name, "image-url", 50, "everywhere", time] + [1] * 12
+
+        import pandas as pd
+
+        creatures = pd.DataFrame(
+            columns=turbot.BUGS.columns,
+            data=[
+                creature("one", "1 am - 10 am"),
+                creature("two", "1 am - 10 pm"),
+                creature("three", "1 pm - 10 am"),
+                creature("four", "1 pm - 10 pm"),
+                creature("five", "10 am - 1 am"),
+                creature("six", "10 am - 1 pm"),
+                creature("seven", "10 pm - 1 am"),
+                creature("eight", "10 pm - 1 pm"),
+                creature("nine", "16 pm - 10 am"),
+                creature("nine", "13 pm - 17 pm"),
+                creature("nine", "all day"),
+                creature("ten", "1 am - 3 am & 6 am - 10 am"),
+            ],
+        )
+
+        def subject(dt):
+            return set(client.creatures_available_now(dt, creatures))
+
+        assert subject(datetime(2020, 4, 6, 0)) == {"three", "seven", "nine"}
+        assert subject(datetime(2020, 4, 6, 1)) == {
+            "three",
+            "ten",
+            "seven",
+            "two",
+            "nine",
+            "one",
+        }
+        assert subject(datetime(2020, 4, 6, 2)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 3)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 4)) == {"one", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 5)) == {"one", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 6)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 7)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 8)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 9)) == {"three", "ten", "two", "nine", "one"}
+        assert subject(datetime(2020, 4, 6, 10)) == {
+            "three",
+            "ten",
+            "one",
+            "two",
+            "nine",
+            "six",
+        }
+        assert subject(datetime(2020, 4, 6, 11)) == {"six", "nine", "two"}
+        assert subject(datetime(2020, 4, 6, 12)) == {
+            "three",
+            "seven",
+            "two",
+            "nine",
+            "six",
+        }
+        assert subject(datetime(2020, 4, 6, 13)) == {
+            "three",
+            "seven",
+            "two",
+            "nine",
+            "six",
+        }
+        assert subject(datetime(2020, 4, 6, 14)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 15)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 16)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 17)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 18)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 19)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 20)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 21)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 22)) == {"seven", "nine", "three", "two"}
+        assert subject(datetime(2020, 4, 6, 23)) == {"seven", "nine", "three"}
 
 
 class TestFigures:
@@ -2611,7 +2815,7 @@ class TestCodebase:
         cmd = ["black", "-v", "--check", *SRC_DIRS]
         print("running:", " ".join(str(part) for part in cmd))
         proc = run(cmd, capture_output=True)
-        assert proc.returncode == 0, f"black issues:\n{proc.stdout.decode('utf-8')}"
+        assert proc.returncode == 0, f"black issues:\n{proc.stderr.decode('utf-8')}"
 
     def test_isort(self):
         """Checks that the Python codebase imports are correctly sorted."""
