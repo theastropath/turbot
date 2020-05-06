@@ -42,7 +42,12 @@ collect_art_new: 'Marked the following art as collected:
 
   > $items'
 collect_bugs: Collecting bugs is not supported yet.
-collect_fish: Collecting fish is not supported yet.
+collect_fish_dupe: 'The following fish had already been collected:
+
+  > $items'
+collect_fish_new: 'Marked the following fish as collected:
+
+  > $items'
 collect_fossil_dupe: 'The following fossils had already been collected:
 
   > $items'
@@ -50,16 +55,22 @@ collect_fossil_new: 'Marked the following fossils as collected:
 
   > $items'
 collect_no_params: Please provide the name of something to mark as collected.
-collected_art: '__**$count Pieces of art donated by $name**__
+collected_art: '__**$count pieces of art donated by $name**__
 
   >>> $items'
-collected_fossils: '__**$count Fossils donated by $name**__
+collected_fish: '__**$count fish donated by $name**__
+
+  >>> $items'
+collected_fossils: '__**$count fossils donated by $name**__
 
   >>> $items'
 congrats_all_art: '**Congratulations, you''ve collected all art!**'
+congrats_all_fish: '**Congratulations, you''ve collected all fish!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
 count_art_valid: '> **$name** has $count pieces of art remaining.'
 count_art_valid_header: __**Art Count**__
+count_fish_valid: '> **$name** has $count fish remaining.'
+count_fish_valid_header: __**Fish Count**__
 count_fossil_valid: '> **$name** has $count fossils remaining.'
 count_fossil_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
@@ -109,7 +120,7 @@ reset: '**Resetting data for a new week!**'
 search_all_not_needed: No one currently needs this.
 search_art_row: '> $name needs arts: $items'
 search_bugs: Searching for bugs is not supported yet.
-search_fish: Searching for fish is not supported yet.
+search_fish_row: '> $name needs fish: $items'
 search_fossil_row: '> $name needs fossils: $items'
 search_invalid: 'Did not recognize the following collectables:
 
@@ -136,7 +147,12 @@ uncollect_art_deleted: 'Unmarked the following pieces of art as collected:
 
   > $items'
 uncollect_bugs: Uncollecting bugs is not supported yet.
-uncollect_fish: Uncollecting fish is not supported yet.
+uncollect_fish_already: 'The following fish were already marked as not collected:
+
+  > $items'
+uncollect_fish_deleted: 'Unmarked the following fish as collected:
+
+  > $items'
 uncollect_fossil_already: 'The following fossils were already marked as not collected:
 
   > $items'
@@ -146,5 +162,7 @@ uncollect_fossil_deleted: 'Unmarked the following fossils as collected:
 uncollect_no_params: Please provide the name of something to mark as uncollected.
 uncollected_art_count: __**$count Pieces of art remaining for $name**__
 uncollected_art_remaining: '>>> $items'
+uncollected_fish_count: __**$count fish remaining for $name**__
+uncollected_fish_remaining: '>>> $items'
 uncollected_fossils_count: __**$count Fossils remaining for $name**__
 uncollected_fossils_remaining: '>>> $items'
