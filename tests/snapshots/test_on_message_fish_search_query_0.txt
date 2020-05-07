@@ -1,6 +1,104 @@
-> **Anchovy** (shadow size 2) is available 4 am - 9 pm at sea (sells for 200 bells) 
-> **Char** (shadow size 3) is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) 
-> **Cherry salmon** (shadow size 3) is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) 
-> **Loach** (shadow size 2) is available all day at river (sells for 400 bells) 
-> **Pale chub** (shadow size 1) is available 9 am - 4 pm at river (sells for 200 bells) 
-> **Ranchu goldfish** (shadow size 2) is available 9 am - 4 pm at pond (sells for 4500 bells) 
+[
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "3800"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "river (clifftop)  pond"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "3"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "4 pm - 9 am"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Mar - Jun, Sep - Nov"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/1/15/NH-Icon-char.png/revision/latest/scale-to-width-down/64?cb=20200401003129"
+        },
+        "title": "Char",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "800"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "river (clifftop)"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "3"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "4 pm - 9 am"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Mar - Jun, Sep - Nov"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/5/5f/NH-Icon-cherrysalmon.png/revision/latest/scale-to-width-down/64?cb=20200401003129"
+        },
+        "title": "Cherry salmon",
+        "type": "rich"
+    },
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "price",
+                "value": "400"
+            },
+            {
+                "inline": true,
+                "name": "location",
+                "value": "river"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "2"
+            },
+            {
+                "inline": true,
+                "name": "available",
+                "value": "all day"
+            },
+            {
+                "inline": true,
+                "name": "during",
+                "value": "Mar - May"
+            }
+        ],
+        "thumbnail": {
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/7/77/NH-Icon-loach.png/revision/latest/scale-to-width-down/64?cb=20200401003129"
+        },
+        "title": "Loach",
+        "type": "rich"
+    }
+]

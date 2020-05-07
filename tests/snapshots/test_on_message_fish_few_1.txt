@@ -1,37 +1,42 @@
 [
     {
-        "color": 15105570,
+        "color": 3447003,
         "fields": [
             {
                 "inline": true,
                 "name": "price",
-                "value": "500"
+                "value": "5000"
             },
             {
                 "inline": true,
                 "name": "location",
-                "value": "underground"
+                "value": "river"
+            },
+            {
+                "inline": true,
+                "name": "shadow size",
+                "value": "5"
             },
             {
                 "inline": true,
                 "name": "available",
-                "value": "all day"
+                "value": "9 pm - 4 am"
             },
             {
                 "inline": true,
                 "name": "during",
-                "value": "Jan - May, Nov - Dec"
+                "value": "Apr - Oct"
             },
             {
                 "inline": true,
                 "name": "alert",
-                "value": "**GONE NEXT MONTH!**"
+                "value": "_New this month_"
             }
         ],
         "thumbnail": {
-            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/0/00/NH-Icon-molecricket.png/revision/latest/scale-to-width-down/64?cb=20200401005429"
+            "url": "https://vignette.wikia.nocookie.net/animalcrossing/images/2/24/NH-Icon-snappingturtle.png/revision/latest/scale-to-width-down/64?cb=20200401003129"
         },
-        "title": "Mole cricket",
+        "title": "Snapping turtle",
         "type": "rich"
     }
 ]

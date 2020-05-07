@@ -1,18 +1,22 @@
+__**Fish available right now**__
+> **Barred knifejaw** (shadow size 3) is available all day at sea (sells for 5000 bells) 
+> **Barreleye** (shadow size 2) is available 9 pm - 4 am at sea (sells for 15000 bells) 
+> **Black bass** (shadow size 4) is available all day at river (sells for 400 bells) 
+> **Blue marlin** (shadow size 6) is available all day at pier (sells for 10000 bells) **GONE NEXT MONTH!**
+> **Butterfly fish** (shadow size 2) is available all day at sea (sells for 1000 bells) _New this month_
+> **Carp** (shadow size 4) is available all day at pond (sells for 300 bells) 
+> **Char** (shadow size 3) is available 4 pm - 9 am at river (clifftop)  pond (sells for 3800 bells) 
+> **Cherry salmon** (shadow size 3) is available 4 pm - 9 am at river (clifftop) (sells for 800 bells) 
+> **Clown fish** (shadow size 1) is available all day at sea (sells for 650 bells) _New this month_
+> **Coelacanth** (shadow size 6) is available all day at sea (raining) (sells for 15000 bells) 
+> **Crawfish** (shadow size 2) is available all day at pond (sells for 200 bells) _New this month_
+> **Crucian carp** (shadow size 2) is available all day at river (sells for 160 bells) 
+> **Dab** (shadow size 3) is available all day at sea (sells for 300 bells) **GONE NEXT MONTH!**
+> **Dace** (shadow size 3) is available 4 pm - 9 am at river (sells for 240 bells) 
+> **Freshwater goby** (shadow size 2) is available 4 pm - 9 am at river (sells for 400 bells) 
+> **Golden trout** (shadow size 3) is available 4 pm - 9 am at river (clifftop) (sells for 15000 bells) 
+> **Goldfish** (shadow size 1) is available all day at pond (sells for 1300 bells) 
+> **Horse mackerel** (shadow size 2) is available all day at sea (sells for 150 bells) 
 > **Killifish** (shadow size 1) is available all day at pond (sells for 300 bells) _New this month_
 > **Koi** (shadow size 4) is available 4 pm - 9 am at pond (sells for 4000 bells) 
 > **Loach** (shadow size 2) is available all day at river (sells for 400 bells) 
-> **Neon tetra** (shadow size 1) is available 9 am - 4 pm at river (sells for 500 bells) _New this month_
-> **Oarfish** (shadow size 6) is available all day at sea (sells for 9000 bells) 
-> **Olive flounder** (shadow size 5) is available all day at sea (sells for 800 bells) 
-> **Pale chub** (shadow size 1) is available 9 am - 4 pm at river (sells for 200 bells) 
-> **Pop-eyed goldfish** (shadow size 1) is available 9 am - 4 pm at pond (sells for 1300 bells) 
-> **Ranchu goldfish** (shadow size 2) is available 9 am - 4 pm at pond (sells for 4500 bells) 
-> **Red snapper** (shadow size 4) is available all day at sea (sells for 3000 bells) 
-> **Sea bass** (shadow size 5) is available all day at sea (sells for 400 bells) 
-> **Sea horse** (shadow size 1) is available all day at sea (sells for 1100 bells) _New this month_
-> **Snapping turtle** (shadow size 5) is available 9 pm - 4 am at river (sells for 5000 bells) _New this month_
-> **Squid** (shadow size 3) is available all day at sea (sells for 500 bells) 
-> **Surgeonfish** (shadow size 2) is available all day at sea (sells for 1000 bells) _New this month_
-> **Tadpole** (shadow size 1) is available all day at pond (sells for 100 bells) 
-> **Tuna** (shadow size 6) is available all day at pier (sells for 7000 bells) **GONE NEXT MONTH!**
-> **Zebra turkeyfish** (shadow size 3) is available all day at sea (sells for 500 bells) _New this month_
