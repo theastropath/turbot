@@ -94,15 +94,17 @@ USER_PREFRENCES = [
     "creator",
 ]
 
+# Based on values from datetime.isoweekday()
 DAYS = {
-    "sunday": 0,
     "monday": 1,
     "tuesday": 2,
     "wednesday": 3,
     "thursday": 4,
     "friday": 5,
     "saturday": 6,
+    "sunday": 7,
 }
+IDAYS = dict(map(reversed, DAYS.items()))
 
 
 class Validate:
@@ -155,6 +157,13 @@ def h(dt):
         dt = dt.to_pydatetime()
     naive_dt = dt.replace(tzinfo=None)
     return naturaltime(naive_dt)
+
+
+def day_and_time(dt):
+    """Converts a datetime to a day and time of day, eg: Monday pm."""
+    day = IDAYS[dt.isoweekday()]
+    am_pm = "am" if dt.hour < 12 else "pm"
+    return f"{day.title()} {am_pm}"
 
 
 def humanize_months(row):
@@ -684,15 +693,21 @@ class Turbot(discord.Client):
                     for i, page in enumerate(pages):
                         file = (
                             attachment
-                            if attachment
+                            if attachment is not None
                             and i == last_page_index
                             and n == last_reply_index
                             else None
                         )
                         await message.channel.send(page, file=file)
                 elif isinstance(reply, discord.embeds.Embed):
-                    file = attachment if attachment and n == last_reply_index else None
+                    file = (
+                        attachment
+                        if attachment is not None and n == last_reply_index
+                        else None
+                    )
                     await message.channel.send(embed=reply, file=file)
+                else:
+                    raise RuntimeError("non-string non-embed reply not supported")
 
     ##############################
     # Discord Client Behavior
@@ -913,11 +928,13 @@ class Turbot(discord.Client):
         yours = prices[prices.author == target_id]
         lines = [s("history_header", name=target_name)]
         for _, row in yours.iterrows():
+            time = self.to_usertime(target_id, row.timestamp)
             lines.append(
                 s(
                     f"history_{row.kind}",
                     price=row.price,
-                    timestamp=h(self.to_usertime(target_id, row.timestamp)),
+                    timestamp=h(time),
+                    day_and_time=day_and_time(time),
                 )
             )
         return "\n".join(lines), None
