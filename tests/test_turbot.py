@@ -364,8 +364,9 @@ class TestTurbot:
             MockMessage(author, channel, f"!pref timezone {author_tz.zone}")
         )
 
-        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=author_tz)
         freezer.move_to(sunday_am)
+        assert sunday_am.isoweekday() == turbot.DAYS["sunday"]
         await client.on_message(MockMessage(author, channel, f"!buy 90"))
 
         amount = 100
@@ -426,6 +427,23 @@ class TestTurbot:
             None,
             None,
         ]
+
+    async def test_get_user_timeline_buy_at_sunday(self, client, channel, lines, freezer):
+        author = someone()
+        author_tz = pytz.timezone("America/Los_Angeles")
+        await client.on_message(
+            MockMessage(author, channel, f"!pref timezone {author_tz.zone}")
+        )
+
+        sunday_am = datetime(2020, 5, 4, 6, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am + timedelta(days=2, hours=12))
+        await client.on_message(MockMessage(author, channel, f"!buy 90 sunday morning"))
+
+        await client.on_message(MockMessage(author, channel, f"!history"))
+        assert channel.last_sent_response == (
+            f"__**Historical info for {author}**__\n"
+            "> Can buy turnips from Daisy Mae for 90 bells 3 days ago"
+        )
 
     async def test_get_user_timeline_no_sells(self, client, channel, lines, freezer):
         author = someone()
