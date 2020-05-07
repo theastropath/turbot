@@ -15,7 +15,7 @@ max-line-length = 90
 
 [tool.poetry]
 name = 'turbot'
-version = "4.0.0"
+version = "4.1.0"
 license = 'MIT'
 authors = [
     'TheAstropath <theastropath@gmail.com>',

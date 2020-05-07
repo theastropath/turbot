@@ -6,7 +6,7 @@
             {
                 "inline": true,
                 "name": "Version",
-                "value": "[4.0.0](https://pypi.org/project/turbot/4.0.0/)"
+                "value": "[4.1.0](https://pypi.org/project/turbot/4.1.0/)"
             },
             {
                 "inline": true,
