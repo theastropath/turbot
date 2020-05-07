@@ -475,9 +475,12 @@ class Turbot(discord.Client):
             island.name, list(island.model_group.models), island.previous_week, True
         )
 
+        ax = plt.gca()
+        if "!!ERROR!!" in ax.get_title():
+            return None
+
         # fit the y-axis to the plotted data
         maximum = 0
-        ax = plt.gca()
         for line in ax.lines:
             for price in line.get_ydata():
                 if price > maximum:
@@ -553,9 +556,10 @@ class Turbot(discord.Client):
 
     def generate_graph(self, channel, target_user, graphname):  # pragma: no cover
         """Generates a nice looking graph of user data."""
-        fig = self.get_graph(channel, target_user, graphname)
-        if fig:
-            plt.close("all")
+        plot = self.get_graph(channel, target_user, graphname)
+        success = plot is not None
+        plt.close("all")
+        return success
 
     def append_price(self, author, kind, price, at):
         """Adds a price to the prices data file for the given author and kind."""
@@ -945,8 +949,9 @@ class Turbot(discord.Client):
         """
         Generates a historical graph of turnip prices for all users.
         """
-        self.generate_graph(channel, None, GRAPHCMD_FILE)
-        return s("graph_all_users"), discord.File(GRAPHCMD_FILE)
+        success = self.generate_graph(channel, None, GRAPHCMD_FILE)
+        attach = discord.File(GRAPHCMD_FILE) if success else None
+        return s("graph_all_users"), attach
 
     @command
     def history(self, channel, author, params):
@@ -1526,10 +1531,11 @@ class Turbot(discord.Client):
         if not timeline[0]:
             return s("cant_find_buy", name=target_name), None
 
-        self.generate_graph(channel, target_user, GRAPHCMD_FILE)
+        success = self.generate_graph(channel, target_user, GRAPHCMD_FILE)
         query = ".".join((str(price) if price else "") for price in timeline).rstrip(".")
         url = f"{self.base_prophet_url}{query}"
-        return s("predict", name=target_name, url=url), discord.File(GRAPHCMD_FILE)
+        attach = discord.File(GRAPHCMD_FILE) if success else None
+        return s("predict", name=target_name, url=url), attach
 
     @command
     def pref(self, channel, author, params):
