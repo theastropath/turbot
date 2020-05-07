@@ -4,4 +4,4 @@ WORKDIR /turbot
 COPY . ./
 RUN poetry config virtualenvs.create false \
     && poetry install --no-ansi --no-interaction
-CMD poetry run turbot
+CMD ["poetry", "run", "turbot"]
