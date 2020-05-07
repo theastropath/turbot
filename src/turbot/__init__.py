@@ -68,19 +68,44 @@ TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
 
-with open(STRINGS_DATA_FILE) as f:
-    STRINGS = load(f, Loader=Loader)
+# loaded application data
+STRINGS = None
+FISH = None
+BUGS = None
+ART = None
+FOSSILS_SET = None
+FISH_SET = None
+BUGS_SET = None
+ART_SET = None
+COLLECTABLE_SET = None
 
-FISH = pd.read_csv(FISH_DATA_FILE)
-BUGS = pd.read_csv(BUGS_DATA_FILE)
-ART = pd.read_csv(ART_DATA_FILE)
 
-with open(FOSSILS_DATA_FILE) as f:
-    FOSSILS_SET = frozenset([line.strip().lower() for line in f.readlines()])
-FISH_SET = frozenset(FISH.drop_duplicates(subset="name").name.tolist())
-BUGS_SET = frozenset(BUGS.drop_duplicates(subset="name").name.tolist())
-ART_SET = frozenset(ART.drop_duplicates(subset="name").name.tolist())
-COLLECTABLE_SET = FOSSILS_SET | FISH_SET | BUGS_SET | ART_SET
+def load_application_data():
+    """Defer loading these assests until we actually need them."""
+    global STRINGS
+    global FISH
+    global BUGS
+    global ART
+    global FOSSILS_SET
+    global FISH_SET
+    global BUGS_SET
+    global ART_SET
+    global COLLECTABLE_SET
+
+    with open(STRINGS_DATA_FILE) as f:
+        STRINGS = load(f, Loader=Loader)
+
+    FISH = pd.read_csv(FISH_DATA_FILE)
+    BUGS = pd.read_csv(BUGS_DATA_FILE)
+    ART = pd.read_csv(ART_DATA_FILE)
+
+    with open(FOSSILS_DATA_FILE) as f:
+        FOSSILS_SET = frozenset([line.strip().lower() for line in f.readlines()])
+    FISH_SET = frozenset(FISH.drop_duplicates(subset="name").name.tolist())
+    BUGS_SET = frozenset(BUGS.drop_duplicates(subset="name").name.tolist())
+    ART_SET = frozenset(ART.drop_duplicates(subset="name").name.tolist())
+    COLLECTABLE_SET = FOSSILS_SET | FISH_SET | BUGS_SET | ART_SET
+
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
@@ -317,6 +342,8 @@ class Turbot(discord.Client):
             for member in members
             if hasattr(member[1], "is_command") and member[1].is_command
         ]
+
+        load_application_data()
 
     def run(self):  # pragma: no cover
         super().run(self.token)
