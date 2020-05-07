@@ -2222,10 +2222,32 @@ class TestTurbot:
             == "SW-1111-2222-3333"
         )
 
-    async def test_on_message_about(self, client, channel, snap):
+    async def test_on_message_about(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!about"))
-        snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 1
+
+        about = channel.last_sent_embed
+        assert about["title"] == "Turbot"
+        assert about["url"] == "https://github.com/theastropath/turbot"
+        assert about["description"] == (
+            "A Discord bot for everything _Animal Crossing: New Horizons._\n\n"
+            "Use the command `!help` for usage details. Having issues with Turbot? "
+            "Please [report bugs](https://github.com/theastropath/turbot/issues)!\n"
+        )
+        assert about["footer"]["text"] == "MIT \u00a9 TheAstropath, lexicalunit et al"
+        assert about["thumbnail"]["url"] == (
+            "https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png"
+        )
+
+        fields = {f["name"]: f["value"] for f in about["fields"]}
+        assert fields["Package"] == "[PyPI](https://pypi.org/project/turbot/)"
+        assert fields["Author"] == "[TheAstropath](https://github.com/theastropath)"
+        assert fields["Maintainer"] == "[lexicalunit](https://github.com/lexicaluit)"
+
+        version = turbot.__version__
+        assert fields["Version"] == (
+            f"[{version}](https://pypi.org/project/turbot/{version}/)"
+        )
 
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
         # Simulate the condition where a user exists in the data file,

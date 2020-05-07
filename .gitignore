@@ -5,7 +5,6 @@
 /coverage
 /db
 /tmp
-/vendor
 channels.txt
 token.txt
 

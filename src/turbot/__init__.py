@@ -16,7 +16,6 @@ from string import Template
 
 import click
 import discord
-import dunamai as _dunamai
 import hupper
 import matplotlib
 import matplotlib.dates as mdates
@@ -26,18 +25,17 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
+from yaml import load
+
+from turbot._version import __version__
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
-from yaml import load
 
 try:
     from yaml import CLoader as Loader
 except ImportError:  # pragma: no cover
     from yaml import Loader
 
-__version__ = _dunamai.get_version(
-    "turbot", third_choice=_dunamai.Version.from_any_vcs
-).serialize()
 
 matplotlib.use("Agg")
 
