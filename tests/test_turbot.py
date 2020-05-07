@@ -478,7 +478,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!history"))
         assert channel.last_sent_response == (
             f"__**Historical info for {author}**__\n"
-            "> Can buy turnips from Daisy Mae for 90 bells 3 days ago"
+            "> Can buy turnips from Daisy Mae for 90 bells 3 days ago (Sunday am)"
         )
 
     async def test_get_user_timeline_no_sells(self, client, channel, lines, freezer):
