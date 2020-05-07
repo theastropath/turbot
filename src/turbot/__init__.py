@@ -63,6 +63,7 @@ DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
 DEFAULT_DB_ART = DB_DIR / "art.csv"
 DEFAULT_DB_USERS = DB_DIR / "users.csv"
 DEFAULT_DB_FISH = DB_DIR / "fish.csv"
+DEFAULT_DB_BUGS = DB_DIR / "bugs.csv"
 
 # temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
@@ -286,6 +287,7 @@ class Turbot(discord.Client):
         prices_file=DEFAULT_DB_PRICES,
         art_file=DEFAULT_DB_ART,
         fish_file=DEFAULT_DB_FISH,
+        bugs_file=DEFAULT_DB_BUGS,
         fossils_file=DEFAULT_DB_FOSSILS,
         users_file=DEFAULT_DB_USERS,
         log_level=None,
@@ -298,12 +300,14 @@ class Turbot(discord.Client):
         self.prices_file = prices_file
         self.art_file = art_file
         self.fish_file = fish_file
+        self.bugs_file = bugs_file
         self.fossils_file = fossils_file
         self.users_file = users_file
         self.base_prophet_url = "https://turnipprophet.io/?prices="  # TODO: configurable?
         self._prices_data = None  # do not use directly, load it from load_prices()
         self._art_data = None  # do not use directly, load it from load_art()
         self._fish_data = None  # do not use directly, load it from load_fish()
+        self._bugs_data = None  # do not use directly, load it from load_bugs()
         self._fossils_data = None  # do not use directly, load it from load_fossils()
         self._users_data = None  # do not use directly, load it from load_users()
         self._last_backup_filename = None
@@ -405,6 +409,20 @@ class Turbot(discord.Client):
             except FileNotFoundError:
                 self._fish_data = pd.DataFrame(columns=["author", "name"])
         return self._fish_data
+
+    def save_bugs(self, data):
+        """Saves the given bugs data to csv file."""
+        data.to_csv(self.bugs_file, index=False)  # persist to disk
+        self._bugs_data = data  # in-memory optimization
+
+    def load_bugs(self):
+        """Returns a DataFrame of bugs data or creates an empty one."""
+        if self._bugs_data is None:
+            try:
+                self._bugs_data = pd.read_csv(self.bugs_file)
+            except FileNotFoundError:
+                self._bugs_data = pd.DataFrame(columns=["author", "name"])
+        return self._bugs_data
 
     def save_fossils(self, data):
         """Saves the given fossils data to csv file."""
@@ -1052,7 +1070,21 @@ class Turbot(discord.Client):
                 lines.append(s("congrats_all_fossils"))
 
         if valid_bugs:
-            lines.append(s("collect_bugs"))
+            bugs = self.load_bugs()
+            yours = bugs[bugs.author == author.id]
+            dupes = yours.loc[yours.name.isin(valid_bugs)].name.values.tolist()
+            new_names = list(set(valid_bugs) - set(dupes))
+            new_data = [[author.id, name] for name in new_names]
+            new_bugs = pd.DataFrame(columns=bugs.columns, data=new_data)
+            bugs = bugs.append(new_bugs, ignore_index=True)
+            yours = bugs[bugs.author == author.id]  # re-fetch for congrats
+            self.save_bugs(bugs)
+            if new_names:
+                lines.append(s("collect_bugs_new", items=", ".join(sorted(new_names))))
+            if dupes:
+                lines.append(s("collect_bugs_dupe", items=", ".join(sorted(dupes))))
+            if len(BUGS_SET) == len(yours.index):
+                lines.append(s("congrats_all_bugs"))
 
         if valid_fish:
             fish = self.load_fish()
@@ -1130,7 +1162,21 @@ class Turbot(discord.Client):
                 )
 
         if valid_bugs:
-            lines.append(s("uncollect_bugs"))
+            bugs = self.load_bugs()
+            yours = bugs[bugs.author == author.id]
+            previously_collected = yours.loc[yours.name.isin(valid_bugs)]
+            deleted = set(previously_collected.name.values.tolist())
+            didnt_have = valid_bugs - deleted
+            bugs = bugs.drop(previously_collected.index)
+            self.save_bugs(bugs)
+            if deleted:
+                lines.append(
+                    s("uncollect_bugs_deleted", items=", ".join(sorted(deleted)))
+                )
+            if didnt_have:
+                lines.append(
+                    s("uncollect_bugs_already", items=", ".join(sorted(didnt_have)))
+                )
 
         if valid_fish:
             fish = self.load_fish()
@@ -1197,8 +1243,15 @@ class Turbot(discord.Client):
                 name = discord_user_from_id(channel, needer)
                 fossil_results[name].append(collected_fossil)
 
-        if valid_bugs:
-            return s("search_bugs"), None
+        bugs = self.load_bugs()
+        bugs_users = bugs.author.unique()
+        bugs_results = defaultdict(list)
+        for collected_bugs in valid_bugs:
+            havers = bugs[bugs.name == collected_bugs].author.unique()
+            needers = np.setdiff1d(bugs_users, havers).tolist()
+            for needer in needers:
+                name = discord_user_from_id(channel, needer)
+                bugs_results[name].append(collected_bugs)
 
         fish = self.load_fish()
         fish_users = fish.author.unique()
@@ -1229,6 +1282,8 @@ class Turbot(discord.Client):
             needed.update(items)
         for items in fish_results.values():
             needed.update(items)
+        for items in bugs_results.values():
+            needed.update(items)
         for items in art_results.values():
             needed.update(items)
         not_needed = searched - needed
@@ -1240,6 +1295,9 @@ class Turbot(discord.Client):
         for name, items in fish_results.items():
             items_str = ", ".join(sorted(items))
             lines.append(s("search_fish_row", name=name, items=items_str))
+        for name, items in bugs_results.items():
+            items_str = ", ".join(sorted(items))
+            lines.append(s("search_bugs_row", name=name, items=items_str))
         for name, items in art_results.items():
             items_str = ", ".join(sorted(items))
             lines.append(s("search_art_row", name=name, items=items_str))
@@ -1279,6 +1337,11 @@ class Turbot(discord.Client):
         collected_fish = set(your_fish.name.unique())
         remaining_fish = FISH_SET - collected_fish
 
+        bugs = self.load_bugs()
+        your_bugs = bugs[bugs.author == target_id]
+        collected_bugs = set(your_bugs.name.unique())
+        remaining_bugs = BUGS_SET - collected_bugs
+
         art = self.load_art()
         your_art = art[art.author == target_id]
         collected_art = set(your_art.name.unique())
@@ -1312,6 +1375,16 @@ class Turbot(discord.Client):
             )
         else:
             lines.append(s("congrats_all_fish"))
+
+        if remaining_bugs:
+            lines.append(
+                s("uncollected_bugs_count", count=len(remaining_bugs), name=target_name)
+            )
+            lines.append(
+                s("uncollected_bugs_remaining", items=", ".join(sorted(remaining_bugs)))
+            )
+        else:
+            lines.append(s("congrats_all_bugs"))
 
         if remaining_art:
             lines.append(
@@ -1375,20 +1448,27 @@ class Turbot(discord.Client):
         collected_fish = set(your_fish.name.unique())
         all_fish = len(collected_fish) == len(FISH_SET)
 
+        bugs = self.load_bugs()
+        your_bugs = bugs[bugs.author == target_id]
+        collected_bugs = set(your_bugs.name.unique())
+        all_bugs = len(collected_bugs) == len(BUGS_SET)
+
         art = self.load_art()
         your_art = art[art.author == target_id]
         collected_art = set(your_art.name.unique())
         all_art = len(collected_art) == len(ART_SET)
 
         lines = []
-        if any([all_fossils, all_fish, all_art]):
+        if any([all_fossils, all_fish, all_bugs, all_art]):
             if all_fossils:
                 lines.append(s("congrats_all_fossils"))
             if all_fish:
                 lines.append(s("congrats_all_fish"))
+            if all_bugs:
+                lines.append(s("congrats_all_bugs"))
             if all_art:
                 lines.append(s("congrats_all_art"))
-            if all([all_fossils, all_fish, all_art]):
+            if all([all_fossils, all_fish, all_bugs, all_art]):
                 return "\n".join(lines), None
 
         if collected_art and not all_art:
@@ -1408,6 +1488,16 @@ class Turbot(discord.Client):
                     name=target_name,
                     count=len(collected_fish),
                     items=", ".join(sorted(collected_fish)),
+                )
+            )
+
+        if collected_bugs and not all_bugs:
+            lines.append(
+                s(
+                    "collected_bugs",
+                    name=target_name,
+                    count=len(collected_bugs),
+                    items=", ".join(sorted(collected_bugs)),
                 )
             )
 
@@ -1505,6 +1595,14 @@ class Turbot(discord.Client):
                 collected = set(yours.name.unique())
                 remaining = FISH_SET - collected
                 lines.append(s("count_fish_valid", name=user_name, count=len(remaining)))
+
+            lines.append(s("count_bugs_valid_header"))
+            bugs = self.load_bugs()
+            for user_name, user_id in sorted(valid):
+                yours = bugs[bugs.author == user_id]
+                collected = set(yours.name.unique())
+                remaining = BUGS_SET - collected
+                lines.append(s("count_bugs_valid", name=user_name, count=len(remaining)))
 
             lines.append(s("count_art_valid_header"))
             art = self.load_art()
@@ -1661,7 +1759,8 @@ class Turbot(discord.Client):
                 caught = self.load_fish()
                 caught = caught[caught.author == author.id]
             else:  # kind == "bugs"
-                caught = None  # not supported yet
+                caught = self.load_bugs()
+                caught = caught[caught.author == author.id]
 
             if caught is not None and not caught.empty:
                 already = available.loc[available.name.isin(caught.name)]
@@ -1938,6 +2037,9 @@ def get_channels(channels_file):  # pragma: no cover
     "--fish-file", default=DEFAULT_DB_FISH, help="read fish data from this file",
 )
 @click.option(
+    "--bugs-file", default=DEFAULT_DB_BUGS, help="read bugs data from this file",
+)
+@click.option(
     "--fossils-file", default=DEFAULT_DB_FOSSILS, help="read fossil data from this file",
 )
 @click.option(
@@ -1961,6 +2063,7 @@ def main(
     prices_file,
     art_file,
     fish_file,
+    bugs_file,
     fossils_file,
     users_file,
     dev,
@@ -1986,6 +2089,7 @@ def main(
         prices_file=prices_file,
         art_file=art_file,
         fish_file=fish_file,
+        bugs_file=bugs_file,
         fossils_file=fossils_file,
         users_file=users_file,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),

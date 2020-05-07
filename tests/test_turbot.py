@@ -225,6 +225,7 @@ def client(monkeypatch, freezer, patch_discord, tmp_path):
         prices_file=tmp_path / "prices.csv",
         art_file=tmp_path / "art.csv",
         fish_file=tmp_path / "fish.csv",
+        bugs_file=tmp_path / "bugs.csv",
         fossils_file=tmp_path / "fossils.csv",
         users_file=tmp_path / "users.csv",
     )
@@ -1227,6 +1228,8 @@ class TestTurbot:
             f"> **{BUDDY}** has 73 fossils remaining.\n"
             "__**Fish Count**__\n"
             f"> **{BUDDY}** has 80 fish remaining.\n"
+            "__**Bugs Count**__\n"
+            f"> **{BUDDY}** has 80 bugs remaining.\n"
             "__**Art Count**__\n"
             f"> **{BUDDY}** has 43 pieces of art remaining."
         )
@@ -1254,10 +1257,20 @@ class TestTurbot:
         fossils = "amber, ammonite, ankylo skull"
         await client.on_message(MockMessage(author, channel, f"!collect {fossils}"))
 
+        fish = "goldfish, killifish, snapping turtle"
+        await client.on_message(MockMessage(author, channel, f"!collect {fish}"))
+
+        bugs = "grasshopper, honeybee, robust cicada"
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 pieces of art donated by {author}**__\n"
             ">>> academic painting, great statue, sinking painting\n"
+            f"__**3 fish donated by {author}**__\n"
+            ">>> goldfish, killifish, snapping turtle\n"
+            f"__**3 bugs donated by {author}**__\n"
+            ">>> grasshopper, honeybee, robust cicada\n"
             f"__**3 fossils donated by {author}**__\n"
             ">>> amber, ammonite, ankylo skull"
         )
@@ -1274,10 +1287,14 @@ class TestTurbot:
         all_fish = ",".join(turbot.FISH_SET)
         await client.on_message(MockMessage(author, channel, f"!collect {all_fish}"))
 
+        bugs_fish = ",".join(turbot.BUGS_SET)
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs_fish}"))
+
         await client.on_message(MockMessage(author, channel, f"!collected"))
         assert channel.last_sent_response == (
             "**Congratulations, you've collected all fossils!**\n"
             "**Congratulations, you've collected all fish!**\n"
+            "**Congratulations, you've collected all bugs!**\n"
             "**Congratulations, you've collected all art!**"
         )
 
@@ -1323,14 +1340,6 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
-
-    async def test_on_message_collect_bugs(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!collect mantis"))
-        assert channel.last_sent_response == "Collecting bugs is not supported yet."
-
-    async def test_on_message_uncollect_bugs(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!uncollect mantis"))
-        assert channel.last_sent_response == "Uncollecting bugs is not supported yet."
 
     async def test_on_message_collect_art(self, client, channel, lines):
         # first collect some art
@@ -1435,7 +1444,8 @@ class TestTurbot:
         )
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_calls) == 3
+        snap(channel.all_sent_responses[3])
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_uncollected_with_name(self, client, channel, snap):
         art = "academic painting, sinking painting"
@@ -1448,7 +1458,8 @@ class TestTurbot:
         )
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
-        assert len(channel.all_sent_calls) == 3
+        snap(channel.all_sent_responses[3])
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_search_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!search"))
@@ -1594,8 +1605,9 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!collect {everything}"))
 
         await client.on_message(MockMessage(author, channel, "!uncollected"))
-        snap(channel.last_sent_response)
-        assert len(channel.all_sent_calls) == 2
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_neededfossils(self, client, channel):
         everything = sorted(list(turbot.FOSSILS_SET))
@@ -1664,6 +1676,10 @@ class TestTurbot:
             f"> **{BUDDY}** has 80 fish remaining.\n"
             f"> **{FRIEND}** has 80 fish remaining.\n"
             f"> **{GUY}** has 80 fish remaining.\n"
+            "__**Bugs Count**__\n"
+            f"> **{BUDDY}** has 80 bugs remaining.\n"
+            f"> **{FRIEND}** has 80 bugs remaining.\n"
+            f"> **{GUY}** has 80 bugs remaining.\n"
             "__**Art Count**__\n"
             f"> **{BUDDY}** has 43 pieces of art remaining.\n"
             f"> **{FRIEND}** has 43 pieces of art remaining.\n"
@@ -2239,10 +2255,6 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, f"!info"))
         assert channel.last_sent_response == "Please provide a search term."
 
-    async def test_on_message_search_bugs(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, f"!search mantis"))
-        channel.last_sent_response == "Searching for bugs is not supported yet."
-
     async def test_discord_user_from_name_guard(self, channel):
         assert turbot.discord_user_from_name(channel, None) == None
 
@@ -2560,8 +2572,9 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
         await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
-        snap(channel.last_sent_response)
-        assert len(channel.all_sent_calls) == 2
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_calls) == 3
 
     async def test_on_message_collected_fish_with_name(self, client, channel):
         fish = "snapping turtle, bluegill, giant snakehead"
@@ -2730,6 +2743,239 @@ class TestTurbot:
         assert subject(datetime(2020, 4, 6, 21)) == {"seven", "nine", "three", "two"}
         assert subject(datetime(2020, 4, 6, 22)) == {"seven", "nine", "three", "two"}
         assert subject(datetime(2020, 4, 6, 23)) == {"seven", "nine", "three"}
+
+    async def test_on_message_uncollect_bugs(self, client, channel, lines):
+        # first collect some fossils
+        author = someone()
+        bugs = "great purple emperor, stinkbug ,bell cricket"
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+
+        # then delete some of them
+        bugs = "great purple emperor, anime waifu, ancient statue, bell cricket"
+        await client.on_message(MockMessage(author, channel, f"!uncollect {bugs}"))
+        assert channel.last_sent_response == (
+            "Unmarked the following bugs as collected:\n"
+            "> bell cricket, great purple emperor\n"
+            "The following pieces of art were already marked as not collected:\n"
+            "> ancient statue\n"
+            "Unrecognized collectable names:\n"
+            "> anime waifu"
+        )
+        with open(client.bugs_file) as f:
+            assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
+
+        # then delete the same ones again
+        await client.on_message(MockMessage(author, channel, f"!uncollect {bugs}"))
+        assert channel.last_sent_response == (
+            "The following bugs were already marked as not collected:\n"
+            "> bell cricket, great purple emperor\n"
+            "The following pieces of art were already marked as not collected:\n"
+            "> ancient statue\n"
+            "Unrecognized collectable names:\n"
+            "> anime waifu"
+        )
+        with open(client.bugs_file) as f:
+            assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
+
+        # and delete one more
+        await client.on_message(MockMessage(author, channel, f"!uncollect stinkbug"))
+        assert channel.last_sent_response == (
+            "Unmarked the following bugs as collected:\n" "> stinkbug"
+        )
+        with open(client.bugs_file) as f:
+            assert f.readlines() == ["author,name\n"]
+
+    async def test_on_message_search_bugs_no_need_with_bad(self, client, channel):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
+        )
+        await client.on_message(
+            MockMessage(BUDDY, channel, "!collect stinkbug, great purple emperor")
+        )
+        await client.on_message(
+            MockMessage(
+                GUY, channel, "!collect stinkbug, great purple emperor, wistful painting",
+            )
+        )
+
+        await client.on_message(
+            MockMessage(
+                PUNK, channel, "!search stinkbug, great purple emperor, anime waifu"
+            )
+        )
+        assert channel.last_sent_response == (
+            "> No one needs: great purple emperor, stinkbug\n"
+            "Did not recognize the following collectables:\n"
+            "> anime waifu"
+        )
+
+    async def test_on_message_search_bugs(self, client, channel):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
+        )
+        await client.on_message(MockMessage(BUDDY, channel, "!collect stinkbug"))
+        await client.on_message(
+            MockMessage(GUY, channel, "!collect stinkbug, great purple emperor")
+        )
+
+        query = "stinkbug, great purple emperor, wistful painting"
+        await client.on_message(MockMessage(PUNK, channel, f"!search {query}"))
+        channel.last_sent_response == (
+            "__**Bugs Search**__\n"
+            f"> {BUDDY} needs: great purple emperor, wistful painting\n"
+            f"> {FRIEND} needs: wistful painting\n"
+            f"> {GUY} needs: wistful painting"
+        )
+
+    async def test_on_message_search_bugs_with_bad(self, client, channel):
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
+        )
+        await client.on_message(MockMessage(BUDDY, channel, "!collect stinkbug"))
+        await client.on_message(
+            MockMessage(GUY, channel, "!collect stinkbug, great purple emperor")
+        )
+
+        query = "stinkbug, great purple emperor, wistful painting, anime waifu"
+        await client.on_message(MockMessage(PUNK, channel, f"!search {query}"))
+        assert channel.last_sent_response == (
+            "> No one needs: stinkbug, wistful painting\n"
+            f"> {BUDDY} needs bugs: great purple emperor\n"
+            "Did not recognize the following collectables:\n"
+            "> anime waifu"
+        )
+
+    async def test_on_message_count_bugs(self, client, channel, snap):
+        author = someone()
+        await client.on_message(
+            MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
+        )
+        await client.on_message(MockMessage(BUDDY, channel, "!collect stinkbug"))
+        await client.on_message(
+            MockMessage(GUY, channel, "!collect stinkbug, great purple emperor")
+        )
+
+        users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
+        await client.on_message(MockMessage(author, channel, f"!count {users}"))
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
+
+    async def test_on_message_collected_bugs_no_name(self, client, channel):
+        author = DUDE
+        bugs = "stinkbug, bell cricket, great purple emperor"
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+
+        await client.on_message(MockMessage(author, channel, "!collected"))
+        assert channel.last_sent_response == (
+            f"__**3 bugs donated by {DUDE}**__\n"
+            ">>> bell cricket, great purple emperor, stinkbug"
+        )
+
+    async def test_on_message_collected_bugs_congrats(self, client, channel):
+        everything = ",".join(turbot.BUGS_SET)
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
+
+        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        channel.last_sent_response == "**Congratulations, you've collected all bugs!**"
+
+    async def test_on_message_uncollected_bugs_congrats(self, client, channel, snap):
+        everything = ",".join(turbot.BUGS_SET)
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
+
+        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        snap(channel.all_sent_responses[1])
+        snap(channel.all_sent_responses[2])
+        assert len(channel.all_sent_calls) == 3
+
+    async def test_on_message_collected_bugs_with_name(self, client, channel):
+        bugs = "stinkbug, bell cricket, great purple emperor"
+        await client.on_message(MockMessage(GUY, channel, f"!collect {bugs}"))
+
+        await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
+        assert channel.last_sent_response == (
+            f"__**3 bugs donated by {GUY}**__\n"
+            ">>> bell cricket, great purple emperor, stinkbug"
+        )
+
+    async def test_on_message_collected_bugs_bad_name(self, client, channel):
+        await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
+        assert channel.last_sent_response == (
+            f"Can not find the user named {PUNK.name} in this channel."
+        )
+
+    async def test_on_message_collect_bugs(self, client, channel, lines):
+        # first collect some bugs
+        author = BUDDY
+        bugs = "bell cricket, stinkbug, anime waifu"
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+        assert channel.last_sent_response == (
+            "Marked the following bugs as collected:\n"
+            "> bell cricket, stinkbug\n"
+            "Unrecognized collectable names:\n"
+            "> anime waifu"
+        )
+        assert set(lines(client.bugs_file)) == {
+            "author,name\n",
+            f"{author.id},bell cricket\n",
+            f"{author.id},stinkbug\n",
+        }
+
+        # collect them again
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+        assert channel.last_sent_response == (
+            "The following bugs had already been collected:\n"
+            "> bell cricket, stinkbug\n"
+            "Unrecognized collectable names:\n"
+            "> anime waifu"
+        )
+
+        # collect some new stuff, but with some dupes
+        bugs = "body pillow, stinkbug, tiger beetle"
+        await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
+        assert channel.last_sent_response == (
+            "Marked the following bugs as collected:\n"
+            "> tiger beetle\n"
+            "The following bugs had already been collected:\n"
+            "> stinkbug\n"
+            "Unrecognized collectable names:\n"
+            "> body pillow"
+        )
+
+        assert lines(client.bugs_file) == [f"{author.id},tiger beetle\n"]
+
+    async def test_on_message_collect_bugs_congrats(self, client, channel, snap):
+        everything = sorted(list(turbot.BUGS.name.unique()))
+        some, rest = everything[:10], everything[10:]
+
+        # someone else collects some bugs
+        bugs = "bell cricket, stinkbug, tiger beetle"
+        await client.on_message(MockMessage(GUY, channel, f"!collect {bugs}"))
+
+        # Buddy collects some
+        await client.on_message(
+            MockMessage(BUDDY, channel, f"!collect {', '.join(some)}")
+        )
+
+        # Friend collects a different set
+        bugs = "great purple emperor, banded dragonfly"
+        await client.on_message(MockMessage(FRIEND, channel, f"!collect {bugs}"))
+
+        # Buddy collects the rest
+        await client.on_message(
+            MockMessage(BUDDY, channel, f"!collect {', '.join(rest)}")
+        )
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
+
+    async def test_on_message_bugs_none_available(self, client, channel):
+        everything = ",".join(turbot.BUGS_SET)
+        await client.on_message(MockMessage(BUDDY, channel, f"!pref hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
+        await client.on_message(MockMessage(BUDDY, channel, f"!bugs"))
+        assert channel.last_sent_response == (
+            "No bugs that you haven't already caught are available at this time."
+        )
+        assert len(channel.all_sent_calls) == 3
 
 
 class TestFigures:

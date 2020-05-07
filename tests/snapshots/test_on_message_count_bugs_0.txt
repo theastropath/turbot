@@ -7,12 +7,12 @@ __**Fish Count**__
 > **friend#82169952898912256** has 80 fish remaining.
 > **guy#82988021019836416** has 80 fish remaining.
 __**Bugs Count**__
-> **buddy#82942320688758784** has 80 bugs remaining.
-> **friend#82169952898912256** has 80 bugs remaining.
-> **guy#82988021019836416** has 80 bugs remaining.
+> **buddy#82942320688758784** has 79 bugs remaining.
+> **friend#82169952898912256** has 78 bugs remaining.
+> **guy#82988021019836416** has 78 bugs remaining.
 __**Art Count**__
-> **buddy#82942320688758784** has 42 pieces of art remaining.
-> **friend#82169952898912256** has 41 pieces of art remaining.
-> **guy#82988021019836416** has 41 pieces of art remaining.
+> **buddy#82942320688758784** has 43 pieces of art remaining.
+> **friend#82169952898912256** has 43 pieces of art remaining.
+> **guy#82988021019836416** has 43 pieces of art remaining.
 __**Did not recognize the following names**__
 > punk
