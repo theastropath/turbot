@@ -214,10 +214,17 @@ def set_random_seed():
 
 
 @pytest.fixture
-def client(monkeypatch, freezer, patch_discord, tmp_path):
+def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
     monkeypatch.setattr(turbot, "s", S_SPY)
+
+    # To ensure fast tests, assume that calls to generate_graph() always fails. To test
+    # that they should succeed, use the fixture graph() or lastweek(). To actually test
+    # the generation of a graph, put the test into TestFigures and use client.get_graph()
+    # instead of client.generate_graph().
+    monkeypatch.setattr(turbot.Turbot, "generate_graph", mocker.Mock(return_value=False))
+
     freezer.move_to(NOW)
     return turbot.Turbot(
         token=CLIENT_TOKEN,
@@ -248,8 +255,9 @@ def lines():
 def graph(mocker, monkeypatch):
     def create_file(*args, **kwargs):
         Path(turbot.GRAPHCMD_FILE).touch()
+        return True
 
-    mock = mocker.Mock(side_effect=create_file)
+    mock = mocker.Mock(side_effect=create_file, return_value=True)
     monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
@@ -258,8 +266,9 @@ def graph(mocker, monkeypatch):
 def lastweek(mocker, monkeypatch):
     def create_file(*args, **kwargs):
         Path(turbot.LASTWEEKCMD_FILE).touch()
+        return True
 
-    mock = mocker.Mock(side_effect=create_file)
+    mock = mocker.Mock(side_effect=create_file, return_value=True)
     monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
 
@@ -1701,7 +1710,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_predict(self, client, channel, freezer):
+    async def test_on_message_predict(self, client, channel, freezer, graph):
         author = someone()
 
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
@@ -1731,7 +1740,35 @@ class TestTurbot:
             file=Matching(is_discord_file),
         )
 
-    async def test_on_message_predict_with_timezone(self, client, channel, freezer):
+    async def test_on_message_predict_error(self, client, channel, freezer):
+        author = someone()
+
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(author, channel, "!buy 102"))
+
+        freezer.move_to(sunday_am + timedelta(days=1))
+        await client.on_message(MockMessage(author, channel, "!sell 93"))
+        freezer.move_to(sunday_am + timedelta(days=1, hours=12))
+        await client.on_message(MockMessage(author, channel, "!sell 87"))
+
+        freezer.move_to(sunday_am + timedelta(days=2))
+        await client.on_message(MockMessage(author, channel, "!sell 86"))
+        freezer.move_to(sunday_am + timedelta(days=2, hours=12))
+        await client.on_message(MockMessage(author, channel, "!sell 79"))
+
+        freezer.move_to(sunday_am + timedelta(days=3, hours=12))
+        await client.on_message(MockMessage(author, channel, "!sell 69"))
+
+        await client.on_message(MockMessage(author, channel, "!predict"))
+        channel.sent.assert_called_with(
+            f"__**Predictive Graph for {author}**__\n"
+            "Details: <https://turnipprophet.io/?prices=102.93.87.86.79..69>"
+        )
+
+    async def test_on_message_predict_with_timezone(
+        self, client, channel, freezer, graph
+    ):
         author = someone()
         user_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
