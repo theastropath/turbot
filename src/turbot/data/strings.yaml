@@ -27,6 +27,8 @@ bugs_header: '```diff
   -Eeek! What wretched things. Alas, I am obliged to respond...
 
   ```'
+bugs_none_available: No bugs that you haven't already caught are available at this
+  time.
 bugs_none_found: Did not find any bugs searching for "$search".
 buy: Logged buying price of $price for user $name.
 buy_no_params: Please include buying price after command name.
@@ -41,7 +43,12 @@ collect_art_dupe: 'The following art had already been collected:
 collect_art_new: 'Marked the following art as collected:
 
   > $items'
-collect_bugs: Collecting bugs is not supported yet.
+collect_bugs_dupe: 'The following bugs had already been collected:
+
+  > $items'
+collect_bugs_new: 'Marked the following bugs as collected:
+
+  > $items'
 collect_fish_dupe: 'The following fish had already been collected:
 
   > $items'
@@ -58,6 +65,9 @@ collect_no_params: Please provide the name of something to mark as collected.
 collected_art: '__**$count pieces of art donated by $name**__
 
   >>> $items'
+collected_bugs: '__**$count bugs donated by $name**__
+
+  >>> $items'
 collected_fish: '__**$count fish donated by $name**__
 
   >>> $items'
@@ -65,10 +75,13 @@ collected_fossils: '__**$count fossils donated by $name**__
 
   >>> $items'
 congrats_all_art: '**Congratulations, you''ve collected all art!**'
+congrats_all_bugs: '**Congratulations, you''ve collected all bugs!**'
 congrats_all_fish: '**Congratulations, you''ve collected all fish!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
 count_art_valid: '> **$name** has $count pieces of art remaining.'
 count_art_valid_header: __**Art Count**__
+count_bugs_valid: '> **$name** has $count bugs remaining.'
+count_bugs_valid_header: __**Bugs Count**__
 count_fish_valid: '> **$name** has $count fish remaining.'
 count_fish_valid_header: __**Fish Count**__
 count_fossil_valid: '> **$name** has $count fossils remaining.'
@@ -123,7 +136,7 @@ price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
 search_all_not_needed: No one currently needs this.
 search_art_row: '> $name needs arts: $items'
-search_bugs: Searching for bugs is not supported yet.
+search_bugs_row: '> $name needs bugs: $items'
 search_fish_row: '> $name needs fish: $items'
 search_fossil_row: '> $name needs fossils: $items'
 search_invalid: 'Did not recognize the following collectables:
@@ -150,7 +163,12 @@ uncollect_art_already: 'The following pieces of art were already marked as not c
 uncollect_art_deleted: 'Unmarked the following pieces of art as collected:
 
   > $items'
-uncollect_bugs: Uncollecting bugs is not supported yet.
+uncollect_bugs_already: 'The following bugs were already marked as not collected:
+
+  > $items'
+uncollect_bugs_deleted: 'Unmarked the following bugs as collected:
+
+  > $items'
 uncollect_fish_already: 'The following fish were already marked as not collected:
 
   > $items'
@@ -166,6 +184,8 @@ uncollect_fossil_deleted: 'Unmarked the following fossils as collected:
 uncollect_no_params: Please provide the name of something to mark as uncollected.
 uncollected_art_count: __**$count Pieces of art remaining for $name**__
 uncollected_art_remaining: '>>> $items'
+uncollected_bugs_count: __**$count bugs remaining for $name**__
+uncollected_bugs_remaining: '>>> $items'
 uncollected_fish_count: __**$count fish remaining for $name**__
 uncollected_fish_remaining: '>>> $items'
 uncollected_fossils_count: __**$count Fossils remaining for $name**__
