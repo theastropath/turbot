@@ -595,7 +595,9 @@ class Turbot(discord.Client):
             return [None] * 13
 
         buy_date = recent_buy.timestamp.iloc[0]
-        if buy_date.to_pydatetime().isoweekday() != 7:  # buy isn't on a sunday
+        if (
+            buy_date.to_pydatetime().isoweekday() != DAYS["sunday"]
+        ):  # buy isn't on a sunday
             return [None] * 13
 
         buy_price = int(recent_buy.price.iloc[0])
@@ -615,7 +617,7 @@ class Turbot(discord.Client):
         groups = sells.set_index("timestamp").groupby(pd.Grouper(freq="D"))
         for day, df in groups:
             day_of_week = day.to_pydatetime().isoweekday()
-            if day_of_week == 7:  # no sells allowed on sundays
+            if day_of_week == DAYS["sunday"]:  # no sells allowed on sundays
                 continue
             for ts, row in df.iterrows():
                 if ts.hour < 12:  # am
@@ -825,7 +827,7 @@ class Turbot(discord.Client):
         now = self.to_usertime(user_id, datetime.now(pytz.utc))
         start = now - timedelta(days=now.isoweekday() % 7)  # start of week
         start = datetime(start.year, start.month, start.day, tzinfo=start.tzinfo)
-        day_offset = DAYS[day_of_week]
+        day_offset = DAYS[day_of_week] % 7
         hour_offset = 13 if time_of_day == "evening" else 0
         return start + timedelta(days=day_offset, hours=hour_offset)
 
