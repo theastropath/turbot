@@ -758,7 +758,13 @@ class TestTurbot:
         assert channel.last_sent_response == (f"**Cleared history for {author}.**")
         assert lines(client.data.file("prices")) == ["author,kind,price,timestamp\n"]
 
-    async def test_on_message_bestsell(self, client, channel):
+    async def test_on_message_best_bad_param(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!best dog"))
+        assert channel.last_sent_response == (
+            "Please choose either best buy or best sell."
+        )
+
+    async def test_on_message_best_sell(self, client, channel):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 200"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
@@ -766,14 +772,14 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 600"))
         await client.on_message(MockMessage(GUY, channel, "!buy 800"))
 
-        await client.on_message(MockMessage(someone(), channel, "!bestsell"))
+        await client.on_message(MockMessage(someone(), channel, "!best sell"))
         assert channel.last_sent_response == (
             "__**Best Selling Prices in the Last 12 Hours**__\n"
             f"> **{BUDDY}:** now for 600 bells\n"
             f"> **{FRIEND}:** now for 200 bells"
         )
 
-    async def test_on_message_bestsell_timezone(self, client, channel):
+    async def test_on_message_best_sell_timezone(self, client, channel):
         friend_tz = "America/Los_Angeles"
         await client.on_message(
             MockMessage(FRIEND, channel, f"!pref timezone {friend_tz}")
@@ -795,7 +801,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 600"))
         await client.on_message(MockMessage(GUY, channel, "!buy 800"))
 
-        await client.on_message(MockMessage(someone(), channel, "!bestsell"))
+        await client.on_message(MockMessage(someone(), channel, "!best"))
         assert channel.last_sent_response == (
             "__**Best Selling Prices in the Last 12 Hours**__\n"
             f"> **{BUDDY}:** {turbot.h(buddy_now)} for 600 bells\n"
@@ -879,7 +885,7 @@ class TestTurbot:
             f"> Can buy turnips from Daisy Mae for 3 bells {ts}"
         )
 
-    async def test_on_message_bestbuy(self, client, channel):
+    async def test_on_message_best_buy(self, client, channel):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
@@ -887,14 +893,14 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
         await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
-        await client.on_message(MockMessage(someone(), channel, "!bestbuy"))
+        await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
             "__**Best Buying Prices in the Last 12 Hours**__\n"
             f"> **{BUDDY}:** now for 60 bells\n"
             f"> **{FRIEND}:** now for 100 bells"
         )
 
-    async def test_on_message_bestbuy_timezone(self, client, channel):
+    async def test_on_message_best_buy_timezone(self, client, channel):
         friend_tz = "America/Los_Angeles"
         await client.on_message(
             MockMessage(FRIEND, channel, f"!pref timezone {friend_tz}")
@@ -916,7 +922,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
         await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
-        await client.on_message(MockMessage(someone(), channel, "!bestbuy"))
+        await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
             "__**Best Buying Prices in the Last 12 Hours**__\n"
             f"> **{BUDDY}:** {turbot.h(buddy_now)} for 60 bells\n"
@@ -1590,11 +1596,6 @@ class TestTurbot:
             "Unrecognized collectable names:\n> a foot, unicorn bits"
         )
 
-    async def test_on_message_allfossils(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, "!allfossils"))
-        snap(channel.last_sent_response)
-        assert len(channel.all_sent_calls) == 1
-
     async def test_on_message_collected_fossils_congrats(self, client, channel):
         author = someone()
         everything = ", ".join(sorted(turbot.FOSSILS_SET))
@@ -1615,7 +1616,19 @@ class TestTurbot:
         snap(channel.all_sent_responses[2])
         assert len(channel.all_sent_calls) == 3
 
-    async def test_on_message_neededfossils(self, client, channel):
+    async def test_on_message_needed_no_param(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed"))
+        assert channel.last_sent_response == (
+            "Please provide a parameter: fossils, bugs, fish or art."
+        )
+
+    async def test_on_message_needed_bad_param(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed food"))
+        assert channel.last_sent_response == (
+            "Invalid parameter, use one of: fossils, bugs, fish or art."
+        )
+
+    async def test_on_message_needed_fossils(self, client, channel):
         everything = sorted(list(turbot.FOSSILS_SET))
 
         fossils = ",".join(everything[3:])
@@ -1627,17 +1640,92 @@ class TestTurbot:
         fossils = ",".join(everything)
         await client.on_message(MockMessage(FRIEND, channel, f"!collect {fossils}"))
 
-        await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
+        await client.on_message(MockMessage(someone(), channel, "!needed fossils"))
         assert channel.last_sent_response == (
             f"> **{BUDDY}** needs acanthostega, amber, ammonite\n"
             f"> **{GUY}** needs _more than 10 fossils..._"
         )
 
-    async def test_on_message_neededfossils_none(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!neededfossils"))
+    async def test_on_message_needed_fossils_none(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed fossils"))
         assert channel.last_sent_response == (
             "No fossils are known to be needed at this time, "
-            "new users must collect at least one fossil."
+            "new users must collect at least one before being considered for this search."
+        )
+
+    async def test_on_message_needed_bugs(self, client, channel):
+        everything = sorted(list(turbot.BUGS_SET))
+
+        bugs = ",".join(everything[3:])
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {bugs}"))
+
+        bugs = ",".join(everything[20:])
+        await client.on_message(MockMessage(GUY, channel, f"!collect {bugs}"))
+
+        bugs = ",".join(everything)
+        await client.on_message(MockMessage(FRIEND, channel, f"!collect {bugs}"))
+
+        await client.on_message(MockMessage(someone(), channel, "!needed bugs"))
+        assert channel.last_sent_response == (
+            f"> **{BUDDY}** needs agrias butterfly, ant, atlas moth\n"
+            f"> **{GUY}** needs _more than 10 bugs..._"
+        )
+
+    async def test_on_message_needed_bugs_none(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed bugs"))
+        assert channel.last_sent_response == (
+            "No bugs are known to be needed at this time, "
+            "new users must collect at least one before being considered for this search."
+        )
+
+    async def test_on_message_needed_fish(self, client, channel):
+        everything = sorted(list(turbot.FISH_SET))
+
+        fish = ",".join(everything[3:])
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {fish}"))
+
+        fish = ",".join(everything[20:])
+        await client.on_message(MockMessage(GUY, channel, f"!collect {fish}"))
+
+        fish = ",".join(everything)
+        await client.on_message(MockMessage(FRIEND, channel, f"!collect {fish}"))
+
+        await client.on_message(MockMessage(someone(), channel, "!needed fish"))
+        assert channel.last_sent_response == (
+            f"> **{BUDDY}** needs anchovy, angelfish, arapaima\n"
+            f"> **{GUY}** needs _more than 10 fish..._"
+        )
+
+    async def test_on_message_needed_fish_none(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed fish"))
+        assert channel.last_sent_response == (
+            "No fish are known to be needed at this time, "
+            "new users must collect at least one before being considered for this search."
+        )
+
+    async def test_on_message_needed_art(self, client, channel):
+        everything = sorted(list(turbot.ART_SET))
+
+        art = ",".join(everything[3:])
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
+
+        art = ",".join(everything[20:])
+        await client.on_message(MockMessage(GUY, channel, f"!collect {art}"))
+
+        art = ",".join(everything)
+        await client.on_message(MockMessage(FRIEND, channel, f"!collect {art}"))
+
+        await client.on_message(MockMessage(someone(), channel, "!needed art"))
+        assert channel.last_sent_response == (
+            f"> **{BUDDY}** needs academic painting, amazing painting, ancient statue\n"
+            f"> **{GUY}** needs _more than 10 art..._"
+        )
+
+    async def test_on_message_needed_art_none(self, client, channel):
+        await client.on_message(MockMessage(someone(), channel, "!needed art"))
+        assert channel.last_sent_response == (
+            "No art are known to be needed at this time, "
+            "new users must collect at least one before being considered for this search."
         )
 
     async def test_on_message_collected_fossils_no_name(self, client, channel):
