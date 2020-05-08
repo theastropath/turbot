@@ -948,73 +948,29 @@ class Turbot(discord.Client):
 
         lines = []
 
-        if valid_fossils:
-            fossils = self.data.fossils
-            yours = fossils[fossils.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_fossils)].name.values.tolist()
-            new_names = list(set(valid_fossils) - set(dupes))
+        def add_lines(kind, valid_items, fullset):
+            if not valid_items:
+                return
+            store = getattr(self.data, kind)
+            yours = store[store.author == author.id]
+            dupes = yours.loc[yours.name.isin(valid_items)].name.values.tolist()
+            new_names = list(set(valid_items) - set(dupes))
             new_data = [[author.id, name] for name in new_names]
-            new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
-            fossils = fossils.append(new_fossils, ignore_index=True)
-            yours = fossils[fossils.author == author.id]  # re-fetch for congrats
-            self.data.commit(fossils)
+            new_fossils = pd.DataFrame(columns=store.columns, data=new_data)
+            store = store.append(new_fossils, ignore_index=True)
+            yours = store[store.author == author.id]  # re-fetch for congrats
+            self.data.commit(store)
             if new_names:
-                lines.append(s("collect_fossil_new", items=", ".join(sorted(new_names))))
+                lines.append(s(f"collect_{kind}_new", items=", ".join(sorted(new_names))))
             if dupes:
-                lines.append(s("collect_fossil_dupe", items=", ".join(sorted(dupes))))
-            if len(FOSSILS_SET) == len(yours.index):
-                lines.append(s("congrats_all_fossils"))
+                lines.append(s(f"collect_{kind}_dupe", items=", ".join(sorted(dupes))))
+            if len(fullset) == len(yours.index):
+                lines.append(s(f"congrats_all_{kind}"))
 
-        if valid_bugs:
-            bugs = self.data.bugs
-            yours = bugs[bugs.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_bugs)].name.values.tolist()
-            new_names = list(set(valid_bugs) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_bugs = pd.DataFrame(columns=bugs.columns, data=new_data)
-            bugs = bugs.append(new_bugs, ignore_index=True)
-            yours = bugs[bugs.author == author.id]  # re-fetch for congrats
-            self.data.commit(bugs)
-            if new_names:
-                lines.append(s("collect_bugs_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_bugs_dupe", items=", ".join(sorted(dupes))))
-            if len(BUGS_SET) == len(yours.index):
-                lines.append(s("congrats_all_bugs"))
-
-        if valid_fish:
-            fish = self.data.fish
-            yours = fish[fish.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_fish)].name.values.tolist()
-            new_names = list(set(valid_fish) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_fish = pd.DataFrame(columns=fish.columns, data=new_data)
-            fish = fish.append(new_fish, ignore_index=True)
-            yours = fish[fish.author == author.id]  # re-fetch for congrats
-            self.data.commit(fish)
-            if new_names:
-                lines.append(s("collect_fish_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_fish_dupe", items=", ".join(sorted(dupes))))
-            if len(FISH_SET) == len(yours.index):
-                lines.append(s("congrats_all_fish"))
-
-        if valid_art:
-            art = self.data.art
-            yours = art[art.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_art)].name.values.tolist()
-            new_names = list(set(valid_art) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_art = pd.DataFrame(columns=art.columns, data=new_data)
-            art = art.append(new_art, ignore_index=True)
-            yours = art[art.author == author.id]  # re-fetch for congrats
-            self.data.commit(art)
-            if new_names:
-                lines.append(s("collect_art_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_art_dupe", items=", ".join(sorted(dupes))))
-            if len(ART_SET) == len(yours.index):
-                lines.append(s("congrats_all_art"))
+        add_lines("fossils", valid_fossils, FOSSILS_SET)
+        add_lines("bugs", valid_bugs, BUGS_SET)
+        add_lines("fish", valid_fish, FISH_SET)
+        add_lines("art", valid_art, ART_SET)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1040,71 +996,25 @@ class Turbot(discord.Client):
 
         lines = []
 
-        if valid_fossils:
-            fossils = self.data.fossils
-            yours = fossils[fossils.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_fossils)]
+        def add_lines(kind, valid_items):
+            store = getattr(self.data, kind)
+            yours = store[store.author == author.id]
+            previously_collected = yours.loc[yours.name.isin(valid_items)]
             deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_fossils - deleted
-            fossils = fossils.drop(previously_collected.index)
-            self.data.commit(fossils)
+            didnt_have = valid_items - deleted
+            store = store.drop(previously_collected.index)
+            self.data.commit(store)
             if deleted:
-                lines.append(
-                    s("uncollect_fossil_deleted", items=", ".join(sorted(deleted)))
-                )
+                items_str = ", ".join(sorted(deleted))
+                lines.append(s(f"uncollect_{kind}_deleted", items=items_str))
             if didnt_have:
-                lines.append(
-                    s("uncollect_fossil_already", items=", ".join(sorted(didnt_have)))
-                )
+                items_str = ", ".join(sorted(didnt_have))
+                lines.append(s(f"uncollect_{kind}_already", items=items_str))
 
-        if valid_bugs:
-            bugs = self.data.bugs
-            yours = bugs[bugs.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_bugs)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_bugs - deleted
-            bugs = bugs.drop(previously_collected.index)
-            self.data.commit(bugs)
-            if deleted:
-                lines.append(
-                    s("uncollect_bugs_deleted", items=", ".join(sorted(deleted)))
-                )
-            if didnt_have:
-                lines.append(
-                    s("uncollect_bugs_already", items=", ".join(sorted(didnt_have)))
-                )
-
-        if valid_fish:
-            fish = self.data.fish
-            yours = fish[fish.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_fish)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_fish - deleted
-            fish = fish.drop(previously_collected.index)
-            self.data.commit(fish)
-            if deleted:
-                lines.append(
-                    s("uncollect_fish_deleted", items=", ".join(sorted(deleted)))
-                )
-            if didnt_have:
-                lines.append(
-                    s("uncollect_fish_already", items=", ".join(sorted(didnt_have)))
-                )
-
-        if valid_art:
-            art = self.data.art
-            yours = art[art.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_art)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_art - deleted
-            art = art.drop(previously_collected.index)
-            self.data.commit(art)
-            if deleted:
-                lines.append(s("uncollect_art_deleted", items=", ".join(sorted(deleted))))
-            if didnt_have:
-                lines.append(
-                    s("uncollect_art_already", items=", ".join(sorted(didnt_have)))
-                )
+        add_lines("fossils", valid_fossils)
+        add_lines("bugs", valid_bugs)
+        add_lines("fish", valid_fish)
+        add_lines("art", valid_art)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1129,52 +1039,29 @@ class Turbot(discord.Client):
         valid_art = items.intersection(ART_SET)
         invalid = items.difference(COLLECTABLE_SET)
 
-        fossils = self.data.fossils
-        fossil_users = fossils.author.unique()
-        fossil_results = defaultdict(list)
-        for collected_fossil in valid_fossils:
-            havers = fossils[fossils.name == collected_fossil].author.unique()
-            needers = np.setdiff1d(fossil_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                fossil_results[name].append(collected_fossil)
+        def get_results(kind, valid_items):
+            store = getattr(self.data, kind)
+            users = store.author.unique()
+            results = defaultdict(list)
+            for collected_item in valid_items:
+                havers = store[store.name == collected_item].author.unique()
+                needers = np.setdiff1d(users, havers).tolist()
+                for needer in needers:
+                    name = discord_user_from_id(channel, needer)
+                    results[name].append(collected_item)
+            return results
 
-        bugs = self.data.bugs
-        bugs_users = bugs.author.unique()
-        bugs_results = defaultdict(list)
-        for collected_bugs in valid_bugs:
-            havers = bugs[bugs.name == collected_bugs].author.unique()
-            needers = np.setdiff1d(bugs_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                bugs_results[name].append(collected_bugs)
+        fossils_results = get_results("fossils", valid_fossils)
+        bugs_results = get_results("bugs", valid_bugs)
+        fish_results = get_results("fish", valid_fish)
+        art_results = get_results("art", valid_art)
 
-        fish = self.data.fish
-        fish_users = fish.author.unique()
-        fish_results = defaultdict(list)
-        for collected_fish in valid_fish:
-            havers = fish[fish.name == collected_fish].author.unique()
-            needers = np.setdiff1d(fish_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                fish_results[name].append(collected_fish)
-
-        art = self.data.art
-        art_users = art.author.unique()
-        art_results = defaultdict(list)
-        for collected_art in valid_art:
-            havers = art[art.name == collected_art].author.unique()
-            needers = np.setdiff1d(art_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                art_results[name].append(collected_art)
-
-        if not fossil_results and not art_results and not invalid:
+        if not fossils_results and not art_results and not invalid:
             return s("search_all_not_needed"), None
 
         searched = valid_fossils | valid_bugs | valid_fish | valid_art
         needed = set()
-        for items in fossil_results.values():
+        for items in fossils_results.values():
             needed.update(items)
         for items in fish_results.values():
             needed.update(items)
@@ -1185,7 +1072,7 @@ class Turbot(discord.Client):
         not_needed = searched - needed
 
         lines = []
-        for name, items in fossil_results.items():
+        for name, items in fossils_results.items():
             items_str = ", ".join(sorted(items))
             lines.append(s("search_fossil_row", name=name, items=items_str))
         for name, items in fish_results.items():
@@ -1223,74 +1110,27 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = self.data.fossils
-        your_fossils = fossils[fossils.author == target_id]
-        collected_fossils = set(your_fossils.name.unique())
-        remaining_fossils = FOSSILS_SET - collected_fossils
-
-        fish = self.data.fish
-        your_fish = fish[fish.author == target_id]
-        collected_fish = set(your_fish.name.unique())
-        remaining_fish = FISH_SET - collected_fish
-
-        bugs = self.data.bugs
-        your_bugs = bugs[bugs.author == target_id]
-        collected_bugs = set(your_bugs.name.unique())
-        remaining_bugs = BUGS_SET - collected_bugs
-
-        art = self.data.art
-        your_art = art[art.author == target_id]
-        collected_art = set(your_art.name.unique())
-        remaining_art = ART_SET - collected_art
-
         lines = []
 
-        if remaining_fossils:
-            lines.append(
-                s(
-                    "uncollected_fossils_count",
-                    count=len(remaining_fossils),
-                    name=target_name,
-                )
-            )
-            lines.append(
-                s(
-                    "uncollected_fossils_remaining",
-                    items=", ".join(sorted(remaining_fossils)),
-                )
-            )
-        else:
-            lines.append(s("congrats_all_fossils"))
+        def add_lines(kind, fullset):
+            store = getattr(self.data, kind)
+            your_items = store[store.author == target_id]
+            collected_items = set(your_items.name.unique())
+            remaining_items = fullset - collected_items
+            if remaining_items:
+                count_key = f"uncollected_{kind}_count"
+                remaining_key = f"uncollected_{kind}_remaining"
+                count = len(remaining_items)
+                items_str = ", ".join(sorted(remaining_items))
+                lines.append(s(count_key, count=count, name=target_name))
+                lines.append(s(remaining_key, items=items_str))
+            else:
+                lines.append(s(f"congrats_all_{kind}"))
 
-        if remaining_fish:
-            lines.append(
-                s("uncollected_fish_count", count=len(remaining_fish), name=target_name)
-            )
-            lines.append(
-                s("uncollected_fish_remaining", items=", ".join(sorted(remaining_fish)))
-            )
-        else:
-            lines.append(s("congrats_all_fish"))
-
-        if remaining_bugs:
-            lines.append(
-                s("uncollected_bugs_count", count=len(remaining_bugs), name=target_name)
-            )
-            lines.append(
-                s("uncollected_bugs_remaining", items=", ".join(sorted(remaining_bugs)))
-            )
-        else:
-            lines.append(s("congrats_all_bugs"))
-
-        if remaining_art:
-            lines.append(
-                s("uncollected_art_count", count=len(remaining_art), name=target_name)
-            )
-            lines.append(
-                s("uncollected_art_remaining", items=", ".join(sorted(remaining_art)))
-            )
-        else:
-            lines.append(s("congrats_all_art"))
+        add_lines("fossils", FOSSILS_SET)
+        add_lines("bugs", BUGS_SET)
+        add_lines("fish", FISH_SET)
+        add_lines("art", ART_SET)
 
         return "\n".join(lines), None
 
@@ -1334,78 +1174,41 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = self.data.fossils
-        your_fossils = fossils[fossils.author == target_id]
-        collected_fossils = set(your_fossils.name.unique())
-        all_fossils = len(collected_fossils) == len(FOSSILS_SET)
+        def get_collection(kind):
+            store = getattr(self.data, kind)
+            your_items = store[store.author == target_id]
+            return set(your_items.name.unique())
 
-        fish = self.data.fish
-        your_fish = fish[fish.author == target_id]
-        collected_fish = set(your_fish.name.unique())
-        all_fish = len(collected_fish) == len(FISH_SET)
+        collected_items = {
+            "fossils": get_collection("fossils"),
+            "bugs": get_collection("bugs"),
+            "fish": get_collection("fish"),
+            "art": get_collection("art"),
+        }
 
-        bugs = self.data.bugs
-        your_bugs = bugs[bugs.author == target_id]
-        collected_bugs = set(your_bugs.name.unique())
-        all_bugs = len(collected_bugs) == len(BUGS_SET)
-
-        art = self.data.art
-        your_art = art[art.author == target_id]
-        collected_art = set(your_art.name.unique())
-        all_art = len(collected_art) == len(ART_SET)
+        all_items = {
+            "fossils": len(collected_items["fossils"]) == len(FOSSILS_SET),
+            "fish": len(collected_items["fish"]) == len(FISH_SET),
+            "bugs": len(collected_items["bugs"]) == len(BUGS_SET),
+            "art": len(collected_items["art"]) == len(ART_SET),
+        }
 
         lines = []
-        if any([all_fossils, all_fish, all_bugs, all_art]):
-            if all_fossils:
-                lines.append(s("congrats_all_fossils"))
-            if all_fish:
-                lines.append(s("congrats_all_fish"))
-            if all_bugs:
-                lines.append(s("congrats_all_bugs"))
-            if all_art:
-                lines.append(s("congrats_all_art"))
-            if all([all_fossils, all_fish, all_bugs, all_art]):
+
+        if any(flag for flag in all_items.values()):
+            for kind, flag in all_items.items():
+                if flag:
+                    lines.append(s(f"congrats_all_{kind}"))
+            if all(flag for flag in all_items.values()):
                 return "\n".join(lines), None
 
-        if collected_art and not all_art:
-            lines.append(
-                s(
-                    "collected_art",
-                    name=target_name,
-                    count=len(collected_art),
-                    items=", ".join(sorted(collected_art)),
-                )
-            )
+        for kind, items in collected_items.items():
+            if items and not all_items[kind]:
+                key = f"collected_{kind}"
+                count = len(items)
+                items_str = ", ".join(sorted(items))
+                lines.append(s(key, name=target_name, count=count, items=items_str))
 
-        if collected_fish and not all_fish:
-            lines.append(
-                s(
-                    "collected_fish",
-                    name=target_name,
-                    count=len(collected_fish),
-                    items=", ".join(sorted(collected_fish)),
-                )
-            )
-
-        if collected_bugs and not all_bugs:
-            lines.append(
-                s(
-                    "collected_bugs",
-                    name=target_name,
-                    count=len(collected_bugs),
-                    items=", ".join(sorted(collected_bugs)),
-                )
-            )
-
-        if collected_fossils and not all_fossils:
-            lines.append(
-                s(
-                    "collected_fossils",
-                    name=target_name,
-                    count=len(collected_fossils),
-                    items=", ".join(sorted(collected_fossils)),
-                )
-            )
         return "\n".join(lines), None
 
     @command
@@ -1474,40 +1277,22 @@ class Turbot(discord.Client):
                 invalid.append(user)
 
         lines = []
+
+        def add_valid_lines(kind, fullset):
+            lines.append(s(f"count_{kind}_valid_header"))
+            store = getattr(self.data, kind)
+            for user_name, user_id in sorted(valid):
+                yours = store[store.author == user_id]
+                collected = set(yours.name.unique())
+                remaining = fullset - collected
+                count = len(remaining)
+                lines.append(s(f"count_{kind}_valid", name=user_name, count=count))
+
         if valid:
-            lines.append(s("count_fossil_valid_header"))
-            fossils = self.data.fossils
-            for user_name, user_id in sorted(valid):
-                yours = fossils[fossils.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = FOSSILS_SET - collected
-                lines.append(
-                    s("count_fossil_valid", name=user_name, count=len(remaining))
-                )
-
-            lines.append(s("count_fish_valid_header"))
-            fish = self.data.fish
-            for user_name, user_id in sorted(valid):
-                yours = fish[fish.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = FISH_SET - collected
-                lines.append(s("count_fish_valid", name=user_name, count=len(remaining)))
-
-            lines.append(s("count_bugs_valid_header"))
-            bugs = self.data.bugs
-            for user_name, user_id in sorted(valid):
-                yours = bugs[bugs.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = BUGS_SET - collected
-                lines.append(s("count_bugs_valid", name=user_name, count=len(remaining)))
-
-            lines.append(s("count_art_valid_header"))
-            art = self.data.art
-            for user_name, user_id in sorted(valid):
-                yours = art[art.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = ART_SET - collected
-                lines.append(s("count_art_valid", name=user_name, count=len(remaining)))
+            add_valid_lines("fossils", FOSSILS_SET)
+            add_valid_lines("bugs", BUGS_SET)
+            add_valid_lines("fish", FISH_SET)
+            add_valid_lines("art", ART_SET)
 
         if invalid:
             lines.append(s("count_invalid_header"))
@@ -1731,10 +1516,8 @@ class Turbot(discord.Client):
         Tells you what fish are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        return (
-            self._creatures(author=author, params=params, kind="fish", source=FISH),
-            None,
-        )
+        found = self._creatures(author=author, params=params, kind="fish", source=FISH)
+        return found, None
 
     @command
     def bugs(self, channel, author, params):
@@ -1742,35 +1525,21 @@ class Turbot(discord.Client):
         Tells you what bugs are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        return (
-            self._creatures(author=author, params=params, kind="bugs", source=BUGS),
-            None,
-        )
+        found = self._creatures(author=author, params=params, kind="bugs", source=BUGS)
+        return found, None
 
     @command
     def new(self, channel, author, params):
         """
         Tells you what new things available in your hemisphere right now.
         """
-        return (
-            [
-                *self._creatures(
-                    author=author,
-                    params=["arriving"],
-                    kind="bugs",
-                    source=BUGS,
-                    force_text=True,
-                ),
-                *self._creatures(
-                    author=author,
-                    params=["arriving"],
-                    kind="fish",
-                    source=FISH,
-                    force_text=True,
-                ),
-            ],
-            None,
+        bugs = self._creatures(
+            author=author, params=["arriving"], kind="bugs", source=BUGS, force_text=True
         )
+        fish = self._creatures(
+            author=author, params=["arriving"], kind="fish", source=FISH, force_text=True
+        )
+        return [*bugs, *fish], None
 
     def _info_embed(self, user):
         prefs = self.get_user_prefs(user.id)

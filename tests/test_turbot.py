@@ -1232,10 +1232,10 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "__**Fossil Count**__\n"
             f"> **{BUDDY}** has 73 fossils remaining.\n"
-            "__**Fish Count**__\n"
-            f"> **{BUDDY}** has 80 fish remaining.\n"
             "__**Bugs Count**__\n"
             f"> **{BUDDY}** has 80 bugs remaining.\n"
+            "__**Fish Count**__\n"
+            f"> **{BUDDY}** has 80 fish remaining.\n"
             "__**Art Count**__\n"
             f"> **{BUDDY}** has 43 pieces of art remaining."
         )
@@ -1271,14 +1271,14 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
-            f"__**3 pieces of art donated by {author}**__\n"
-            ">>> academic painting, great statue, sinking painting\n"
-            f"__**3 fish donated by {author}**__\n"
-            ">>> goldfish, killifish, snapping turtle\n"
+            f"__**3 fossils donated by {author}**__\n"
+            ">>> amber, ammonite, ankylo skull\n"
             f"__**3 bugs donated by {author}**__\n"
             ">>> grasshopper, honeybee, robust cicada\n"
-            f"__**3 fossils donated by {author}**__\n"
-            ">>> amber, ammonite, ankylo skull"
+            f"__**3 fish donated by {author}**__\n"
+            ">>> goldfish, killifish, snapping turtle\n"
+            f"__**3 pieces of art donated by {author}**__\n"
+            ">>> academic painting, great statue, sinking painting"
         )
 
     async def test_on_message_collected_all(self, client, channel):
@@ -1665,7 +1665,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_count_fossils(self, client, channel):
+    async def test_on_message_count_fossils(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
@@ -1673,26 +1673,8 @@ class TestTurbot:
 
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
         await client.on_message(MockMessage(author, channel, f"!count {users}"))
-        assert channel.last_sent_response == (
-            "__**Fossil Count**__\n"
-            f"> **{BUDDY}** has 72 fossils remaining.\n"
-            f"> **{FRIEND}** has 71 fossils remaining.\n"
-            f"> **{GUY}** has 71 fossils remaining.\n"
-            "__**Fish Count**__\n"
-            f"> **{BUDDY}** has 80 fish remaining.\n"
-            f"> **{FRIEND}** has 80 fish remaining.\n"
-            f"> **{GUY}** has 80 fish remaining.\n"
-            "__**Bugs Count**__\n"
-            f"> **{BUDDY}** has 80 bugs remaining.\n"
-            f"> **{FRIEND}** has 80 bugs remaining.\n"
-            f"> **{GUY}** has 80 bugs remaining.\n"
-            "__**Art Count**__\n"
-            f"> **{BUDDY}** has 43 pieces of art remaining.\n"
-            f"> **{FRIEND}** has 43 pieces of art remaining.\n"
-            f"> **{GUY}** has 43 pieces of art remaining.\n"
-            "__**Did not recognize the following names**__\n"
-            f"> {PUNK.name}"
-        )
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_predict_no_buy(self, client, channel):
         author = someone()
