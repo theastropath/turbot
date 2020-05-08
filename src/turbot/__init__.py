@@ -463,8 +463,9 @@ class Turbot(discord.Client):
         at = datetime.now(pytz.utc) if not at else at
         at = at.astimezone(pytz.utc)  # always store data in UTC
         prices = self.data.prices
-        prices.add(author.id, kind, price, at)
-        prices.commit()
+        row = pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]])
+        prices = prices.append(row, ignore_index=True)
+        self.data.commit(prices)
 
     def get_last_price(self, user_id):
         """Returns the last sell price for the given user id."""
@@ -562,7 +563,7 @@ class Turbot(discord.Client):
             users = users.append({"author": author.id, pref: value}, ignore_index=True)
         else:
             users.at[row.index, pref] = value
-        users.commit()
+        self.data.commit(users)
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -824,7 +825,7 @@ class Turbot(discord.Client):
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
         idx = buys.groupby(by="author")["timestamp"].idxmax()
         prices = buys.loc[idx]
-        prices.commit()
+        self.data.commit(prices)
         return s("reset"), None
 
     @command
@@ -881,7 +882,7 @@ class Turbot(discord.Client):
         target_name = discord_user_name(channel, target)
         prices = self.data.prices
         prices = prices.drop(prices[prices.author == author.id].tail(1).index)
-        prices.commit()
+        self.data.commit(prices)
         return s("oops", name=target_name), None
 
     @command
@@ -892,7 +893,7 @@ class Turbot(discord.Client):
         user_id = discord_user_id(channel, str(author))
         prices = self.data.prices
         prices = prices[prices.author != user_id]
-        prices.commit()
+        self.data.commit(prices)
         return s("clear", name=author), None
 
     def _best(self, channel, author, kind):
@@ -956,7 +957,7 @@ class Turbot(discord.Client):
             new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
             fossils = fossils.append(new_fossils, ignore_index=True)
             yours = fossils[fossils.author == author.id]  # re-fetch for congrats
-            fossils.commit()
+            self.data.commit(fossils)
             if new_names:
                 lines.append(s("collect_fossil_new", items=", ".join(sorted(new_names))))
             if dupes:
@@ -973,7 +974,7 @@ class Turbot(discord.Client):
             new_bugs = pd.DataFrame(columns=bugs.columns, data=new_data)
             bugs = bugs.append(new_bugs, ignore_index=True)
             yours = bugs[bugs.author == author.id]  # re-fetch for congrats
-            bugs.commit()
+            self.data.commit(bugs)
             if new_names:
                 lines.append(s("collect_bugs_new", items=", ".join(sorted(new_names))))
             if dupes:
@@ -990,7 +991,7 @@ class Turbot(discord.Client):
             new_fish = pd.DataFrame(columns=fish.columns, data=new_data)
             fish = fish.append(new_fish, ignore_index=True)
             yours = fish[fish.author == author.id]  # re-fetch for congrats
-            fish.commit()
+            self.data.commit(fish)
             if new_names:
                 lines.append(s("collect_fish_new", items=", ".join(sorted(new_names))))
             if dupes:
@@ -1007,7 +1008,7 @@ class Turbot(discord.Client):
             new_art = pd.DataFrame(columns=art.columns, data=new_data)
             art = art.append(new_art, ignore_index=True)
             yours = art[art.author == author.id]  # re-fetch for congrats
-            art.commit()
+            self.data.commit(art)
             if new_names:
                 lines.append(s("collect_art_new", items=", ".join(sorted(new_names))))
             if dupes:
@@ -1046,7 +1047,7 @@ class Turbot(discord.Client):
             deleted = set(previously_collected.name.values.tolist())
             didnt_have = valid_fossils - deleted
             fossils = fossils.drop(previously_collected.index)
-            fossils.commit()
+            self.data.commit(fossils)
             if deleted:
                 lines.append(
                     s("uncollect_fossil_deleted", items=", ".join(sorted(deleted)))
@@ -1063,7 +1064,7 @@ class Turbot(discord.Client):
             deleted = set(previously_collected.name.values.tolist())
             didnt_have = valid_bugs - deleted
             bugs = bugs.drop(previously_collected.index)
-            bugs.commit()
+            self.data.commit(bugs)
             if deleted:
                 lines.append(
                     s("uncollect_bugs_deleted", items=", ".join(sorted(deleted)))
@@ -1080,7 +1081,7 @@ class Turbot(discord.Client):
             deleted = set(previously_collected.name.values.tolist())
             didnt_have = valid_fish - deleted
             fish = fish.drop(previously_collected.index)
-            fish.commit()
+            self.data.commit(fish)
             if deleted:
                 lines.append(
                     s("uncollect_fish_deleted", items=", ".join(sorted(deleted)))
@@ -1097,7 +1098,7 @@ class Turbot(discord.Client):
             deleted = set(previously_collected.name.values.tolist())
             didnt_have = valid_art - deleted
             art = art.drop(previously_collected.index)
-            art.commit()
+            self.data.commit(art)
             if deleted:
                 lines.append(s("uncollect_art_deleted", items=", ".join(sorted(deleted))))
             if didnt_have:
@@ -1822,8 +1823,7 @@ class Turbot(discord.Client):
 
         query = " ".join(params).lower()  # allow spaces in names
 
-        users = self.data.users
-        for _, row in users.iterrows():
+        for _, row in self.data.users.iterrows():
             user_id = int(row["author"])
             user_name = discord_user_name(channel, user_id)
             if not user_name:

@@ -3033,6 +3033,10 @@ class TestTurbot:
         )
         assert len(channel.all_sent_calls) == 3
 
+    async def test_client_data_exception(self, client):
+        with pytest.raises(RuntimeError):
+            client.data.foobar
+
 
 class TestFigures:
     # Some realistic price data sampled from the wild.
@@ -3084,6 +3088,26 @@ class TestFigures:
                     f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",
                 ]
             )
+
+    def set_error_prices(self, client):
+        with open(client.data.file("prices"), "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    # for some reason this sequence of prices errors out the turnips lib
+                    f"{BUDDY.id},buy,102,2020-04-05 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,93,2020-04-06 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,87,2020-04-06 13:00:00+00:00\n",
+                    f"{BUDDY.id},sell,86,2020-04-07 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,79,2020-04-07 13:00:00+00:00\n",
+                    f"{BUDDY.id},sell,69,2020-04-08 13:00:00+00:00\n",
+                ]
+            )
+
+    def test_get_graph_predictive_error(self, client, channel):
+        self.set_error_prices(client)
+        client.get_graph(channel, BUDDY, turbot.GRAPHCMD_FILE)
+        assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     def test_get_graph_predictive_bad_user(self, client, channel):
         self.set_example_prices(client)
