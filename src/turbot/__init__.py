@@ -9,9 +9,7 @@ from contextlib import redirect_stdout
 from datetime import datetime, timedelta
 from itertools import product
 from os import getenv
-from os.path import dirname, realpath
 from pathlib import Path
-from string import Template
 
 import click
 import discord
@@ -24,80 +22,23 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
-from yaml import load
+from unidecode import unidecode
 
 from turbot._version import __version__
+from turbot.assets import Assets, s
 from turbot.data import Data
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
 
-try:
-    from yaml import CLoader as Loader
-except ImportError:  # pragma: no cover
-    from yaml import Loader
-
-
 matplotlib.use("Agg")
 
-PACKAGE_ROOT = Path(dirname(realpath(__file__)))
 RUNTIME_ROOT = Path(".")
 DEFAULT_DB_DIR = RUNTIME_ROOT / "db"
-
-# application configuration files
 DEFAULT_CONFIG_TOKEN = RUNTIME_ROOT / "token.txt"
 DEFAULT_CONFIG_CHANNELS = RUNTIME_ROOT / "channels.txt"
-
-# static application asset data
-DATA_DIR = PACKAGE_ROOT / "data"
-STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
-FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
-FISH_DATA_FILE = DATA_DIR / "fish.csv"
-BUGS_DATA_FILE = DATA_DIR / "bugs.csv"
-ART_DATA_FILE = DATA_DIR / "art.csv"
-
-# temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
-
-# loaded application data
-STRINGS = None
-FISH = None
-BUGS = None
-ART = None
-FOSSILS_SET = None
-FISH_SET = None
-BUGS_SET = None
-ART_SET = None
-COLLECTABLE_SET = None
-
-
-def load_application_data():
-    """Defer loading these assests until we actually need them."""
-    global STRINGS
-    global FISH
-    global BUGS
-    global ART
-    global FOSSILS_SET
-    global FISH_SET
-    global BUGS_SET
-    global ART_SET
-    global COLLECTABLE_SET
-
-    with open(STRINGS_DATA_FILE) as f:
-        STRINGS = load(f, Loader=Loader)
-
-    FISH = pd.read_csv(FISH_DATA_FILE)
-    BUGS = pd.read_csv(BUGS_DATA_FILE)
-    ART = pd.read_csv(ART_DATA_FILE)
-
-    with open(FOSSILS_DATA_FILE) as f:
-        FOSSILS_SET = frozenset([line.strip().lower() for line in f.readlines()])
-    FISH_SET = frozenset(FISH.drop_duplicates(subset="name").name.tolist())
-    BUGS_SET = frozenset(BUGS.drop_duplicates(subset="name").name.tolist())
-    ART_SET = frozenset(ART.drop_duplicates(subset="name").name.tolist())
-    COLLECTABLE_SET = FOSSILS_SET | FISH_SET | BUGS_SET | ART_SET
-
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
@@ -161,13 +102,6 @@ class Validate:
         return value
 
 
-def s(key, **kwargs):
-    """Returns a string from data/strings.yaml with subsitutions."""
-    data = STRINGS.get(key, "")
-    assert data, f"error: missing strings key: {key}"
-    return Template(data).substitute(kwargs)
-
-
 def h(dt):
     """Convertes a datetime to something readable by a human."""
     if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
@@ -181,6 +115,10 @@ def day_and_time(dt):
     day = IDAYS[dt.isoweekday()]
     am_pm = "am" if dt.hour < 12 else "pm"
     return f"{day.title()} {am_pm}"
+
+
+def sanitize_collectable(item):
+    return unidecode(item.strip().lower())
 
 
 def humanize_months(row):
@@ -315,7 +253,8 @@ class Turbot(discord.Client):
             if hasattr(member[1], "is_command") and member[1].is_command
         ]
 
-        load_application_data()
+        # load static application data
+        self.assets = Assets()
 
     def run(self):  # pragma: no cover
         super().run(self.token)
@@ -928,13 +867,8 @@ class Turbot(discord.Client):
         if not params:
             return s("collect_no_params"), None
 
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-
-        valid_fossils = items.intersection(FOSSILS_SET)
-        valid_bugs = items.intersection(BUGS_SET)
-        valid_fish = items.intersection(FISH_SET)
-        valid_art = items.intersection(ART_SET)
-        invalid = items.difference(COLLECTABLE_SET)
+        items = set(sanitize_collectable(item) for item in " ".join(params).split(","))
+        valid, invalid = self.assets.validate(items)
 
         lines = []
 
@@ -944,23 +878,21 @@ class Turbot(discord.Client):
             store = getattr(self.data, kind)
             yours = store[store.author == author.id]
             dupes = yours.loc[yours.name.isin(valid_items)].name.values.tolist()
-            new_names = list(set(valid_items) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
+            new_items = list(set(valid_items) - set(dupes))
+            new_data = [[author.id, name] for name in new_items]
             new_fossils = pd.DataFrame(columns=store.columns, data=new_data)
             store = store.append(new_fossils, ignore_index=True)
             yours = store[store.author == author.id]  # re-fetch for congrats
             self.data.commit(store)
-            if new_names:
-                lines.append(s(f"collect_{kind}_new", items=", ".join(sorted(new_names))))
+            if new_items:
+                lines.append(s(f"collect_{kind}_new", items=", ".join(sorted(new_items))))
             if dupes:
                 lines.append(s(f"collect_{kind}_dupe", items=", ".join(sorted(dupes))))
             if len(fullset) == len(yours.index):
                 lines.append(s(f"congrats_all_{kind}"))
 
-        add_lines("fossils", valid_fossils, FOSSILS_SET)
-        add_lines("bugs", valid_bugs, BUGS_SET)
-        add_lines("fish", valid_fish, FISH_SET)
-        add_lines("art", valid_art, ART_SET)
+        for kind in self.assets.collectables:
+            add_lines(kind, valid[kind], self.assets[kind].all)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -976,13 +908,8 @@ class Turbot(discord.Client):
         if not params:
             return s("uncollect_no_params"), None
 
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-
-        valid_fossils = items.intersection(FOSSILS_SET)
-        valid_bugs = items.intersection(BUGS_SET)
-        valid_fish = items.intersection(FISH_SET)
-        valid_art = items.intersection(ART_SET)
-        invalid = items.difference(COLLECTABLE_SET)
+        items = set(sanitize_collectable(item) for item in " ".join(params).split(","))
+        valid, invalid = self.assets.validate(items)
 
         lines = []
 
@@ -1001,10 +928,8 @@ class Turbot(discord.Client):
                 items_str = ", ".join(sorted(didnt_have))
                 lines.append(s(f"uncollect_{kind}_already", items=items_str))
 
-        add_lines("fossils", valid_fossils)
-        add_lines("bugs", valid_bugs)
-        add_lines("fish", valid_fish)
-        add_lines("art", valid_art)
+        for kind in self.assets.collectables:
+            add_lines(kind, valid[kind])
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1021,13 +946,8 @@ class Turbot(discord.Client):
         if not params:
             return s("search_no_params"), None
 
-        items = set(item.strip().lower() for item in " ".join(params).split(","))
-
-        valid_fossils = items.intersection(FOSSILS_SET)
-        valid_bugs = items.intersection(BUGS_SET)
-        valid_fish = items.intersection(FISH_SET)
-        valid_art = items.intersection(ART_SET)
-        invalid = items.difference(COLLECTABLE_SET)
+        items = set(sanitize_collectable(item) for item in " ".join(params).split(","))
+        valid, invalid = self.assets.validate(items)
 
         def get_results(kind, valid_items):
             store = getattr(self.data, kind)
@@ -1041,39 +961,29 @@ class Turbot(discord.Client):
                     results[name].append(collected_item)
             return results
 
-        fossils_results = get_results("fossils", valid_fossils)
-        bugs_results = get_results("bugs", valid_bugs)
-        fish_results = get_results("fish", valid_fish)
-        art_results = get_results("art", valid_art)
+        results = {}
+        for kind in self.assets.collectables:
+            results[kind] = get_results(kind, valid[kind])
 
-        if not fossils_results and not art_results and not invalid:
+        if not any(result for result in results.values()) and not invalid:
             return s("search_all_not_needed"), None
 
-        searched = valid_fossils | valid_bugs | valid_fish | valid_art
+        searched = set()
+        for valid_items in valid.values():
+            searched.update(valid_items)
+
         needed = set()
-        for items in fossils_results.values():
-            needed.update(items)
-        for items in fish_results.values():
-            needed.update(items)
-        for items in bugs_results.values():
-            needed.update(items)
-        for items in art_results.values():
-            needed.update(items)
+        for result in results.values():
+            for items in result.values():
+                needed.update(items)
+
         not_needed = searched - needed
 
         lines = []
-        for name, items in fossils_results.items():
-            items_str = ", ".join(sorted(items))
-            lines.append(s("search_fossil_row", name=name, items=items_str))
-        for name, items in fish_results.items():
-            items_str = ", ".join(sorted(items))
-            lines.append(s("search_fish_row", name=name, items=items_str))
-        for name, items in bugs_results.items():
-            items_str = ", ".join(sorted(items))
-            lines.append(s("search_bugs_row", name=name, items=items_str))
-        for name, items in art_results.items():
-            items_str = ", ".join(sorted(items))
-            lines.append(s("search_art_row", name=name, items=items_str))
+        for kind, result in results.items():
+            for name, items in result.items():
+                items_str = ", ".join(sorted(items))
+                lines.append(s(f"search_{kind}_row", name=name, items=items_str))
         if not_needed:
             items_str = ", ".join(sorted(not_needed))
             lines.append(s("search_not_needed", items=items_str))
@@ -1110,10 +1020,8 @@ class Turbot(discord.Client):
             else:
                 lines.append(s(f"congrats_all_{kind}"))
 
-        add_lines("fossils", FOSSILS_SET)
-        add_lines("bugs", BUGS_SET)
-        add_lines("fish", FISH_SET)
-        add_lines("art", ART_SET)
+        for kind in self.assets.collectables:
+            add_lines(kind, self.assets[kind].all)
 
         return "\n".join(lines), None
 
@@ -1122,24 +1030,16 @@ class Turbot(discord.Client):
         """
         Lists all the needed items for all the channel members. As the only parameter
         give the name of the kind of collectable to return.
-        | <fossils|bugs|fish|art>
+        | <fossils|bugs|fish|art|songs>
         """
         if not params:
             return s("needed_no_param"), None
 
         kind = params[0].lower()
-        if kind not in ["fossils", "bugs", "fish", "art"]:
+        if kind not in ["fossils", "bugs", "fish", "art", "songs"]:
             return s("needed_invalid_param"), None
 
-        if kind == "fossils":
-            fullset = FOSSILS_SET
-        if kind == "bugs":
-            fullset = BUGS_SET
-        if kind == "fish":
-            fullset = FISH_SET
-        if kind == "art":
-            fullset = ART_SET
-
+        fullset = self.assets[kind].all
         store = getattr(self.data, kind)
         authors = [member.id for member in channel.members if member.id != self.user.id]
         total = pd.DataFrame(list(product(authors, fullset)), columns=store.columns)
@@ -1183,17 +1083,12 @@ class Turbot(discord.Client):
             return set(your_items.name.unique())
 
         collected_items = {
-            "fossils": get_collection("fossils"),
-            "bugs": get_collection("bugs"),
-            "fish": get_collection("fish"),
-            "art": get_collection("art"),
+            kind: get_collection(kind) for kind in self.assets.collectables
         }
 
         all_items = {
-            "fossils": len(collected_items["fossils"]) == len(FOSSILS_SET),
-            "fish": len(collected_items["fish"]) == len(FISH_SET),
-            "bugs": len(collected_items["bugs"]) == len(BUGS_SET),
-            "art": len(collected_items["art"]) == len(ART_SET),
+            kind: len(collected_items[kind]) == len(self.assets[kind].all)
+            for kind in self.assets.collectables
         }
 
         lines = []
@@ -1267,7 +1162,7 @@ class Turbot(discord.Client):
         if not params:
             return s("count_no_params"), None
 
-        users = set(item.strip().lower() for item in " ".join(params).split(","))
+        users = set(sanitize_collectable(item) for item in " ".join(params).split(","))
 
         valid = []
         invalid = []
@@ -1292,10 +1187,8 @@ class Turbot(discord.Client):
                 lines.append(s(f"count_{kind}_valid", name=user_name, count=count))
 
         if valid:
-            add_valid_lines("fossils", FOSSILS_SET)
-            add_valid_lines("bugs", BUGS_SET)
-            add_valid_lines("fish", FISH_SET)
-            add_valid_lines("art", ART_SET)
+            for kind in self.assets.collectables:
+                add_valid_lines(kind, self.assets[kind].all)
 
         if invalid:
             lines.append(s("count_invalid_header"))
@@ -1311,15 +1204,17 @@ class Turbot(discord.Client):
         """
         response = ""
         if params:
-            items = set(item.strip().lower() for item in " ".join(params).split(","))
-            validset = items.intersection(ART_SET)
-            invalidset = items - validset
-            valid = sorted(list(validset))
+            items = set(
+                sanitize_collectable(item) for item in " ".join(params).split(",")
+            )
+            validset, invalidset = self.assets.validate(items, kinds=["art"])
+            art_data = self.assets["art"].data
+            valid = sorted(list(validset["art"]))
             invalid = sorted(list(invalidset))
             lines = []
             response = s("art_header") + "\n"
             for art in valid:
-                piece = ART[ART.name == art].iloc[0]
+                piece = art_data[art_data.name == art].iloc[0]
                 if piece["has_fake"]:
                     lines.append(
                         s(
@@ -1345,7 +1240,8 @@ class Turbot(discord.Client):
                 response += "\n" + (s("art_invalid", items=", ".join(invalid)))
 
         else:
-            response = s("allart", list=", ".join(sorted(ART_SET)))
+            items = self.assets["art"].all
+            response = s("allart", list=", ".join(sorted(items)))
 
         return response, None
 
@@ -1519,7 +1415,8 @@ class Turbot(discord.Client):
         Tells you what fish are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        found = self._creatures(author=author, params=params, kind="fish", source=FISH)
+        source = self.assets["fish"].data
+        found = self._creatures(author=author, params=params, kind="fish", source=source)
         return found, None
 
     @command
@@ -1528,7 +1425,8 @@ class Turbot(discord.Client):
         Tells you what bugs are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        found = self._creatures(author=author, params=params, kind="bugs", source=BUGS)
+        source = self.assets["bugs"].data
+        found = self._creatures(author=author, params=params, kind="bugs", source=source)
         return found, None
 
     @command
@@ -1536,11 +1434,21 @@ class Turbot(discord.Client):
         """
         Tells you what new things available in your hemisphere right now.
         """
+        bugs_data = self.assets["bugs"].data
         bugs = self._creatures(
-            author=author, params=["arriving"], kind="bugs", source=BUGS, force_text=True
+            author=author,
+            params=["arriving"],
+            kind="bugs",
+            source=bugs_data,
+            force_text=True,
         )
+        fish_data = self.assets["fish"].data
         fish = self._creatures(
-            author=author, params=["arriving"], kind="fish", source=FISH, force_text=True
+            author=author,
+            params=["arriving"],
+            kind="fish",
+            source=fish_data,
+            force_text=True,
         )
         return [*bugs, *fish], None
 
@@ -1713,22 +1621,22 @@ def main(
         print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
 
-    if dev:
-        reloader = hupper.start_reloader("turbot.main")
-        reloader.watch_files(
-            [ART_DATA_FILE, BUGS_DATA_FILE, FISH_DATA_FILE, STRINGS_DATA_FILE]
-        )
-
     # ensure transient application directories exist
     db_dir.mkdir(exist_ok=True)
     TMP_DIR.mkdir(exist_ok=True)
 
-    Turbot(
+    client = Turbot(
         token=get_token(bot_token_file),
         channels=auth_channels,
         db_dir=db_dir,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
-    ).run()
+    )
+
+    if dev:
+        reloader = hupper.start_reloader("turbot.main")
+        reloader.watch_files(client.assets.files())
+
+    client.run()
 
 
 if __name__ == "__main__":

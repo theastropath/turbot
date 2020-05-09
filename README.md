@@ -67,7 +67,7 @@ These commands help users buy low and sell high in the stalk market.
 - `!reset`: Reset all users' data
 - `!sell`: Save a sell price
 
-### 🐟 Fish and Bugs
+### 🐟 Fish & 🐞 Bugs
 
 Provides users with information on where and when to catch critters.
 
@@ -75,7 +75,7 @@ Provides users with information on where and when to catch critters.
 - `!fish`: Get information on fish
 - `!new`: Get information on newly available fish and bugs
 
-### 🦴 Fossils & 🖼️ Art
+### 🦴 Fossils, 🖼️ Art, & 🎶 Songs
 
 When a community of users tracks collectables and trades them between each
 other, everyone finishes collecting everything in the game so much more quickly
