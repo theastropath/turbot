@@ -55,10 +55,10 @@ collect_fish_dupe: 'The following fish had already been collected:
 collect_fish_new: 'Marked the following fish as collected:
 
   > $items'
-collect_fossil_dupe: 'The following fossils had already been collected:
+collect_fossils_dupe: 'The following fossils had already been collected:
 
   > $items'
-collect_fossil_new: 'Marked the following fossils as collected:
+collect_fossils_new: 'Marked the following fossils as collected:
 
   > $items'
 collect_no_params: Please provide the name of something to mark as collected.
@@ -84,8 +84,8 @@ count_bugs_valid: '> **$name** has $count bugs remaining.'
 count_bugs_valid_header: __**Bugs Count**__
 count_fish_valid: '> **$name** has $count fish remaining.'
 count_fish_valid_header: __**Fish Count**__
-count_fossil_valid: '> **$name** has $count fossils remaining.'
-count_fossil_valid_header: __**Fossil Count**__
+count_fossils_valid: '> **$name** has $count fossils remaining.'
+count_fossils_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
 count_invalid_header: __**Did not recognize the following names**__
 count_no_params: Please provide at least one user name to search for.
@@ -175,10 +175,10 @@ uncollect_fish_already: 'The following fish were already marked as not collected
 uncollect_fish_deleted: 'Unmarked the following fish as collected:
 
   > $items'
-uncollect_fossil_already: 'The following fossils were already marked as not collected:
+uncollect_fossils_already: 'The following fossils were already marked as not collected:
 
   > $items'
-uncollect_fossil_deleted: 'Unmarked the following fossils as collected:
+uncollect_fossils_deleted: 'Unmarked the following fossils as collected:
 
   > $items'
 uncollect_no_params: Please provide the name of something to mark as uncollected.

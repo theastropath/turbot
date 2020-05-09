@@ -227,14 +227,7 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
 
     freezer.move_to(NOW)
     return turbot.Turbot(
-        token=CLIENT_TOKEN,
-        channels=[AUTHORIZED_CHANNEL],
-        prices_file=tmp_path / "prices.csv",
-        art_file=tmp_path / "art.csv",
-        fish_file=tmp_path / "fish.csv",
-        bugs_file=tmp_path / "bugs.csv",
-        fossils_file=tmp_path / "fossils.csv",
-        users_file=tmp_path / "users.csv",
+        token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_dir=tmp_path,
     )
 
 
@@ -398,7 +391,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{monday_evening_adjust}\n",
         ]
@@ -568,7 +561,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{monday_evening}\n",
         ]
@@ -612,7 +605,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{NOW}\n",
         ]
@@ -625,7 +618,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},sell,{amount},{NOW}\n",
         ]
@@ -636,7 +629,7 @@ class TestTurbot:
             f"Logged selling price of {amount} for user {author}. "
             f"(Same as last selling price)"
         )
-        assert lines(client.prices_file) == [f"{author.id},sell,{amount},{NOW}\n"]
+        assert lines(client.data.file("prices")) == [f"{author.id},sell,{amount},{NOW}\n"]
 
         # higher price sale
         new_amount = amount + somebells()
@@ -645,7 +638,9 @@ class TestTurbot:
             f"Logged selling price of {new_amount} for user {author}. "
             f"(Higher than last selling price of {amount} bells)"
         )
-        assert lines(client.prices_file) == [f"{author.id},sell,{new_amount},{NOW}\n"]
+        assert lines(client.data.file("prices")) == [
+            f"{author.id},sell,{new_amount},{NOW}\n"
+        ]
 
         # lower price sale
         last_amount = round(amount / 2)
@@ -654,7 +649,9 @@ class TestTurbot:
             f"Logged selling price of {last_amount} for user {author}. "
             f"(Lower than last selling price of {new_amount} bells)"
         )
-        assert lines(client.prices_file) == [f"{author.id},sell,{last_amount},{NOW}\n"]
+        assert lines(client.data.file("prices")) == [
+            f"{author.id},sell,{last_amount},{NOW}\n"
+        ]
 
     async def test_on_message_buy_at_time_with_tz(self, client, channel, lines, freezer):
         author = someone()
@@ -677,7 +674,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,{amount},{monday_evening_adjust}\n",
         ]
@@ -696,7 +693,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,{amount},{monday_evening}\n",
         ]
@@ -740,7 +737,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,{amount},{NOW}\n",
         ]
@@ -759,7 +756,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!clear"))
         assert channel.last_sent_response == (f"**Cleared history for {author}.**")
-        assert lines(client.prices_file) == ["author,kind,price,timestamp\n"]
+        assert lines(client.data.file("prices")) == ["author,kind,price,timestamp\n"]
 
     async def test_on_message_bestsell(self, client, channel):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
@@ -815,7 +812,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"**Deleting last logged price for {author}.**"
         )
-        assert lines(client.prices_file) == [
+        assert lines(client.data.file("prices")) == [
             "author,kind,price,timestamp\n",
             f"{author.id},buy,1,{NOW}\n",
             f"{author.id},sell,2,{NOW}\n",
@@ -985,12 +982,12 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
-        old_data = lines(client.prices_file)
+        old_data = lines(client.data.file("prices"))
 
         # then reset price data
         await client.on_message(MockMessage(somenonturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("User is not a Turbot Admin")
-        with open(client.prices_file) as f:
+        with open(client.data.file("prices")) as f:
             assert f.readlines() == old_data
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
@@ -1022,12 +1019,12 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
-        old_data = lines(client.prices_file)
+        old_data = lines(client.data.file("prices"))
 
         # then reset price data
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("**Resetting data for a new week!**")
-        with open(client.prices_file) as f:
+        with open(client.data.file("prices")) as f:
             assert f.readlines() == [
                 "author,kind,price,timestamp\n",
                 f"{FRIEND.id},buy,102,{later}\n",
@@ -1060,7 +1057,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        assert set(lines(client.fossils_file)) == {
+        assert set(lines(client.data.file("fossils"))) == {
             "author,name\n",
             f"{author.id},amber\n",
             f"{author.id},ankylo skull\n",
@@ -1087,7 +1084,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> an arm"
         )
-        assert lines(client.fossils_file) == [f"{author.id},plesio body\n"]
+        assert lines(client.data.file("fossils")) == [f"{author.id},plesio body\n"]
 
     async def test_on_message_collect_fossils_congrats(self, client, channel):
         everything = sorted(list(turbot.FOSSILS_SET))
@@ -1132,7 +1129,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.art_file) as f:
+        with open(client.data.file("art")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},sinking painting\n"]
 
         # then delete the same ones again
@@ -1143,7 +1140,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.art_file) as f:
+        with open(client.data.file("art")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},sinking painting\n"]
 
         # and delete one more
@@ -1153,7 +1150,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following pieces of art as collected:\n" "> sinking painting"
         )
-        with open(client.art_file) as f:
+        with open(client.data.file("art")) as f:
             assert f.readlines() == ["author,name\n"]
 
     async def test_on_message_search_art_no_need_with_bad(self, client, channel):
@@ -1235,10 +1232,10 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "__**Fossil Count**__\n"
             f"> **{BUDDY}** has 73 fossils remaining.\n"
-            "__**Fish Count**__\n"
-            f"> **{BUDDY}** has 80 fish remaining.\n"
             "__**Bugs Count**__\n"
             f"> **{BUDDY}** has 80 bugs remaining.\n"
+            "__**Fish Count**__\n"
+            f"> **{BUDDY}** has 80 fish remaining.\n"
             "__**Art Count**__\n"
             f"> **{BUDDY}** has 43 pieces of art remaining."
         )
@@ -1274,14 +1271,14 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
-            f"__**3 pieces of art donated by {author}**__\n"
-            ">>> academic painting, great statue, sinking painting\n"
-            f"__**3 fish donated by {author}**__\n"
-            ">>> goldfish, killifish, snapping turtle\n"
+            f"__**3 fossils donated by {author}**__\n"
+            ">>> amber, ammonite, ankylo skull\n"
             f"__**3 bugs donated by {author}**__\n"
             ">>> grasshopper, honeybee, robust cicada\n"
-            f"__**3 fossils donated by {author}**__\n"
-            ">>> amber, ammonite, ankylo skull"
+            f"__**3 fish donated by {author}**__\n"
+            ">>> goldfish, killifish, snapping turtle\n"
+            f"__**3 pieces of art donated by {author}**__\n"
+            ">>> academic painting, great statue, sinking painting"
         )
 
     async def test_on_message_collected_all(self, client, channel):
@@ -1361,7 +1358,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.art_file)) == {
+        assert set(lines(client.data.file("art"))) == {
             "author,name\n",
             f"{author.id},academic painting\n",
             f"{author.id},sinking painting\n",
@@ -1388,7 +1385,7 @@ class TestTurbot:
             "> body pillow"
         )
 
-        assert lines(client.art_file) == [f"{author.id},tremendous statue\n"]
+        assert lines(client.data.file("art")) == [f"{author.id},tremendous statue\n"]
 
     async def test_on_message_collect_art_congrats(self, client, channel, snap):
         everything = sorted(list(turbot.ART.name.unique()))
@@ -1564,7 +1561,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        with open(client.fossils_file) as f:
+        with open(client.data.file("fossils")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
 
         # delete the same ones again
@@ -1575,7 +1572,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        with open(client.fossils_file) as f:
+        with open(client.data.file("fossils")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
 
         # and delete one more
@@ -1583,7 +1580,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following fossils as collected:\n> ammonite"
         )
-        with open(client.fossils_file) as f:
+        with open(client.data.file("fossils")) as f:
             assert f.readlines() == ["author,name\n"]
 
     async def test_on_message_uncollect_with_only_bad(self, client, channel):
@@ -1668,7 +1665,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_count_fossils(self, client, channel):
+    async def test_on_message_count_fossils(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
@@ -1676,26 +1673,8 @@ class TestTurbot:
 
         users = ", ".join([FRIEND.name, BUDDY.name, GUY.name, PUNK.name])
         await client.on_message(MockMessage(author, channel, f"!count {users}"))
-        assert channel.last_sent_response == (
-            "__**Fossil Count**__\n"
-            f"> **{BUDDY}** has 72 fossils remaining.\n"
-            f"> **{FRIEND}** has 71 fossils remaining.\n"
-            f"> **{GUY}** has 71 fossils remaining.\n"
-            "__**Fish Count**__\n"
-            f"> **{BUDDY}** has 80 fish remaining.\n"
-            f"> **{FRIEND}** has 80 fish remaining.\n"
-            f"> **{GUY}** has 80 fish remaining.\n"
-            "__**Bugs Count**__\n"
-            f"> **{BUDDY}** has 80 bugs remaining.\n"
-            f"> **{FRIEND}** has 80 bugs remaining.\n"
-            f"> **{GUY}** has 80 bugs remaining.\n"
-            "__**Art Count**__\n"
-            f"> **{BUDDY}** has 43 pieces of art remaining.\n"
-            f"> **{FRIEND}** has 43 pieces of art remaining.\n"
-            f"> **{GUY}** has 43 pieces of art remaining.\n"
-            "__**Did not recognize the following names**__\n"
-            f"> {PUNK.name}"
-        )
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_predict_no_buy(self, client, channel):
         author = someone()
@@ -1950,7 +1929,7 @@ class TestTurbot:
         assert len(channel.all_sent_calls) == 3
 
     async def test_load_prices_new(self, client):
-        prices = client.load_prices()
+        prices = client.data.prices
         assert prices.empty
 
         loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
@@ -1969,11 +1948,11 @@ class TestTurbot:
             ["93126903363301376", "sell", "87", "2020-04-13 14:25:10.902356148+00:00"],
             ["93126903363301376", "sell", "84", "2020-04-13 16:35:31.403252602+00:00"],
         ]
-        with open(client.prices_file, "w") as f:
+        with open(client.data.file("prices"), "w") as f:
             for line in data:
                 f.write(f"{','.join(line)}\n")
 
-        prices = client.load_prices()
+        prices = client.data.prices
         loaded_data = [[str(i) for i in row.tolist()] for _, row in prices.iterrows()]
         assert loaded_data == data[1:]
 
@@ -2241,7 +2220,7 @@ class TestTurbot:
 
     async def test_get_user_prefs_friend_code(self, client, channel):
         author = someone()
-        with open(client.users_file, "w") as f:
+        with open(client.data.file("users"), "w") as f:
             f.writelines(
                 [
                     "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
@@ -2354,7 +2333,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered hemisphere preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},southern,,,,,,\n",
@@ -2364,7 +2343,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered hemisphere preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},northern,,,,,,\n",
@@ -2382,7 +2361,7 @@ class TestTurbot:
             MockMessage(author, channel, f"!pref friend sw-1234-5678-9012")
         )
         assert channel.last_sent_response == f"Registered friend preference for {author}."
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,,,123456789012,,,\n",
@@ -2402,7 +2381,7 @@ class TestTurbot:
         assert (
             channel.last_sent_response == f"Registered creator preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,,,,,,123456789012\n",
@@ -2420,7 +2399,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered fruit preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,,,,apple,,\n",
@@ -2444,7 +2423,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered timezone preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,America/Los_Angeles,,,,,\n",
@@ -2456,7 +2435,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered timezone preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,Canada/Saskatchewan,,,,,\n",
@@ -2469,7 +2448,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered island preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,,{island},,,,\n",
@@ -2482,7 +2461,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered nickname preference for {author}."
         )
-        with open(client.users_file) as f:
+        with open(client.data.file("users")) as f:
             assert f.readlines() == [
                 "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
                 f"{author.id},,,,,,{name},\n",
@@ -2505,7 +2484,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.fish_file) as f:
+        with open(client.data.file("fish")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},snapping turtle\n"]
 
         # then delete the same ones again
@@ -2518,7 +2497,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.fish_file) as f:
+        with open(client.data.file("fish")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},snapping turtle\n"]
 
         # and delete one more
@@ -2528,7 +2507,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following fish as collected:\n" "> snapping turtle"
         )
-        with open(client.fish_file) as f:
+        with open(client.data.file("fish")) as f:
             assert f.readlines() == ["author,name\n"]
 
     async def test_on_message_search_fish_no_need_with_bad(self, client, channel):
@@ -2662,7 +2641,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.fish_file)) == {
+        assert set(lines(client.data.file("fish"))) == {
             "author,name\n",
             f"{author.id},bluegill\n",
             f"{author.id},snapping turtle\n",
@@ -2689,7 +2668,7 @@ class TestTurbot:
             "> body pillow"
         )
 
-        assert lines(client.fish_file) == [f"{author.id},tadpole\n"]
+        assert lines(client.data.file("fish")) == [f"{author.id},tadpole\n"]
 
     async def test_on_message_collect_fish_congrats(self, client, channel, snap):
         everything = sorted(list(turbot.FISH.name.unique()))
@@ -2820,7 +2799,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.bugs_file) as f:
+        with open(client.data.file("bugs")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
 
         # then delete the same ones again
@@ -2833,7 +2812,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.bugs_file) as f:
+        with open(client.data.file("bugs")) as f:
             assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
 
         # and delete one more
@@ -2841,7 +2820,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following bugs as collected:\n" "> stinkbug"
         )
-        with open(client.bugs_file) as f:
+        with open(client.data.file("bugs")) as f:
             assert f.readlines() == ["author,name\n"]
 
     async def test_on_message_search_bugs_no_need_with_bad(self, client, channel):
@@ -2973,7 +2952,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.bugs_file)) == {
+        assert set(lines(client.data.file("bugs"))) == {
             "author,name\n",
             f"{author.id},bell cricket\n",
             f"{author.id},stinkbug\n",
@@ -3000,7 +2979,7 @@ class TestTurbot:
             "> body pillow"
         )
 
-        assert lines(client.bugs_file) == [f"{author.id},tiger beetle\n"]
+        assert lines(client.data.file("bugs")) == [f"{author.id},tiger beetle\n"]
 
     async def test_on_message_collect_bugs_congrats(self, client, channel, snap):
         everything = sorted(list(turbot.BUGS.name.unique()))
@@ -3036,6 +3015,10 @@ class TestTurbot:
         )
         assert len(channel.all_sent_calls) == 3
 
+    async def test_client_data_exception(self, client):
+        with pytest.raises(RuntimeError):
+            client.data.foobar
+
 
 class TestFigures:
     # Some realistic price data sampled from the wild.
@@ -3070,11 +3053,11 @@ class TestFigures:
     ]
 
     def set_example_prices(self, client):
-        with open(client.prices_file, "w") as f:
+        with open(client.data.file("prices"), "w") as f:
             f.writelines(self.PRICES)
 
     def set_bogus_prices(self, client):
-        with open(client.prices_file, "w") as f:
+        with open(client.data.file("prices"), "w") as f:
             f.writelines(
                 [
                     "author,kind,price,timestamp\n",
@@ -3087,6 +3070,26 @@ class TestFigures:
                     f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",
                 ]
             )
+
+    def set_error_prices(self, client):
+        with open(client.data.file("prices"), "w") as f:
+            f.writelines(
+                [
+                    "author,kind,price,timestamp\n",
+                    # for some reason this sequence of prices errors out the turnips lib
+                    f"{BUDDY.id},buy,102,2020-04-05 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,93,2020-04-06 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,87,2020-04-06 13:00:00+00:00\n",
+                    f"{BUDDY.id},sell,86,2020-04-07 09:00:00+00:00\n",
+                    f"{BUDDY.id},sell,79,2020-04-07 13:00:00+00:00\n",
+                    f"{BUDDY.id},sell,69,2020-04-08 13:00:00+00:00\n",
+                ]
+            )
+
+    def test_get_graph_predictive_error(self, client, channel):
+        self.set_error_prices(client)
+        client.get_graph(channel, BUDDY, turbot.GRAPHCMD_FILE)
+        assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     def test_get_graph_predictive_bad_user(self, client, channel):
         self.set_example_prices(client)

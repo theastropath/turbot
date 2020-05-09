@@ -7,7 +7,6 @@ import sys
 from collections import defaultdict
 from contextlib import redirect_stdout
 from datetime import datetime, timedelta
-from io import StringIO
 from itertools import product
 from os import getenv
 from os.path import dirname, realpath
@@ -28,6 +27,7 @@ from humanize import naturaltime
 from yaml import load
 
 from turbot._version import __version__
+from turbot.data import Data
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
 
@@ -41,6 +41,7 @@ matplotlib.use("Agg")
 
 PACKAGE_ROOT = Path(dirname(realpath(__file__)))
 RUNTIME_ROOT = Path(".")
+DEFAULT_DB_DIR = RUNTIME_ROOT / "db"
 
 # application configuration files
 DEFAULT_CONFIG_TOKEN = RUNTIME_ROOT / "token.txt"
@@ -53,15 +54,6 @@ FOSSILS_DATA_FILE = DATA_DIR / "fossils.txt"
 FISH_DATA_FILE = DATA_DIR / "fish.csv"
 BUGS_DATA_FILE = DATA_DIR / "bugs.csv"
 ART_DATA_FILE = DATA_DIR / "art.csv"
-
-# persisted user and application data
-DB_DIR = RUNTIME_ROOT / "db"
-DEFAULT_DB_FOSSILS = DB_DIR / "fossils.csv"
-DEFAULT_DB_PRICES = DB_DIR / "prices.csv"
-DEFAULT_DB_ART = DB_DIR / "art.csv"
-DEFAULT_DB_USERS = DB_DIR / "users.csv"
-DEFAULT_DB_FISH = DB_DIR / "fish.csv"
-DEFAULT_DB_BUGS = DB_DIR / "bugs.csv"
 
 # temporary application files
 TMP_DIR = RUNTIME_ROOT / "tmp"
@@ -304,36 +296,16 @@ class Turbot(discord.Client):
     """Discord turnip bot"""
 
     def __init__(
-        self,
-        token="",
-        channels=[],
-        prices_file=DEFAULT_DB_PRICES,
-        art_file=DEFAULT_DB_ART,
-        fish_file=DEFAULT_DB_FISH,
-        bugs_file=DEFAULT_DB_BUGS,
-        fossils_file=DEFAULT_DB_FOSSILS,
-        users_file=DEFAULT_DB_USERS,
-        log_level=None,
+        self, token="", channels=[], db_dir=DEFAULT_DB_DIR, log_level=None,
     ):
         if log_level:  # pragma: no cover
             logging.basicConfig(level=log_level)
         super().__init__()
         self.token = token
         self.channels = channels
-        self.prices_file = prices_file
-        self.art_file = art_file
-        self.fish_file = fish_file
-        self.bugs_file = bugs_file
-        self.fossils_file = fossils_file
-        self.users_file = users_file
-        self.base_prophet_url = "https://turnipprophet.io/?prices="  # TODO: configurable?
-        self._prices_data = None  # do not use directly, load it from load_prices()
-        self._art_data = None  # do not use directly, load it from load_art()
-        self._fish_data = None  # do not use directly, load it from load_fish()
-        self._bugs_data = None  # do not use directly, load it from load_bugs()
-        self._fossils_data = None  # do not use directly, load it from load_fossils()
-        self._users_data = None  # do not use directly, load it from load_users()
+        self.base_prophet_url = "https://turnipprophet.io/?prices="
         self._last_backup_filename = None
+        self.data = Data(db_dir=db_dir)
 
         # build a list of commands supported by this bot by fetching @command methods
         members = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -348,11 +320,6 @@ class Turbot(discord.Client):
     def run(self):  # pragma: no cover
         super().run(self.token)
 
-    def save_prices(self, data):
-        """Saves the given prices data to csv file."""
-        data.to_csv(self.prices_file, index=False)  # persist to disk
-        self._prices_data = data  # in-memory optimization
-
     def last_backup_filename(self):
         """Return the name of the last known backup file for prices or None if unknown."""
         return self._last_backup_filename
@@ -362,106 +329,9 @@ class Turbot(discord.Client):
         filename = datetime.now(pytz.utc).strftime(
             "prices-%Y-%m-%d.csv"  # TODO: configurable?
         )
-        filepath = Path(self.prices_file).parent / filename
+        filepath = Path(self.data.file("prices")).parent / filename
         self._last_backup_filename = filepath
         data.to_csv(filepath, index=False)
-
-    def load_prices(self):
-        """Loads up and returns the application price data as a DataFrame."""
-        if self._prices_data is not None:
-            return self._prices_data
-
-        cols = ["author", "kind", "price", "timestamp"]
-        dtypes = ["int64", "object", "int64", "datetime64[ns, UTC]"]
-        if Path(self.prices_file).exists():
-            self._prices_data = pd.read_csv(
-                self.prices_file, names=cols, parse_dates=True, skiprows=1
-            )
-        else:
-            self._prices_data = pd.read_csv(
-                StringIO(""), names=cols, dtype=dict(zip(cols, dtypes))
-            )
-        self._prices_data = self._prices_data.astype(dict(zip(cols, dtypes)))
-        return self._prices_data
-
-    def save_users(self, data):
-        """Saves the given users data to csv file."""
-        data.to_csv(self.users_file, index=False)  # persist to disk
-        self._users_data = data  # in-memory optimization
-
-    def load_users(self):
-        """Returns a DataFrame of user data or creates an empty one."""
-        if self._users_data is not None:
-            self._users_data = self._users_data.fillna("")
-            return self._users_data
-
-        cols = ["author", *USER_PREFRENCES]
-        dtypes = ["int64", "str", "str", "str", "str", "str", "str", "str"]
-        if Path(self.users_file).exists():
-            self._users_data = pd.read_csv(self.users_file, names=cols, skiprows=1)
-        else:
-            self._users_data = pd.read_csv(
-                StringIO(""), names=cols, dtype=dict(zip(cols, dtypes))
-            )
-        self._users_data = self._users_data.fillna("")
-        self._users_data = self._users_data.astype(dict(zip(cols, dtypes)))
-        return self._users_data
-
-    def save_art(self, data):
-        """Saves the given art data to csv file."""
-        data.to_csv(self.art_file, index=False)  # persist to disk
-        self._art_data = data  # in-memory optimization
-
-    def load_art(self):
-        """Returns a DataFrame of art data or creates an empty one."""
-        if self._art_data is None:
-            try:
-                self._art_data = pd.read_csv(self.art_file)
-            except FileNotFoundError:
-                self._art_data = pd.DataFrame(columns=["author", "name"])
-        return self._art_data
-
-    def save_fish(self, data):
-        """Saves the given fish data to csv file."""
-        data.to_csv(self.fish_file, index=False)  # persist to disk
-        self._fish_data = data  # in-memory optimization
-
-    def load_fish(self):
-        """Returns a DataFrame of fish data or creates an empty one."""
-        if self._fish_data is None:
-            try:
-                self._fish_data = pd.read_csv(self.fish_file)
-            except FileNotFoundError:
-                self._fish_data = pd.DataFrame(columns=["author", "name"])
-        return self._fish_data
-
-    def save_bugs(self, data):
-        """Saves the given bugs data to csv file."""
-        data.to_csv(self.bugs_file, index=False)  # persist to disk
-        self._bugs_data = data  # in-memory optimization
-
-    def load_bugs(self):
-        """Returns a DataFrame of bugs data or creates an empty one."""
-        if self._bugs_data is None:
-            try:
-                self._bugs_data = pd.read_csv(self.bugs_file)
-            except FileNotFoundError:
-                self._bugs_data = pd.DataFrame(columns=["author", "name"])
-        return self._bugs_data
-
-    def save_fossils(self, data):
-        """Saves the given fossils data to csv file."""
-        data.to_csv(self.fossils_file, index=False)  # persist to disk
-        self._fossils_data = data  # in-memory optimization
-
-    def load_fossils(self):
-        """Returns a DataFrame of fossils data or creates an empty one."""
-        if self._fossils_data is None:
-            try:
-                self._fossils_data = pd.read_csv(self.fossils_file)
-            except FileNotFoundError:
-                self._fossils_data = pd.DataFrame(columns=["author", "name"])
-        return self._fossils_data
 
     def _get_island_data(self, user):
         timeline = self.get_user_timeline(user.id)
@@ -538,7 +408,7 @@ class Turbot(discord.Client):
 
         ax.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
 
-        priceList = self.load_prices()
+        priceList = self.data.prices
         legendElems = []
 
         found_at_least_one_user = False
@@ -592,16 +462,14 @@ class Turbot(discord.Client):
         """Adds a price to the prices data file for the given author and kind."""
         at = datetime.now(pytz.utc) if not at else at
         at = at.astimezone(pytz.utc)  # always store data in UTC
-        prices = self.load_prices()
-        prices = prices.append(
-            pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]]),
-            ignore_index=True,
-        )
-        self.save_prices(prices)
+        prices = self.data.prices
+        row = pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]])
+        prices = prices.append(row, ignore_index=True)
+        self.data.commit(prices)
 
     def get_last_price(self, user_id):
         """Returns the last sell price for the given user id."""
-        prices = self.load_prices()
+        prices = self.data.prices
         last = (
             prices[(prices.author == user_id) & (prices.kind == "sell")]
             .sort_values(by=["timestamp"])
@@ -611,7 +479,7 @@ class Turbot(discord.Client):
         return last.iloc[0] if last.any() else None
 
     def get_user_prefs(self, user_id):
-        users = self.load_users()
+        users = self.data.users
         row = users[users.author == user_id].tail(1)
         if row.empty:
             return {}
@@ -622,13 +490,14 @@ class Turbot(discord.Client):
             if not data[column]:
                 continue
             if column == "timezone":
-                prefs[column] = pytz.timezone(data[column])
+                butt = data[column]
+                prefs[column] = pytz.timezone(butt)
             else:
                 prefs[column] = data[column]
         return prefs
 
     def get_user_timeline(self, user_id):
-        prices = self.load_prices()
+        prices = self.data.prices
         past = datetime.now(pytz.utc) - timedelta(days=12)
         yours = prices[(prices.author == user_id) & (prices.timestamp > past)]
         yours = yours.sort_values(by=["timestamp"])
@@ -687,17 +556,14 @@ class Turbot(discord.Client):
             logging.warning(f"can't convert tz on {dt} for user {author_id}")
             return dt
 
-    def save_user_pref(self, author, pref, value):
-        users = self.load_users()
+    def set_user_pref(self, author, pref, value):
+        users = self.data.users
         row = users[users.author == author.id].tail(1)
         if row.empty:
-            data = pd.DataFrame(columns=users.columns)
-            data["author"] = [author.id]
-            data[pref] = [value]
-            users = users.append(data, ignore_index=True)
+            users = users.append({"author": author.id, pref: value}, ignore_index=True)
         else:
             users.at[row.index, pref] = value
-        self.save_users(users)
+        self.data.commit(users)
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -953,13 +819,13 @@ class Turbot(discord.Client):
             return s("not_admin"), None
 
         self.generate_graph(channel, None, LASTWEEKCMD_FILE)
-        prices = self.load_prices()
+        prices = self.data.prices
         self.backup_prices(prices)
 
         buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
         idx = buys.groupby(by="author")["timestamp"].idxmax()
         prices = buys.loc[idx]
-        self.save_prices(prices)
+        self.data.commit(prices)
         return s("reset"), None
 
     @command
@@ -992,7 +858,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        prices = self.load_prices()
+        prices = self.data.prices
         yours = prices[prices.author == target_id]
         lines = [s("history_header", name=target_name)]
         for _, row in yours.iterrows():
@@ -1014,9 +880,9 @@ class Turbot(discord.Client):
         """
         target = author.id
         target_name = discord_user_name(channel, target)
-        prices = self.load_prices()
+        prices = self.data.prices
         prices = prices.drop(prices[prices.author == author.id].tail(1).index)
-        self.save_prices(prices)
+        self.data.commit(prices)
         return s("oops", name=target_name), None
 
     @command
@@ -1025,13 +891,13 @@ class Turbot(discord.Client):
         Clears all of your own historical turnip prices.
         """
         user_id = discord_user_id(channel, str(author))
-        prices = self.load_prices()
+        prices = self.data.prices
         prices = prices[prices.author != user_id]
-        self.save_prices(prices)
+        self.data.commit(prices)
         return s("clear", name=author), None
 
     def _best(self, channel, author, kind):
-        prices = self.load_prices()
+        prices = self.data.prices
         past = datetime.now(pytz.utc) - timedelta(hours=12)
         sells = prices[(prices.kind == kind) & (prices.timestamp > past)]
         idx = sells.groupby(by="author").price.transform(max) == sells.price
@@ -1082,73 +948,29 @@ class Turbot(discord.Client):
 
         lines = []
 
-        if valid_fossils:
-            fossils = self.load_fossils()
-            yours = fossils[fossils.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_fossils)].name.values.tolist()
-            new_names = list(set(valid_fossils) - set(dupes))
+        def add_lines(kind, valid_items, fullset):
+            if not valid_items:
+                return
+            store = getattr(self.data, kind)
+            yours = store[store.author == author.id]
+            dupes = yours.loc[yours.name.isin(valid_items)].name.values.tolist()
+            new_names = list(set(valid_items) - set(dupes))
             new_data = [[author.id, name] for name in new_names]
-            new_fossils = pd.DataFrame(columns=fossils.columns, data=new_data)
-            fossils = fossils.append(new_fossils, ignore_index=True)
-            yours = fossils[fossils.author == author.id]  # re-fetch for congrats
-            self.save_fossils(fossils)
+            new_fossils = pd.DataFrame(columns=store.columns, data=new_data)
+            store = store.append(new_fossils, ignore_index=True)
+            yours = store[store.author == author.id]  # re-fetch for congrats
+            self.data.commit(store)
             if new_names:
-                lines.append(s("collect_fossil_new", items=", ".join(sorted(new_names))))
+                lines.append(s(f"collect_{kind}_new", items=", ".join(sorted(new_names))))
             if dupes:
-                lines.append(s("collect_fossil_dupe", items=", ".join(sorted(dupes))))
-            if len(FOSSILS_SET) == len(yours.index):
-                lines.append(s("congrats_all_fossils"))
+                lines.append(s(f"collect_{kind}_dupe", items=", ".join(sorted(dupes))))
+            if len(fullset) == len(yours.index):
+                lines.append(s(f"congrats_all_{kind}"))
 
-        if valid_bugs:
-            bugs = self.load_bugs()
-            yours = bugs[bugs.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_bugs)].name.values.tolist()
-            new_names = list(set(valid_bugs) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_bugs = pd.DataFrame(columns=bugs.columns, data=new_data)
-            bugs = bugs.append(new_bugs, ignore_index=True)
-            yours = bugs[bugs.author == author.id]  # re-fetch for congrats
-            self.save_bugs(bugs)
-            if new_names:
-                lines.append(s("collect_bugs_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_bugs_dupe", items=", ".join(sorted(dupes))))
-            if len(BUGS_SET) == len(yours.index):
-                lines.append(s("congrats_all_bugs"))
-
-        if valid_fish:
-            fish = self.load_fish()
-            yours = fish[fish.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_fish)].name.values.tolist()
-            new_names = list(set(valid_fish) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_fish = pd.DataFrame(columns=fish.columns, data=new_data)
-            fish = fish.append(new_fish, ignore_index=True)
-            yours = fish[fish.author == author.id]  # re-fetch for congrats
-            self.save_fish(fish)
-            if new_names:
-                lines.append(s("collect_fish_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_fish_dupe", items=", ".join(sorted(dupes))))
-            if len(FISH_SET) == len(yours.index):
-                lines.append(s("congrats_all_fish"))
-
-        if valid_art:
-            art = self.load_art()
-            yours = art[art.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_art)].name.values.tolist()
-            new_names = list(set(valid_art) - set(dupes))
-            new_data = [[author.id, name] for name in new_names]
-            new_art = pd.DataFrame(columns=art.columns, data=new_data)
-            art = art.append(new_art, ignore_index=True)
-            yours = art[art.author == author.id]  # re-fetch for congrats
-            self.save_art(art)
-            if new_names:
-                lines.append(s("collect_art_new", items=", ".join(sorted(new_names))))
-            if dupes:
-                lines.append(s("collect_art_dupe", items=", ".join(sorted(dupes))))
-            if len(ART_SET) == len(yours.index):
-                lines.append(s("congrats_all_art"))
+        add_lines("fossils", valid_fossils, FOSSILS_SET)
+        add_lines("bugs", valid_bugs, BUGS_SET)
+        add_lines("fish", valid_fish, FISH_SET)
+        add_lines("art", valid_art, ART_SET)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1174,71 +996,25 @@ class Turbot(discord.Client):
 
         lines = []
 
-        if valid_fossils:
-            fossils = self.load_fossils()
-            yours = fossils[fossils.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_fossils)]
+        def add_lines(kind, valid_items):
+            store = getattr(self.data, kind)
+            yours = store[store.author == author.id]
+            previously_collected = yours.loc[yours.name.isin(valid_items)]
             deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_fossils - deleted
-            fossils = fossils.drop(previously_collected.index)
-            self.save_fossils(fossils)
+            didnt_have = valid_items - deleted
+            store = store.drop(previously_collected.index)
+            self.data.commit(store)
             if deleted:
-                lines.append(
-                    s("uncollect_fossil_deleted", items=", ".join(sorted(deleted)))
-                )
+                items_str = ", ".join(sorted(deleted))
+                lines.append(s(f"uncollect_{kind}_deleted", items=items_str))
             if didnt_have:
-                lines.append(
-                    s("uncollect_fossil_already", items=", ".join(sorted(didnt_have)))
-                )
+                items_str = ", ".join(sorted(didnt_have))
+                lines.append(s(f"uncollect_{kind}_already", items=items_str))
 
-        if valid_bugs:
-            bugs = self.load_bugs()
-            yours = bugs[bugs.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_bugs)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_bugs - deleted
-            bugs = bugs.drop(previously_collected.index)
-            self.save_bugs(bugs)
-            if deleted:
-                lines.append(
-                    s("uncollect_bugs_deleted", items=", ".join(sorted(deleted)))
-                )
-            if didnt_have:
-                lines.append(
-                    s("uncollect_bugs_already", items=", ".join(sorted(didnt_have)))
-                )
-
-        if valid_fish:
-            fish = self.load_fish()
-            yours = fish[fish.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_fish)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_fish - deleted
-            fish = fish.drop(previously_collected.index)
-            self.save_fish(fish)
-            if deleted:
-                lines.append(
-                    s("uncollect_fish_deleted", items=", ".join(sorted(deleted)))
-                )
-            if didnt_have:
-                lines.append(
-                    s("uncollect_fish_already", items=", ".join(sorted(didnt_have)))
-                )
-
-        if valid_art:
-            art = self.load_art()
-            yours = art[art.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_art)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_art - deleted
-            art = art.drop(previously_collected.index)
-            self.save_art(art)
-            if deleted:
-                lines.append(s("uncollect_art_deleted", items=", ".join(sorted(deleted))))
-            if didnt_have:
-                lines.append(
-                    s("uncollect_art_already", items=", ".join(sorted(didnt_have)))
-                )
+        add_lines("fossils", valid_fossils)
+        add_lines("bugs", valid_bugs)
+        add_lines("fish", valid_fish)
+        add_lines("art", valid_art)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1263,52 +1039,29 @@ class Turbot(discord.Client):
         valid_art = items.intersection(ART_SET)
         invalid = items.difference(COLLECTABLE_SET)
 
-        fossils = self.load_fossils()
-        fossil_users = fossils.author.unique()
-        fossil_results = defaultdict(list)
-        for collected_fossil in valid_fossils:
-            havers = fossils[fossils.name == collected_fossil].author.unique()
-            needers = np.setdiff1d(fossil_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                fossil_results[name].append(collected_fossil)
+        def get_results(kind, valid_items):
+            store = getattr(self.data, kind)
+            users = store.author.unique()
+            results = defaultdict(list)
+            for collected_item in valid_items:
+                havers = store[store.name == collected_item].author.unique()
+                needers = np.setdiff1d(users, havers).tolist()
+                for needer in needers:
+                    name = discord_user_from_id(channel, needer)
+                    results[name].append(collected_item)
+            return results
 
-        bugs = self.load_bugs()
-        bugs_users = bugs.author.unique()
-        bugs_results = defaultdict(list)
-        for collected_bugs in valid_bugs:
-            havers = bugs[bugs.name == collected_bugs].author.unique()
-            needers = np.setdiff1d(bugs_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                bugs_results[name].append(collected_bugs)
+        fossils_results = get_results("fossils", valid_fossils)
+        bugs_results = get_results("bugs", valid_bugs)
+        fish_results = get_results("fish", valid_fish)
+        art_results = get_results("art", valid_art)
 
-        fish = self.load_fish()
-        fish_users = fish.author.unique()
-        fish_results = defaultdict(list)
-        for collected_fish in valid_fish:
-            havers = fish[fish.name == collected_fish].author.unique()
-            needers = np.setdiff1d(fish_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                fish_results[name].append(collected_fish)
-
-        art = self.load_art()
-        art_users = art.author.unique()
-        art_results = defaultdict(list)
-        for collected_art in valid_art:
-            havers = art[art.name == collected_art].author.unique()
-            needers = np.setdiff1d(art_users, havers).tolist()
-            for needer in needers:
-                name = discord_user_from_id(channel, needer)
-                art_results[name].append(collected_art)
-
-        if not fossil_results and not art_results and not invalid:
+        if not fossils_results and not art_results and not invalid:
             return s("search_all_not_needed"), None
 
         searched = valid_fossils | valid_bugs | valid_fish | valid_art
         needed = set()
-        for items in fossil_results.values():
+        for items in fossils_results.values():
             needed.update(items)
         for items in fish_results.values():
             needed.update(items)
@@ -1319,7 +1072,7 @@ class Turbot(discord.Client):
         not_needed = searched - needed
 
         lines = []
-        for name, items in fossil_results.items():
+        for name, items in fossils_results.items():
             items_str = ", ".join(sorted(items))
             lines.append(s("search_fossil_row", name=name, items=items_str))
         for name, items in fish_results.items():
@@ -1357,74 +1110,27 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = self.load_fossils()
-        your_fossils = fossils[fossils.author == target_id]
-        collected_fossils = set(your_fossils.name.unique())
-        remaining_fossils = FOSSILS_SET - collected_fossils
-
-        fish = self.load_fish()
-        your_fish = fish[fish.author == target_id]
-        collected_fish = set(your_fish.name.unique())
-        remaining_fish = FISH_SET - collected_fish
-
-        bugs = self.load_bugs()
-        your_bugs = bugs[bugs.author == target_id]
-        collected_bugs = set(your_bugs.name.unique())
-        remaining_bugs = BUGS_SET - collected_bugs
-
-        art = self.load_art()
-        your_art = art[art.author == target_id]
-        collected_art = set(your_art.name.unique())
-        remaining_art = ART_SET - collected_art
-
         lines = []
 
-        if remaining_fossils:
-            lines.append(
-                s(
-                    "uncollected_fossils_count",
-                    count=len(remaining_fossils),
-                    name=target_name,
-                )
-            )
-            lines.append(
-                s(
-                    "uncollected_fossils_remaining",
-                    items=", ".join(sorted(remaining_fossils)),
-                )
-            )
-        else:
-            lines.append(s("congrats_all_fossils"))
+        def add_lines(kind, fullset):
+            store = getattr(self.data, kind)
+            your_items = store[store.author == target_id]
+            collected_items = set(your_items.name.unique())
+            remaining_items = fullset - collected_items
+            if remaining_items:
+                count_key = f"uncollected_{kind}_count"
+                remaining_key = f"uncollected_{kind}_remaining"
+                count = len(remaining_items)
+                items_str = ", ".join(sorted(remaining_items))
+                lines.append(s(count_key, count=count, name=target_name))
+                lines.append(s(remaining_key, items=items_str))
+            else:
+                lines.append(s(f"congrats_all_{kind}"))
 
-        if remaining_fish:
-            lines.append(
-                s("uncollected_fish_count", count=len(remaining_fish), name=target_name)
-            )
-            lines.append(
-                s("uncollected_fish_remaining", items=", ".join(sorted(remaining_fish)))
-            )
-        else:
-            lines.append(s("congrats_all_fish"))
-
-        if remaining_bugs:
-            lines.append(
-                s("uncollected_bugs_count", count=len(remaining_bugs), name=target_name)
-            )
-            lines.append(
-                s("uncollected_bugs_remaining", items=", ".join(sorted(remaining_bugs)))
-            )
-        else:
-            lines.append(s("congrats_all_bugs"))
-
-        if remaining_art:
-            lines.append(
-                s("uncollected_art_count", count=len(remaining_art), name=target_name)
-            )
-            lines.append(
-                s("uncollected_art_remaining", items=", ".join(sorted(remaining_art)))
-            )
-        else:
-            lines.append(s("congrats_all_art"))
+        add_lines("fossils", FOSSILS_SET)
+        add_lines("bugs", BUGS_SET)
+        add_lines("fish", FISH_SET)
+        add_lines("art", ART_SET)
 
         return "\n".join(lines), None
 
@@ -1433,7 +1139,7 @@ class Turbot(discord.Client):
         """
         Lists all the needed fossils for all the channel members.
         """
-        fossils = self.load_fossils()
+        fossils = self.data.fossils
         authors = [member.id for member in channel.members if member.id != self.user.id]
         total = pd.DataFrame(
             list(product(authors, FOSSILS_SET)), columns=["author", "name"]
@@ -1468,78 +1174,41 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
-        fossils = self.load_fossils()
-        your_fossils = fossils[fossils.author == target_id]
-        collected_fossils = set(your_fossils.name.unique())
-        all_fossils = len(collected_fossils) == len(FOSSILS_SET)
+        def get_collection(kind):
+            store = getattr(self.data, kind)
+            your_items = store[store.author == target_id]
+            return set(your_items.name.unique())
 
-        fish = self.load_fish()
-        your_fish = fish[fish.author == target_id]
-        collected_fish = set(your_fish.name.unique())
-        all_fish = len(collected_fish) == len(FISH_SET)
+        collected_items = {
+            "fossils": get_collection("fossils"),
+            "bugs": get_collection("bugs"),
+            "fish": get_collection("fish"),
+            "art": get_collection("art"),
+        }
 
-        bugs = self.load_bugs()
-        your_bugs = bugs[bugs.author == target_id]
-        collected_bugs = set(your_bugs.name.unique())
-        all_bugs = len(collected_bugs) == len(BUGS_SET)
-
-        art = self.load_art()
-        your_art = art[art.author == target_id]
-        collected_art = set(your_art.name.unique())
-        all_art = len(collected_art) == len(ART_SET)
+        all_items = {
+            "fossils": len(collected_items["fossils"]) == len(FOSSILS_SET),
+            "fish": len(collected_items["fish"]) == len(FISH_SET),
+            "bugs": len(collected_items["bugs"]) == len(BUGS_SET),
+            "art": len(collected_items["art"]) == len(ART_SET),
+        }
 
         lines = []
-        if any([all_fossils, all_fish, all_bugs, all_art]):
-            if all_fossils:
-                lines.append(s("congrats_all_fossils"))
-            if all_fish:
-                lines.append(s("congrats_all_fish"))
-            if all_bugs:
-                lines.append(s("congrats_all_bugs"))
-            if all_art:
-                lines.append(s("congrats_all_art"))
-            if all([all_fossils, all_fish, all_bugs, all_art]):
+
+        if any(flag for flag in all_items.values()):
+            for kind, flag in all_items.items():
+                if flag:
+                    lines.append(s(f"congrats_all_{kind}"))
+            if all(flag for flag in all_items.values()):
                 return "\n".join(lines), None
 
-        if collected_art and not all_art:
-            lines.append(
-                s(
-                    "collected_art",
-                    name=target_name,
-                    count=len(collected_art),
-                    items=", ".join(sorted(collected_art)),
-                )
-            )
+        for kind, items in collected_items.items():
+            if items and not all_items[kind]:
+                key = f"collected_{kind}"
+                count = len(items)
+                items_str = ", ".join(sorted(items))
+                lines.append(s(key, name=target_name, count=count, items=items_str))
 
-        if collected_fish and not all_fish:
-            lines.append(
-                s(
-                    "collected_fish",
-                    name=target_name,
-                    count=len(collected_fish),
-                    items=", ".join(sorted(collected_fish)),
-                )
-            )
-
-        if collected_bugs and not all_bugs:
-            lines.append(
-                s(
-                    "collected_bugs",
-                    name=target_name,
-                    count=len(collected_bugs),
-                    items=", ".join(sorted(collected_bugs)),
-                )
-            )
-
-        if collected_fossils and not all_fossils:
-            lines.append(
-                s(
-                    "collected_fossils",
-                    name=target_name,
-                    count=len(collected_fossils),
-                    items=", ".join(sorted(collected_fossils)),
-                )
-            )
         return "\n".join(lines), None
 
     @command
@@ -1583,7 +1252,7 @@ class Turbot(discord.Client):
         if not validated_value:
             return s(f"{pref}_invalid"), None
 
-        self.save_user_pref(author, pref, validated_value)
+        self.set_user_pref(author, pref, validated_value)
         return s("pref", pref=pref, name=author), None
 
     @command
@@ -1608,40 +1277,22 @@ class Turbot(discord.Client):
                 invalid.append(user)
 
         lines = []
+
+        def add_valid_lines(kind, fullset):
+            lines.append(s(f"count_{kind}_valid_header"))
+            store = getattr(self.data, kind)
+            for user_name, user_id in sorted(valid):
+                yours = store[store.author == user_id]
+                collected = set(yours.name.unique())
+                remaining = fullset - collected
+                count = len(remaining)
+                lines.append(s(f"count_{kind}_valid", name=user_name, count=count))
+
         if valid:
-            lines.append(s("count_fossil_valid_header"))
-            fossils = self.load_fossils()
-            for user_name, user_id in sorted(valid):
-                yours = fossils[fossils.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = FOSSILS_SET - collected
-                lines.append(
-                    s("count_fossil_valid", name=user_name, count=len(remaining))
-                )
-
-            lines.append(s("count_fish_valid_header"))
-            fish = self.load_fish()
-            for user_name, user_id in sorted(valid):
-                yours = fish[fish.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = FISH_SET - collected
-                lines.append(s("count_fish_valid", name=user_name, count=len(remaining)))
-
-            lines.append(s("count_bugs_valid_header"))
-            bugs = self.load_bugs()
-            for user_name, user_id in sorted(valid):
-                yours = bugs[bugs.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = BUGS_SET - collected
-                lines.append(s("count_bugs_valid", name=user_name, count=len(remaining)))
-
-            lines.append(s("count_art_valid_header"))
-            art = self.load_art()
-            for user_name, user_id in sorted(valid):
-                yours = art[art.author == user_id]
-                collected = set(yours.name.unique())
-                remaining = ART_SET - collected
-                lines.append(s("count_art_valid", name=user_name, count=len(remaining)))
+            add_valid_lines("fossils", FOSSILS_SET)
+            add_valid_lines("bugs", BUGS_SET)
+            add_valid_lines("fish", FISH_SET)
+            add_valid_lines("art", ART_SET)
 
         if invalid:
             lines.append(s("count_invalid_header"))
@@ -1787,10 +1438,10 @@ class Turbot(discord.Client):
                 return s(f"{kind}_none_found", search=user_input)
         else:
             if kind == "fish":
-                caught = self.load_fish()
+                caught = self.data.fish
                 caught = caught[caught.author == author.id]
             else:  # kind == "bugs"
-                caught = self.load_bugs()
+                caught = self.data.bugs
                 caught = caught[caught.author == author.id]
 
             if caught is not None and not caught.empty:
@@ -1865,10 +1516,8 @@ class Turbot(discord.Client):
         Tells you what fish are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        return (
-            self._creatures(author=author, params=params, kind="fish", source=FISH),
-            None,
-        )
+        found = self._creatures(author=author, params=params, kind="fish", source=FISH)
+        return found, None
 
     @command
     def bugs(self, channel, author, params):
@@ -1876,35 +1525,21 @@ class Turbot(discord.Client):
         Tells you what bugs are available now in your hemisphere.
         | [name|leaving|arriving]
         """
-        return (
-            self._creatures(author=author, params=params, kind="bugs", source=BUGS),
-            None,
-        )
+        found = self._creatures(author=author, params=params, kind="bugs", source=BUGS)
+        return found, None
 
     @command
     def new(self, channel, author, params):
         """
         Tells you what new things available in your hemisphere right now.
         """
-        return (
-            [
-                *self._creatures(
-                    author=author,
-                    params=["arriving"],
-                    kind="bugs",
-                    source=BUGS,
-                    force_text=True,
-                ),
-                *self._creatures(
-                    author=author,
-                    params=["arriving"],
-                    kind="fish",
-                    source=FISH,
-                    force_text=True,
-                ),
-            ],
-            None,
+        bugs = self._creatures(
+            author=author, params=["arriving"], kind="bugs", source=BUGS, force_text=True
         )
+        fish = self._creatures(
+            author=author, params=["arriving"], kind="fish", source=FISH, force_text=True
+        )
+        return [*bugs, *fish], None
 
     def _info_embed(self, user):
         prefs = self.get_user_prefs(user.id)
@@ -1957,8 +1592,7 @@ class Turbot(discord.Client):
 
         query = " ".join(params).lower()  # allow spaces in names
 
-        users = self.load_users()
-        for _, row in users.iterrows():
+        for _, row in self.data.users.iterrows():
             user_id = int(row["author"])
             user_name = discord_user_name(channel, user_id)
             if not user_name:
@@ -2059,24 +1693,7 @@ def get_channels(channels_file):  # pragma: no cover
     help="read authorized channel names from this file",
 )
 @click.option(
-    "--prices-file", default=DEFAULT_DB_PRICES, help="read price data from this file",
-)
-@click.option(
-    "--art-file", default=DEFAULT_DB_ART, help="read art data from this file",
-)
-@click.option(
-    "--fish-file", default=DEFAULT_DB_FISH, help="read fish data from this file",
-)
-@click.option(
-    "--bugs-file", default=DEFAULT_DB_BUGS, help="read bugs data from this file",
-)
-@click.option(
-    "--fossils-file", default=DEFAULT_DB_FOSSILS, help="read fossil data from this file",
-)
-@click.option(
-    "--users-file",
-    default=DEFAULT_DB_USERS,
-    help="read users preferences data from this file",
+    "--db-dir", default=DEFAULT_DB_DIR, help="use this directory for user db files"
 )
 @click.version_option(version=__version__)
 @click.option(
@@ -2086,18 +1703,7 @@ def get_channels(channels_file):  # pragma: no cover
     help="Development mode, automatically reload bot when source changes",
 )
 def main(
-    log_level,
-    verbose,
-    bot_token_file,
-    channel,
-    auth_channels_file,
-    prices_file,
-    art_file,
-    fish_file,
-    bugs_file,
-    fossils_file,
-    users_file,
-    dev,
+    log_level, verbose, bot_token_file, channel, auth_channels_file, db_dir, dev,
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
@@ -2111,18 +1717,13 @@ def main(
         )
 
     # ensure transient application directories exist
-    DB_DIR.mkdir(exist_ok=True)
+    db_dir.mkdir(exist_ok=True)
     TMP_DIR.mkdir(exist_ok=True)
 
     Turbot(
         token=get_token(bot_token_file),
         channels=auth_channels,
-        prices_file=prices_file,
-        art_file=art_file,
-        fish_file=fish_file,
-        bugs_file=bugs_file,
-        fossils_file=fossils_file,
-        users_file=users_file,
+        db_dir=db_dir,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
     ).run()
 
