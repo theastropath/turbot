@@ -2,17 +2,11 @@ __**Turbot Help!**__
 > **!about**
 >    Get information about Turbot.
 > 
-> **!allfossils**
->    Shows all possible fossils that you can donate to the museum.
-> 
 > **!art [List of art pieces]**
 >    Get info about pieces of art that are available 
 > 
-> **!bestbuy**
->    Finds the best (and most recent) buying prices logged in the last 12 hours.
-> 
-> **!bestsell**
->    Finds the best (and most recent) selling prices logged in the last 12 hours.
+> **!best [buy, sell]**
+>    Finds the best, most recent, buy or sell price currently available. The default is to look for the best sell.
 > 
 > **!bugs [name, leaving, arriving]**
 >    Tells you what bugs are available now in your hemisphere.
@@ -50,8 +44,8 @@ __**Turbot Help!**__
 > **!lastweek**
 >    Displays the final graph from the last week before the data was reset.
 > 
-> **!neededfossils**
->    Lists all the needed fossils for all the channel members.
+> **!needed <fossils, bugs, fish, art>**
+>    Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
 > 
 > **!new**
 >    Tells you what new things available in your hemisphere right now.
@@ -60,3 +54,4 @@ __**Turbot Help!**__
 >    Remove your last logged turnip price.
 > 
 > **!predict [user]**
+>    Get a link to a prediction calculator for a price history. 

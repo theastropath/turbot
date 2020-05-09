@@ -896,38 +896,28 @@ class Turbot(discord.Client):
         self.data.commit(prices)
         return s("clear", name=author), None
 
-    def _best(self, channel, author, kind):
+    @command
+    def best(self, channel, author, params):
+        """
+        Finds the best, most recent, buy or sell price currently available.
+        The default is to look for the best sell.
+        | [buy|sell]
+        """
+        kind = params[0].lower() if params else "sell"
+        if kind not in ["sell", "buy"]:
+            return s("best_invalid_param"), None
+
         prices = self.data.prices
         past = datetime.now(pytz.utc) - timedelta(hours=12)
         sells = prices[(prices.kind == kind) & (prices.timestamp > past)]
         idx = sells.groupby(by="author").price.transform(max) == sells.price
         bests = sells[idx].sort_values(by="price", ascending=kind == "buy")
-        lines = [s(f"best{kind}_header")]
+        lines = [s(f"best_{kind}_header")]
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
-            lines.append(
-                s(
-                    "best",
-                    name=name,
-                    price=row.price,
-                    timestamp=h(self.to_usertime(row.author, row.timestamp)),
-                )
-            )
+            timestamp = h(self.to_usertime(row.author, row.timestamp))
+            lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
         return "\n".join(lines), None
-
-    @command
-    def bestbuy(self, channel, author, params):
-        """
-        Finds the best (and most recent) buying prices logged in the last 12 hours.
-        """
-        return self._best(channel, author, "buy")
-
-    @command
-    def bestsell(self, channel, author, params):
-        """
-        Finds the best (and most recent) selling prices logged in the last 12 hours.
-        """
-        return self._best(channel, author, "sell")
 
     @command
     def collect(self, channel, author, params):
@@ -1092,13 +1082,6 @@ class Turbot(discord.Client):
         return "\n".join(sorted(lines)), None
 
     @command
-    def allfossils(self, channel, author, params):
-        """
-        Shows all possible fossils that you can donate to the museum.
-        """
-        return s("allfossils", list=", ".join(sorted(FOSSILS_SET))), None
-
-    @command
     def uncollected(self, channel, author, params):
         """
         Lists all collectables that you still need to donate. If a user is provided, it
@@ -1135,31 +1118,51 @@ class Turbot(discord.Client):
         return "\n".join(lines), None
 
     @command
-    def neededfossils(self, channel, author, params):
+    def needed(self, channel, author, params):
         """
-        Lists all the needed fossils for all the channel members.
+        Lists all the needed items for all the channel members. As the only parameter
+        give the name of the kind of collectable to return.
+        | <fossils|bugs|fish|art>
         """
-        fossils = self.data.fossils
+        if not params:
+            return s("needed_no_param"), None
+
+        kind = params[0].lower()
+        if kind not in ["fossils", "bugs", "fish", "art"]:
+            return s("needed_invalid_param"), None
+
+        if kind == "fossils":
+            fullset = FOSSILS_SET
+        if kind == "bugs":
+            fullset = BUGS_SET
+        if kind == "fish":
+            fullset = FISH_SET
+        if kind == "art":
+            fullset = ART_SET
+
+        store = getattr(self.data, kind)
         authors = [member.id for member in channel.members if member.id != self.user.id]
-        total = pd.DataFrame(
-            list(product(authors, FOSSILS_SET)), columns=["author", "name"]
-        )
-        merged = total.merge(fossils, indicator=True, how="outer")
+        total = pd.DataFrame(list(product(authors, fullset)), columns=store.columns)
+        merged = total.merge(store, indicator=True, how="outer")
         needed = merged[merged["_merge"] == "left_only"]
 
+        limit = 10
         lines = []
+
         for user, df in needed.groupby(by="author"):
             name = discord_user_name(channel, user)
             items_list = sorted([row["name"] for _, row in df.iterrows()])
-            if len(items_list) == len(FOSSILS_SET):
+            if len(items_list) == len(fullset):
                 continue
-            elif len(items_list) > 10:
-                items_str = "_more than 10 fossils..._"
+            elif len(items_list) > limit:
+                items_str = s("needed_lots", limit=limit, kind=kind)
             else:
                 items_str = ", ".join(items_list)
-            lines.append(s("neededfossils", name=name, items=items_str))
+            lines.append(s(f"needed", name=name, items=items_str))
+
         if not lines:
-            return s("neededfossils_none"), None
+            return s(f"needed_none", kind=kind), None
+
         return "\n".join(sorted(lines)), None
 
     @command

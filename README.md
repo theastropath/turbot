@@ -56,8 +56,7 @@ user's preferred timezone.
 
 These commands help users buy low and sell high in the stalk market.
 
-- `!bestbuy`: Look for the best buy
-- `!bestsell`: Look for the best sell
+- `!best`: Look for the current best sell or buy
 - `!buy`: Save a buy price
 - `!clear`: Clear your price data
 - `!graph`: Graph price data
@@ -84,15 +83,14 @@ than they would on their own.
 
 These commands can also help users tell fake art from real art.
 
-- `!allfossils`: Get a list of all possible fossils
 - `!art`: Get information on an art piece
-- `!collect`: Collect fossils or art
-- `!collected`: Show collected fossils and art
-- `!count`: Count the number of collected fossils and art
-- `!neededfossils`: Get what fossils are needed by users
+- `!collect`: Make something as collected
+- `!collected`: Show the things you've collected so far
+- `!count`: Count the number of collected things you have
+- `!needed`: Find out what collectables are needed by you and others
 - `!search`: Search for someone who needs a fossil or art
-- `!uncollect`: Remove a fossil or art from your collection
-- `!uncollected`: Get fossils and art not yet collected
+- `!uncollect`: Remove something from your collection
+- `!uncollected`: Get a list of things that you haven't collected yet
 
 ---
 
