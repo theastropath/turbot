@@ -23,7 +23,7 @@ class StoreFrame(pd.DataFrame):
 class Data:
     """Persistent and in-memory store for user data."""
 
-    def __init__(self, *_, db_dir):
+    def __init__(self, *, db_dir):
         self.db_dir = db_dir
         self.config = {
             "fossils": {"columns": {"author": "int64", "name": "str"},},
