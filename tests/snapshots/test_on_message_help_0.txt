@@ -44,7 +44,7 @@ __**Turbot Help!**__
 > **!lastweek**
 >    Displays the final graph from the last week before the data was reset.
 > 
-> **!needed <fossils, bugs, fish, art>**
+> **!needed <fossils, bugs, fish, art, songs>**
 >    Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
 > 
 > **!new**

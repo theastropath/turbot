@@ -30,6 +30,7 @@ class Data:
             "art": {"columns": {"author": "int64", "name": "str"}},
             "fish": {"columns": {"author": "int64", "name": "str"}},
             "bugs": {"columns": {"author": "int64", "name": "str"}},
+            "songs": {"columns": {"author": "int64", "name": "str"}},
             "prices": {
                 "columns": {
                     "author": "int64",
