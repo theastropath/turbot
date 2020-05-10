@@ -1228,13 +1228,12 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_count_no_params(self, client, channel, lines):
-        await client.on_message(MockMessage(someone(), channel, "!count"))
-        assert channel.last_sent_response == (
-            "Please provide at least one user name to search for."
-        )
+    async def test_on_message_count_no_params(self, client, channel, snap):
+        await client.on_message(MockMessage(BUDDY, channel, f"!count"))
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
 
-    async def test_on_message_count_bad_name(self, client, channel, lines):
+    async def test_on_message_count_bad_name(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!count {PUNK.name}"))
         assert channel.last_sent_response == (
             f"__**Did not recognize the following names**__\n> {PUNK.name}"

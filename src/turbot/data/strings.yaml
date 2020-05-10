@@ -96,7 +96,6 @@ count_fossils_valid: '> **$name** has $count fossils remaining.'
 count_fossils_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
 count_invalid_header: __**Did not recognize the following names**__
-count_no_params: Please provide at least one user name to search for.
 count_songs_valid: '> **$name** has $count songs remaining.'
 count_songs_valid_header: __**Songs Count**__
 creator_invalid: Your Animal Crossing creator code should be 12 numbers.
