@@ -3233,7 +3233,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
-            f"__**3 songs donated by {DUDE}**__\n"
+            f"__**3 songs collected by {DUDE}**__\n"
             ">>> k.k. bazaar, k.k. groove, k.k. safari"
         )
 
@@ -3260,7 +3260,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
-            f"__**3 songs donated by {GUY}**__\n"
+            f"__**3 songs collected by {GUY}**__\n"
             ">>> k.k. bazaar, k.k. groove, k.k. safari"
         )
 
