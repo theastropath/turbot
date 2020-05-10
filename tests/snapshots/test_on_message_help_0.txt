@@ -44,14 +44,11 @@ __**Turbot Help!**__
 > **!lastweek**
 >    Displays the final graph from the last week before the data was reset.
 > 
-> **!needed <fossils, bugs, fish, art, songs>**
->    Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
+> **!needed <fossils, bugs, fish, art, songs> [user]**
+>    Lists all the needed items for all the channel members. As the only required parameter give the name of the kind of collectable to return. A second optional parameter can be used to narrow the results to a single user.
 > 
 > **!new**
 >    Tells you what new things available in your hemisphere right now.
 > 
 > **!oops**
 >    Remove your last logged turnip price.
-> 
-> **!predict [user]**
->    Get a link to a prediction calculator for a price history. 

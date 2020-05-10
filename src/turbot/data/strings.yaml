@@ -78,7 +78,7 @@ collected_fish: '__**$count fish donated by $name**__
 collected_fossils: '__**$count fossils donated by $name**__
 
   >>> $items'
-collected_songs: '__**$count songs donated by $name**__
+collected_songs: '__**$count songs collected by $name**__
 
   >>> $items'
 congrats_all_art: '**Congratulations, you''ve collected all art!**'

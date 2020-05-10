@@ -1637,6 +1637,20 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 fossils..._"
         )
 
+    async def test_on_message_needed_songs_user(self, client, channel, snap):
+        await client.on_message(MockMessage(BUDDY, channel, f"!collect neapolitan"))
+        await client.on_message(
+            MockMessage(someone(), channel, f"!needed songs {BUDDY.name}")
+        )
+        snap(channel.last_sent_response)
+
+    async def test_on_message_needed_songs_bad_user(self, client, channel, snap):
+        message = MockMessage(someone(), channel, f"!needed songs {PUNK.name}")
+        await client.on_message(message)
+        assert channel.last_sent_response == (
+            "Can not find the user named punk in this channel."
+        )
+
     async def test_on_message_needed_songs(self, client, channel):
         everything = sorted(list(client.assets["songs"].all))
 
@@ -3233,7 +3247,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
-            f"__**3 songs donated by {DUDE}**__\n"
+            f"__**3 songs collected by {DUDE}**__\n"
             ">>> k.k. bazaar, k.k. groove, k.k. safari"
         )
 
@@ -3260,7 +3274,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
-            f"__**3 songs donated by {GUY}**__\n"
+            f"__**3 songs collected by {GUY}**__\n"
             ">>> k.k. bazaar, k.k. groove, k.k. safari"
         )
 

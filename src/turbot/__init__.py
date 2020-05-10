@@ -1028,9 +1028,10 @@ class Turbot(discord.Client):
     @command
     def needed(self, channel, author, params):
         """
-        Lists all the needed items for all the channel members. As the only parameter
-        give the name of the kind of collectable to return.
-        | <fossils|bugs|fish|art|songs>
+        Lists all the needed items for all the channel members. As the only required
+        parameter give the name of the kind of collectable to return. A second optional
+        parameter can be used to narrow the results to a single user.
+        | <fossils|bugs|fish|art|songs> [user]
         """
         if not params:
             return s("needed_no_param"), None
@@ -1039,14 +1040,26 @@ class Turbot(discord.Client):
         if kind not in ["fossils", "bugs", "fish", "art", "songs"]:
             return s("needed_invalid_param"), None
 
+        if len(params) > 1:
+            target = params[1]
+            target_name = discord_user_name(channel, target)
+            target_id = discord_user_id(channel, target_name)
+            if not target_name or not target_id:
+                return s("cant_find_user", name=target), None
+            authors = [target_id]
+            limit = None
+        else:
+            authors = [
+                member.id for member in channel.members if member.id != self.user.id
+            ]
+            limit = 10
+
         fullset = self.assets[kind].all
         store = getattr(self.data, kind)
-        authors = [member.id for member in channel.members if member.id != self.user.id]
         total = pd.DataFrame(list(product(authors, fullset)), columns=store.columns)
         merged = total.merge(store, indicator=True, how="outer")
         needed = merged[merged["_merge"] == "left_only"]
 
-        limit = 10
         lines = []
 
         for user, df in needed.groupby(by="author"):
@@ -1054,7 +1067,7 @@ class Turbot(discord.Client):
             items_list = sorted([row["name"] for _, row in df.iterrows()])
             if len(items_list) == len(fullset):
                 continue
-            elif len(items_list) > limit:
+            elif limit is not None and len(items_list) > limit:
                 items_str = s("needed_lots", limit=limit, kind=kind)
             else:
                 items_str = ", ".join(items_list)

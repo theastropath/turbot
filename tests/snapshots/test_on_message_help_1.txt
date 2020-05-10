@@ -1,4 +1,7 @@
 > 
+> **!predict [user]**
+>    Get a link to a prediction calculator for a price history. 
+> 
 > **!pref <preference> <value>**
 >    Set one of your user preferences. 
 > 
