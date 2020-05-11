@@ -1,6 +1,6 @@
 allart: '__**All Pieces of Art**__
 
-  >>> $list'
+  > $list'
 art_fake: '> **$name** can be fake.
 
   > **Description:** $desc
@@ -68,19 +68,19 @@ collect_songs_new: 'Marked the following songs as collected:
   > $items'
 collected_art: '__**$count pieces of art donated by $name**__
 
-  >>> $items'
+  > $items'
 collected_bugs: '__**$count bugs donated by $name**__
 
-  >>> $items'
+  > $items'
 collected_fish: '__**$count fish donated by $name**__
 
-  >>> $items'
+  > $items'
 collected_fossils: '__**$count fossils donated by $name**__
 
-  >>> $items'
+  > $items'
 collected_songs: '__**$count songs collected by $name**__
 
-  >>> $items'
+  > $items'
 congrats_all_art: '**Congratulations, you''ve collected all art!**'
 congrats_all_bugs: '**Congratulations, you''ve collected all bugs!**'
 congrats_all_fish: '**Congratulations, you''ve collected all fish!**'
@@ -203,12 +203,12 @@ uncollect_songs_deleted: 'Unmarked the following songs as collected:
 
   > $items'
 uncollected_art_count: __**$count Pieces of art remaining for $name**__
-uncollected_art_remaining: '>>> $items'
+uncollected_art_remaining: '> $items'
 uncollected_bugs_count: __**$count bugs remaining for $name**__
-uncollected_bugs_remaining: '>>> $items'
+uncollected_bugs_remaining: '> $items'
 uncollected_fish_count: __**$count fish remaining for $name**__
-uncollected_fish_remaining: '>>> $items'
+uncollected_fish_remaining: '> $items'
 uncollected_fossils_count: __**$count fossils remaining for $name**__
-uncollected_fossils_remaining: '>>> $items'
+uncollected_fossils_remaining: '> $items'
 uncollected_songs_count: __**$count songs remaining for $name**__
-uncollected_songs_remaining: '>>> $items'
+uncollected_songs_remaining: '> $items'

@@ -1282,13 +1282,13 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 fossils donated by {author}**__\n"
-            ">>> amber, ammonite, ankylo skull\n"
+            "> amber, ammonite, ankylo skull\n"
             f"__**3 bugs donated by {author}**__\n"
-            ">>> grasshopper, honeybee, robust cicada\n"
+            "> grasshopper, honeybee, robust cicada\n"
             f"__**3 fish donated by {author}**__\n"
-            ">>> goldfish, killifish, snapping turtle\n"
+            "> goldfish, killifish, snapping turtle\n"
             f"__**3 pieces of art donated by {author}**__\n"
-            ">>> academic painting, great statue, sinking painting"
+            "> academic painting, great statue, sinking painting"
         )
 
     async def test_on_message_collected_all(self, client, channel):
@@ -1313,7 +1313,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 pieces of art donated by {DUDE}**__\n"
-            ">>> academic painting, great statue, sinking painting"
+            "> academic painting, great statue, sinking painting"
         )
 
     async def test_on_message_collected_art_congrats(self, client, channel):
@@ -1339,7 +1339,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
             f"__**3 pieces of art donated by {GUY}**__\n"
-            ">>> academic painting, great statue, sinking painting"
+            "> academic painting, great statue, sinking painting"
         )
 
     async def test_on_message_collected_art_bad_name(self, client, channel):
@@ -1428,7 +1428,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
         assert channel.last_sent_response == (
             f"__**2 pieces of art donated by {BUDDY}**__\n"
-            ">>> academic painting, sinking painting"
+            "> academic painting, sinking painting"
         )
 
     async def test_on_message_uncollected_bad_name(self, client, channel):
@@ -1749,7 +1749,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
-            f"__**3 fossils donated by {author}**__\n" ">>> amber, ammonite, ankylo skull"
+            f"__**3 fossils donated by {author}**__\n" "> amber, ammonite, ankylo skull"
         )
 
     async def test_on_message_collected_fossils_with_name(self, client, channel):
@@ -1758,7 +1758,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
-            f"__**3 fossils donated by {GUY}**__\n" ">>> amber, ammonite, ankylo skull"
+            f"__**3 fossils donated by {GUY}**__\n" "> amber, ammonite, ankylo skull"
         )
 
     async def test_on_message_collected_fossils_bad_name(self, client, channel):
@@ -2233,7 +2233,7 @@ class TestTurbot:
             pages = subject(text)
             assert len(pages) == 2
             assert all(len(page) <= 2000 for page in pages)
-            assert pages == [text[0:1926], text[1926:]]
+            assert pages == [text[0:2000], f"> {text[2000:]}"]
 
     async def test_humanize_months(self):
         def subject(*args):
@@ -2697,7 +2697,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 fish donated by {DUDE}**__\n"
-            ">>> bluegill, giant snakehead, snapping turtle"
+            "> bluegill, giant snakehead, snapping turtle"
         )
 
     async def test_on_message_collected_fish_congrats(self, client, channel):
@@ -2724,7 +2724,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
             f"__**3 fish donated by {GUY}**__\n"
-            ">>> bluegill, giant snakehead, snapping turtle"
+            "> bluegill, giant snakehead, snapping turtle"
         )
 
     async def test_on_message_collected_fish_bad_name(self, client, channel):
@@ -3009,7 +3009,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 bugs donated by {DUDE}**__\n"
-            ">>> bell cricket, great purple emperor, stinkbug"
+            "> bell cricket, great purple emperor, stinkbug"
         )
 
     async def test_on_message_collected_bugs_congrats(self, client, channel):
@@ -3036,7 +3036,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
             f"__**3 bugs donated by {GUY}**__\n"
-            ">>> bell cricket, great purple emperor, stinkbug"
+            "> bell cricket, great purple emperor, stinkbug"
         )
 
     async def test_on_message_collected_bugs_bad_name(self, client, channel):
@@ -3239,7 +3239,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 songs collected by {DUDE}**__\n"
-            ">>> K.K. Bazaar, K.K. Groove, K.K. Safari"
+            "> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
     async def test_on_message_collected_songs_congrats(self, client, channel):
@@ -3266,7 +3266,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
             f"__**3 songs collected by {GUY}**__\n"
-            ">>> K.K. Bazaar, K.K. Groove, K.K. Safari"
+            "> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
     async def test_on_message_collected_songs_bad_name(self, client, channel):
