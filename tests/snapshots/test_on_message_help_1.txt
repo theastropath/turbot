@@ -1,20 +1,16 @@
-> 
-> **!pref <preference> <value>**
->    Set one of your user preferences. 
-> 
-> **!reset**
->    Only Turbot Admin members can run this command. Generates a final graph for use with !lastweek and resets all data for all users.
-> 
-> **!search <list of collectables>**
->    Searches all users to see who needs the given collectables. The names must match the in-game item name, and more than one can be provided if separated by commas.
-> 
-> **!sell <price> [day time]**
->    Log the price that you can sell turnips for on your island.
-> 
-> **!uncollect <comma, separated, list, of, things>**
->    Unmark collectables as donated to your museum. The names must match the in-game item name exactly. 
-> 
-> **!uncollected [user]**
->    Lists all collectables that you still need to donate. If a user is provided, it gives the same information for that user instead. 
-> 
-> turbot created by TheAstropath
+**!reset**
+>  Only Turbot Admin members can run this command. Generates a final graph for use with !lastweek and resets all data for all users.
+
+**!search** _<comma, separated, list, of, collectables>_
+>  Searches all users to see who needs the given collectables. The names must match the in-game item name, and more than one can be provided if separated by commas.
+
+**!sell** _<price> [day time-of-day]_
+>  Log the price that you can sell turnips for on your island.
+
+**!uncollect** _<comma, separated, list, of, things>_
+>  Unmark collectables as donated to your museum. The names must match the in-game item name exactly. 
+
+**!uncollected** _[user]_
+>  Lists all collectables that you still need to donate. If a user is provided, it gives the same information for that user instead. 
+
+_Turbot created by TheAstropath_

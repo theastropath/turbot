@@ -521,16 +521,16 @@ class Turbot(discord.Client):
                     breakpoint = index
                     break
 
-            # A trailing blank quoted line just shows the > symbol, so if possible
-            # we should try bumping that into the remainder if it is present
-            lastnlindex = remaining.rfind("\n", 1800, breakpoint - 1)
-            finalline = remaining[lastnlindex:breakpoint]
-            if finalline.strip() == ">":
-                # the breakpoint should actually be bumped back a bit
-                breakpoint = lastnlindex
-
-            yield remaining[0 : breakpoint + 1]
+            message = remaining[0 : breakpoint + 1]
+            yield message
             remaining = remaining[breakpoint + 1 :]
+            last_line_end = message.rfind("\n")
+            if last_line_end != -1 and len(message) > last_line_end + 1:
+                last_line_start = last_line_end + 1
+            else:
+                last_line_start = 0
+            if message[last_line_start] == ">":
+                remaining = f"> {remaining}"
 
         yield remaining
 
@@ -632,10 +632,10 @@ class Turbot(discord.Client):
     # Would trigger the bot to send three messages to the channel with no attachment.
     #
     # The docstring used for the command method will be automatically used as the help
-    # message for the command. To document commands with parameters use a | to delimit
+    # message for the command. To document commands with parameters use a @ to delimit
     # the help message from the parameter documentation. For example:
     #
-    #     """This is the help message for your command. | [and] [these] [are] [params]"""
+    #     """This is the help message for your command. @ [and] [these] [are] [params]"""
     #
     # A [parameter] is optional whereas a <parameter> is required.
 
@@ -644,21 +644,21 @@ class Turbot(discord.Client):
         """
         Shows this help screen.
         """
-        usage = "__**Turbot Help!**__"
+        usage = "__**Turbot Help!**__\n"
         for command in self.commands:
             method = getattr(self, command)
-            doc = method.__doc__.split("|")
+            doc = method.__doc__.split("@")
             use, params = doc[0], ", ".join([param.strip() for param in doc[1:]])
             use = inspect.cleandoc(use)
             use = use.replace("\n", " ")
 
-            title = f"!{command}"
+            title = f"**!{command}**"
             if params:
-                title = f"{title} {params}"
-            usage += f"\n> **{title}**"
-            usage += f"\n>    {use}"
-            usage += "\n> "
-        usage += "\n> turbot created by TheAstropath"
+                title = f"{title} _{params}_"
+            usage += f"\n{title}"
+            usage += f"\n>  {use}"
+            usage += "\n"
+        usage += "\n_Turbot created by TheAstropath_"
         return usage, None
 
     class _PriceTimeError(Exception):
@@ -691,7 +691,7 @@ class Turbot(discord.Client):
     def sell(self, channel, author, params):
         """
         Log the price that you can sell turnips for on your island.
-        | <price> [day time]
+        @ <price> [day time-of-day]
         """
         if not params:
             return s("sell_no_params"), None
@@ -729,7 +729,7 @@ class Turbot(discord.Client):
     def buy(self, channel, author, params):
         """
         Log the price that you can buy turnips from Daisy Mae on your island.
-        | <price> [day time]
+        @ <price> [day time]
         """
         if not params:
             return s("buy_no_params"), None
@@ -793,7 +793,7 @@ class Turbot(discord.Client):
     def history(self, channel, author, params):
         """
         Show the historical turnip prices for a user. If no user is specified, it will
-        display your own prices. | [user]
+        display your own prices. @ [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
@@ -844,7 +844,7 @@ class Turbot(discord.Client):
         """
         Finds the best, most recent, buy or sell price currently available.
         The default is to look for the best sell.
-        | [buy|sell]
+        @ [buy|sell]
         """
         kind = params[0].lower() if params else "sell"
         if kind not in ["sell", "buy"]:
@@ -866,7 +866,7 @@ class Turbot(discord.Client):
     def collect(self, channel, author, params):
         """
         Mark collectables as donated to your museum. The names must match the in-game item
-        name exactly. | <comma, separated, list, of, things>
+        name exactly. @ <comma, separated, list, of, things>
         """
         if not params:
             return s("collect_no_params"), None
@@ -907,7 +907,7 @@ class Turbot(discord.Client):
     def uncollect(self, channel, author, params):
         """
         Unmark collectables as donated to your museum. The names must match the in-game
-        item name exactly. | <comma, separated, list, of, things>
+        item name exactly. @ <comma, separated, list, of, things>
         """
         if not params:
             return s("uncollect_no_params"), None
@@ -945,7 +945,7 @@ class Turbot(discord.Client):
         """
         Searches all users to see who needs the given collectables. The names must match
         the in-game item name, and more than one can be provided if separated by commas.
-        | <list of collectables>
+        @ <comma, separated, list, of, collectables>
         """
         if not params:
             return s("search_no_params"), None
@@ -999,7 +999,7 @@ class Turbot(discord.Client):
     def uncollected(self, channel, author, params):
         """
         Lists all collectables that you still need to donate. If a user is provided, it
-        gives the same information for that user instead. | [user]
+        gives the same information for that user instead. @ [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
@@ -1034,7 +1034,7 @@ class Turbot(discord.Client):
         """
         Lists all the needed items for all the channel members. As the only parameter
         give the name of the kind of collectable to return.
-        | <fossils|bugs|fish|art|songs>
+        @ <fossils|bugs|fish|art|songs>
         """
         if not params:
             return s("needed_no_param"), None
@@ -1073,7 +1073,7 @@ class Turbot(discord.Client):
     def collected(self, channel, author, params):
         """
         Lists all collectables that you have already donated. If a user is provided, it
-        gives the same information for that user instead. | [user]
+        gives the same information for that user instead. @ [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
@@ -1116,7 +1116,7 @@ class Turbot(discord.Client):
     @command
     def predict(self, channel, author, params):
         """
-        Get a link to a prediction calculator for a price history. | [user]
+        Get a link to a prediction calculator for a price history. @ [user]
         """
         target = author.id if not params else params[0]
         target_name = discord_user_name(channel, target)
@@ -1138,7 +1138,7 @@ class Turbot(discord.Client):
     @command
     def pref(self, channel, author, params):
         """
-        Set one of your user preferences. | <preference> <value>
+        Set one of your user preferences. @ <preference> <value>
         """
         if not params:
             return s("pref_no_params", prefs=", ".join(USER_PREFRENCES)), None
@@ -1161,7 +1161,7 @@ class Turbot(discord.Client):
     def count(self, channel, author, params):
         """
         Provides a count of the number of pieces of collectables for the comma-separated
-        list of users. | [comma, separated, list, of, users]
+        list of users. @ [comma, separated, list, of, users]
         """
         if not params:
             user = discord_user_from_id(channel, author.id)
@@ -1205,7 +1205,8 @@ class Turbot(discord.Client):
     @command
     def art(self, channel, author, params):
         """
-        Get info about pieces of art that are available | [List of art pieces]
+        Get info about pieces of art that are available
+        @ [comma, separated, list, of, art, pieces]
         """
         response = ""
         if params:
@@ -1418,7 +1419,7 @@ class Turbot(discord.Client):
     def fish(self, channel, author, params):
         """
         Tells you what fish are available now in your hemisphere.
-        | [name|leaving|arriving]
+        @ [name|leaving|arriving]
         """
         source = self.assets["fish"].data
         found = self._creatures(author=author, params=params, kind="fish", source=source)
@@ -1428,7 +1429,7 @@ class Turbot(discord.Client):
     def bugs(self, channel, author, params):
         """
         Tells you what bugs are available now in your hemisphere.
-        | [name|leaving|arriving]
+        @ [name|leaving|arriving]
         """
         source = self.assets["bugs"].data
         found = self._creatures(author=author, params=params, kind="bugs", source=source)
@@ -1501,7 +1502,7 @@ class Turbot(discord.Client):
     @command
     def info(self, channel, author, params):
         """
-        Gives you information on a user. | [user]
+        Gives you information on a user. @ [user]
         """
         if len(params) < 1:
             return s("info_no_params"), None
