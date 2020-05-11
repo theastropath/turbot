@@ -1157,22 +1157,23 @@ class Turbot(discord.Client):
     def count(self, channel, author, params):
         """
         Provides a count of the number of pieces of collectables for the comma-separated
-        list of users. | <list of users>
+        list of users. | [comma, separated, list, of, users]
         """
         if not params:
-            return s("count_no_params"), None
-
-        users = set(sanitize_collectable(item) for item in " ".join(params).split(","))
-
-        valid = []
-        invalid = []
-        for user in users:
-            user_name = discord_user_name(channel, user)
-            user_id = discord_user_id(channel, user_name)
-            if user_name and user_id:
-                valid.append((user_name, user_id))
-            else:
-                invalid.append(user)
+            user = discord_user_from_id(channel, author.id)
+            valid = [(user.name, user.id)]
+            invalid = []
+        else:
+            users = set(sanitize_collectable(p) for p in " ".join(params).split(","))
+            valid = []
+            invalid = []
+            for user in users:
+                user_name = discord_user_name(channel, user)
+                user_id = discord_user_id(channel, user_name)
+                if user_name and user_id:
+                    valid.append((user_name, user_id))
+                else:
+                    invalid.append(user)
 
         lines = []
 

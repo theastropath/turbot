@@ -23,7 +23,7 @@ __**Turbot Help!**__
 > **!collected [user]**
 >    Lists all collectables that you have already donated. If a user is provided, it gives the same information for that user instead. 
 > 
-> **!count <list of users>**
+> **!count [comma, separated, list, of, users]**
 >    Provides a count of the number of pieces of collectables for the comma-separated list of users. 
 > 
 > **!fish [name, leaving, arriving]**
