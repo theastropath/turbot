@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from itertools import product
 from os import getenv
 from pathlib import Path
+from subprocess import run
 
 import click
 import discord
@@ -33,12 +34,15 @@ from turnips.plots import plot_models_range
 matplotlib.use("Agg")
 
 RUNTIME_ROOT = Path(".")
+SCRIPTS_DIR = RUNTIME_ROOT / "scripts"
 DEFAULT_DB_DIR = RUNTIME_ROOT / "db"
 DEFAULT_CONFIG_TOKEN = RUNTIME_ROOT / "token.txt"
 DEFAULT_CONFIG_CHANNELS = RUNTIME_ROOT / "channels.txt"
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
+MIGRATIONS_FILE = DEFAULT_DB_DIR / "migrations.txt"
+MIGRATIONS_DIR = SCRIPTS_DIR / "migrations"
 
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 
@@ -1295,7 +1299,7 @@ class Turbot(discord.Client):
                         if lhs_hour <= now_hour <= rhs_hour:
                             yield row["name"]
 
-    def _creatures(self, *_, author, params, kind, source, force_text=False):
+    def _creatures(self, *, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""
         hemisphere = self.get_user_prefs(author.id).get("hemisphere", None)
         if not hemisphere:
@@ -1577,6 +1581,31 @@ def get_channels(channels_file):  # pragma: no cover
         return []
 
 
+def apply_migrations():  # pragma: no cover
+    """Applies any migration scripts that haven't already been applied."""
+
+    def migration_key(script):
+        return int(script.name[0:3])
+
+    applied = set()
+    if MIGRATIONS_FILE.exists():
+        with open(MIGRATIONS_FILE) as f:
+            applied.update(line.strip() for line in f.readlines())
+    with open(MIGRATIONS_FILE, "a") as f:
+        for migration in sorted(MIGRATIONS_DIR.glob("*.py"), key=migration_key):
+            if migration.name not in applied:
+                print(f"applying migration {migration.name}...", end=" ")
+                cmd = ["python3", migration]
+                proc = run(cmd, capture_output=True)
+                if proc.returncode != 0:
+                    print()
+                    print(proc.stdout.decode("utf-8"))
+                    print(proc.stderr.decode("utf-8"), file=sys.stderr)
+                    sys.exit(1)
+                print("done")
+                f.write(f"{migration.name}\n")
+
+
 @click.command()
 @click.option(
     "-l",
@@ -1632,6 +1661,8 @@ def main(
         db_dir=db_dir,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
     )
+
+    apply_migrations()
 
     if dev:
         reloader = hupper.start_reloader("turbot.main")

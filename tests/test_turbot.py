@@ -1096,7 +1096,13 @@ class TestTurbot:
     async def test_on_message_collect_songs_unicode(self, client, channel, lines):
         await client.on_message(MockMessage(someone(), channel, f"!collect Café K.K."))
         assert channel.last_sent_response == (
-            "Marked the following songs as collected:\n> cafe k.k."
+            "Marked the following songs as collected:\n> Café K.K."
+        )
+
+    async def test_on_message_collect_songs_fuzzy(self, client, channel, lines):
+        await client.on_message(MockMessage(someone(), channel, f"!collect cafe"))
+        assert channel.last_sent_response == (
+            "Marked the following songs as collected:\n> Café K.K."
         )
 
     async def test_on_message_collect_fossils_congrats(self, client, channel):
@@ -1650,7 +1656,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(someone(), channel, "!needed songs"))
         assert channel.last_sent_response == (
-            f"> **{BUDDY}** needs agent k.k., aloha k.k., animal city\n"
+            f"> **{BUDDY}** needs Agent K.K., Aloha K.K., Animal City\n"
             f"> **{GUY}** needs _more than 10 songs..._"
         )
 
@@ -3124,30 +3130,30 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!uncollect {songs}"))
         assert channel.last_sent_response == (
             "Unmarked the following songs as collected:\n"
-            "> k.k. bazaar, k.k. groove\n"
+            "> K.K. Bazaar, K.K. Groove\n"
             "The following songs were already marked as not collected:\n"
-            "> k.k. aria\n"
+            "> K.K. Aria\n"
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
         with open(client.data.file("songs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},k.k. safari\n"]
+            assert f.readlines() == ["author,name\n", f"{author.id},K.K. Safari\n"]
 
         # then delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {songs}"))
         assert channel.last_sent_response == (
             "The following songs were already marked as not collected:\n"
-            "> k.k. aria, k.k. bazaar, k.k. groove\n"
+            "> K.K. Aria, K.K. Bazaar, K.K. Groove\n"
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
         with open(client.data.file("songs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},k.k. safari\n"]
+            assert f.readlines() == ["author,name\n", f"{author.id},K.K. Safari\n"]
 
         # and delete one more
         await client.on_message(MockMessage(author, channel, f"!uncollect k.k. safari"))
         assert channel.last_sent_response == (
-            "Unmarked the following songs as collected:\n" "> k.k. safari"
+            "Unmarked the following songs as collected:\n" "> K.K. Safari"
         )
         with open(client.data.file("songs")) as f:
             assert f.readlines() == ["author,name\n"]
@@ -3169,7 +3175,7 @@ class TestTurbot:
             MockMessage(PUNK, channel, "!search k.k. safari, k.k. groove, anime waifu")
         )
         assert channel.last_sent_response == (
-            "> No one needs: k.k. groove, k.k. safari\n"
+            "> No one needs: K.K. Groove, K.K. Safari\n"
             "Did not recognize the following collectables:\n"
             "> anime waifu"
         )
@@ -3187,7 +3193,7 @@ class TestTurbot:
         await client.on_message(MockMessage(PUNK, channel, f"!search {query}"))
         channel.last_sent_response == (
             "__**songs Search**__\n"
-            f"> {BUDDY} needs: k.k. groove, wistful painting\n"
+            f"> {BUDDY} needs: K.K. Groove, wistful painting\n"
             f"> {FRIEND} needs: wistful painting\n"
             f"> {GUY} needs: wistful painting"
         )
@@ -3204,8 +3210,8 @@ class TestTurbot:
         query = "k.k. safari, k.k. groove, wistful painting, anime waifu"
         await client.on_message(MockMessage(PUNK, channel, f"!search {query}"))
         assert channel.last_sent_response == (
-            "> No one needs: k.k. safari, wistful painting\n"
-            f"> {BUDDY} needs songs: k.k. groove\n"
+            "> No one needs: K.K. Safari, wistful painting\n"
+            f"> {BUDDY} needs songs: K.K. Groove\n"
             "Did not recognize the following collectables:\n"
             "> anime waifu"
         )
@@ -3233,7 +3239,7 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**3 songs collected by {DUDE}**__\n"
-            ">>> k.k. bazaar, k.k. groove, k.k. safari"
+            ">>> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
     async def test_on_message_collected_songs_congrats(self, client, channel):
@@ -3254,13 +3260,13 @@ class TestTurbot:
         assert len(channel.all_sent_calls) == 4
 
     async def test_on_message_collected_songs_with_name(self, client, channel):
-        songs = "k.k. safari, k.k. bazaar, k.k. groove"
+        songs = "safari, bazaar, groove"
         await client.on_message(MockMessage(GUY, channel, f"!collect {songs}"))
 
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {GUY.name}"))
         assert channel.last_sent_response == (
             f"__**3 songs collected by {GUY}**__\n"
-            ">>> k.k. bazaar, k.k. groove, k.k. safari"
+            ">>> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
     async def test_on_message_collected_songs_bad_name(self, client, channel):
@@ -3276,21 +3282,21 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!collect {songs}"))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n"
-            "> k.k. bazaar, k.k. safari\n"
+            "> K.K. Bazaar, K.K. Safari\n"
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
         assert set(lines(client.data.file("songs"))) == {
             "author,name\n",
-            f"{author.id},k.k. bazaar\n",
-            f"{author.id},k.k. safari\n",
+            f"{author.id},K.K. Bazaar\n",
+            f"{author.id},K.K. Safari\n",
         }
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {songs}"))
         assert channel.last_sent_response == (
             "The following songs had already been collected:\n"
-            "> k.k. bazaar, k.k. safari\n"
+            "> K.K. Bazaar, K.K. Safari\n"
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
@@ -3300,14 +3306,14 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, f"!collect {songs}"))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n"
-            "> k.k. tango\n"
+            "> K.K. Tango\n"
             "The following songs had already been collected:\n"
-            "> k.k. safari\n"
+            "> K.K. Safari\n"
             "Unrecognized collectable names:\n"
             "> body pillow"
         )
 
-        assert lines(client.data.file("songs")) == [f"{author.id},k.k. tango\n"]
+        assert lines(client.data.file("songs")) == [f"{author.id},K.K. Tango\n"]
 
     async def test_on_message_collect_songs_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["songs"].all))

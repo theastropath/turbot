@@ -1,8 +1,10 @@
+import re
 from os.path import dirname, realpath
 from pathlib import Path
 from string import Template
 
 import pandas as pd
+from unidecode import unidecode
 from yaml import load
 
 try:
@@ -46,14 +48,23 @@ class Assets:
             self.asset[kind] = {"file": file, "data": data, "items": items}
         self.all_collectable_items = frozenset(all_items)
 
-    def validate(self, items, *_, kinds=None):
+    def validate(self, items, *, kinds=None):
+        def clean(item):
+            return re.sub(" ?k.k. ?", "", unidecode(item).lower())
+
+        items = [clean(item) for item in items]
         valid = {}
         for kind in self.collectables:
             if kinds and isinstance(kinds, list) and kind not in kinds:
                 continue
-            valid[kind] = items.intersection(self.asset[kind]["items"])
-        invalid = items.difference(self.all_collectable_items)
-        return valid, invalid
+            valid_items = set()
+            for item in self.asset[kind]["items"]:
+                cleaned_item = clean(item)
+                if cleaned_item in items:
+                    valid_items.add(item)
+                    items.remove(cleaned_item)
+            valid[kind] = valid_items
+        return valid, items
 
     def files(self):  # pragma: no cover
         return [STRINGS_DATA_FILE] + [
