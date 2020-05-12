@@ -407,7 +407,7 @@ class TestTurbot:
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=author_tz)
         freezer.move_to(sunday_am)
         assert sunday_am.isoweekday() == turbot.DAYS["sunday"]
-        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+        await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         amount = 100
         monday_am = sunday_am + timedelta(days=1)
@@ -443,7 +443,7 @@ class TestTurbot:
 
         sunday_am = datetime(2020, 4, 27, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
-        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+        await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         amount = 100
         monday_am = sunday_am + timedelta(days=1)
@@ -477,9 +477,9 @@ class TestTurbot:
 
         sunday_am = datetime(2020, 5, 4, 6, tzinfo=pytz.utc)
         freezer.move_to(sunday_am + timedelta(days=2, hours=12))
-        await client.on_message(MockMessage(author, channel, f"!buy 90 sunday morning"))
+        await client.on_message(MockMessage(author, channel, "!buy 90 sunday morning"))
 
-        await client.on_message(MockMessage(author, channel, f"!history"))
+        await client.on_message(MockMessage(author, channel, "!history"))
         assert channel.last_sent_response == (
             f"__**Historical info for {author}**__\n"
             "> Can buy turnips from Daisy Mae for 90 bells 3 days ago (Sunday am)"
@@ -494,7 +494,7 @@ class TestTurbot:
 
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
-        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+        await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         assert client.get_user_timeline(author.id) == [
             90,
@@ -521,7 +521,7 @@ class TestTurbot:
 
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
-        await client.on_message(MockMessage(author, channel, f"!buy 90"))
+        await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         amount = 100
         monday_am = sunday_am + timedelta(days=1)
@@ -530,7 +530,7 @@ class TestTurbot:
             await client.on_message(MockMessage(author, channel, f"!sell {amount}"))
             amount += 5
 
-        await client.on_message(MockMessage(author, channel, f"!sell 50 sunday evening"))
+        await client.on_message(MockMessage(author, channel, "!sell 50 sunday evening"))
 
         assert client.get_user_timeline(author.id) == [
             90,
@@ -1094,13 +1094,13 @@ class TestTurbot:
         assert lines(client.data.file("fossils")) == [f"{author.id},plesio body\n"]
 
     async def test_on_message_collect_songs_unicode(self, client, channel, lines):
-        await client.on_message(MockMessage(someone(), channel, f"!collect Café K.K."))
+        await client.on_message(MockMessage(someone(), channel, "!collect Café K.K."))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n> Café K.K."
         )
 
     async def test_on_message_collect_songs_fuzzy(self, client, channel, lines):
-        await client.on_message(MockMessage(someone(), channel, f"!collect cafe"))
+        await client.on_message(MockMessage(someone(), channel, "!collect cafe"))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n> Café K.K."
         )
@@ -1164,7 +1164,7 @@ class TestTurbot:
 
         # and delete one more
         await client.on_message(
-            MockMessage(author, channel, f"!uncollect sinking painting")
+            MockMessage(author, channel, "!uncollect sinking painting")
         )
         assert channel.last_sent_response == (
             "Unmarked the following pieces of art as collected:\n" "> sinking painting"
@@ -1235,7 +1235,7 @@ class TestTurbot:
         )
 
     async def test_on_message_count_no_params(self, client, channel, snap):
-        await client.on_message(MockMessage(BUDDY, channel, f"!count"))
+        await client.on_message(MockMessage(BUDDY, channel, "!count"))
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 1
 
@@ -1298,7 +1298,7 @@ class TestTurbot:
             items = ",".join(client.assets[kind].all)
             await client.on_message(MockMessage(author, channel, f"!collect {items}"))
 
-        await client.on_message(MockMessage(author, channel, f"!collected"))
+        await client.on_message(MockMessage(author, channel, "!collected"))
         for kind in client.assets.collectables:
             assert (
                 f"**Congratulations, you've collected all {kind}!**"
@@ -1320,14 +1320,14 @@ class TestTurbot:
         everything = ",".join(client.assets["art"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all art!**"
 
     async def test_on_message_uncollected_art_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["art"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!uncollected"))
         for response in channel.all_sent_responses:
             snap(response)
         assert len(channel.all_sent_calls) == 4
@@ -1425,7 +1425,7 @@ class TestTurbot:
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         assert channel.last_sent_response == (
             f"__**2 pieces of art donated by {BUDDY}**__\n"
             "> academic painting, sinking painting"
@@ -1444,7 +1444,7 @@ class TestTurbot:
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!uncollected"))
         assert channel.all_sent_responses[0] == (
             "Marked the following art as collected:\n"
             "> academic painting, sinking painting"
@@ -1577,7 +1577,7 @@ class TestTurbot:
             assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
 
         # and delete one more
-        await client.on_message(MockMessage(author, channel, f"!uncollect ammonite"))
+        await client.on_message(MockMessage(author, channel, "!uncollect ammonite"))
         assert channel.last_sent_response == (
             "Unmarked the following fossils as collected:\n> ammonite"
         )
@@ -2341,7 +2341,7 @@ class TestTurbot:
         )
 
     async def test_on_message_about(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, f"!about"))
+        await client.on_message(MockMessage(someone(), channel, "!about"))
         assert len(channel.all_sent_calls) == 1
 
         about = channel.last_sent_embed
@@ -2387,12 +2387,12 @@ class TestTurbot:
 
     async def test_on_message_info_no_prefs(self, client, channel):
         author = someone()
-        await client.on_message(MockMessage(author, channel, f"!buy 100"))
+        await client.on_message(MockMessage(author, channel, "!buy 100"))
         await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
         assert channel.last_sent_response == f"> **{author}** has no preferences."
 
     async def test_on_message_info_no_params(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, f"!info"))
+        await client.on_message(MockMessage(someone(), channel, "!info"))
         assert channel.last_sent_response == "Please provide a search term."
 
     async def test_discord_user_from_name_guard(self, channel):
@@ -2460,7 +2460,7 @@ class TestTurbot:
     async def test_on_message_pref_friend(self, client, channel):
         author = someone()
         await client.on_message(
-            MockMessage(author, channel, f"!pref friend sw-1234-5678-9012")
+            MockMessage(author, channel, "!pref friend sw-1234-5678-9012")
         )
         assert channel.last_sent_response == f"Registered friend preference for {author}."
         with open(client.data.file("users")) as f:
@@ -2478,7 +2478,7 @@ class TestTurbot:
     async def test_on_message_pref_creator(self, client, channel):
         author = someone()
         await client.on_message(
-            MockMessage(author, channel, f"!pref creator mA-1234-5678-9012")
+            MockMessage(author, channel, "!pref creator mA-1234-5678-9012")
         )
         assert (
             channel.last_sent_response == f"Registered creator preference for {author}."
@@ -2497,7 +2497,7 @@ class TestTurbot:
 
     async def test_on_message_pref_fruit(self, client, channel):
         author = someone()
-        await client.on_message(MockMessage(author, channel, f"!pref fruit apple"))
+        await client.on_message(MockMessage(author, channel, "!pref fruit apple"))
         assert channel.last_sent_response == (
             f"Registered fruit preference for {author}."
         )
@@ -2604,7 +2604,7 @@ class TestTurbot:
 
         # and delete one more
         await client.on_message(
-            MockMessage(author, channel, f"!uncollect snapping turtle")
+            MockMessage(author, channel, "!uncollect snapping turtle")
         )
         assert channel.last_sent_response == (
             "Unmarked the following fish as collected:\n" "> snapping turtle"
@@ -2704,14 +2704,14 @@ class TestTurbot:
         everything = ",".join(client.assets["fish"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all fish!**"
 
     async def test_on_message_uncollected_fish_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["fish"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!uncollected"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
         snap(channel.all_sent_responses[3])
@@ -2799,9 +2799,9 @@ class TestTurbot:
 
     async def test_on_message_fish_none_available(self, client, channel):
         everything = ",".join(client.assets["fish"].all)
-        await client.on_message(MockMessage(BUDDY, channel, f"!pref hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
-        await client.on_message(MockMessage(BUDDY, channel, f"!fish"))
+        await client.on_message(MockMessage(BUDDY, channel, "!fish"))
         assert channel.last_sent_response == (
             "No fish that you haven't already caught are available at this time."
         )
@@ -2919,7 +2919,7 @@ class TestTurbot:
             assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
 
         # and delete one more
-        await client.on_message(MockMessage(author, channel, f"!uncollect stinkbug"))
+        await client.on_message(MockMessage(author, channel, "!uncollect stinkbug"))
         assert channel.last_sent_response == (
             "Unmarked the following bugs as collected:\n" "> stinkbug"
         )
@@ -3016,14 +3016,14 @@ class TestTurbot:
         everything = ",".join(client.assets["bugs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all bugs!**"
 
     async def test_on_message_uncollected_bugs_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["bugs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!uncollected"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
         snap(channel.all_sent_responses[3])
@@ -3111,9 +3111,9 @@ class TestTurbot:
 
     async def test_on_message_bugs_none_available(self, client, channel):
         everything = ",".join(client.assets["bugs"].all)
-        await client.on_message(MockMessage(BUDDY, channel, f"!pref hemisphere northern"))
+        await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
-        await client.on_message(MockMessage(BUDDY, channel, f"!bugs"))
+        await client.on_message(MockMessage(BUDDY, channel, "!bugs"))
         assert channel.last_sent_response == (
             "No bugs that you haven't already caught are available at this time."
         )
@@ -3151,7 +3151,7 @@ class TestTurbot:
             assert f.readlines() == ["author,name\n", f"{author.id},K.K. Safari\n"]
 
         # and delete one more
-        await client.on_message(MockMessage(author, channel, f"!uncollect k.k. safari"))
+        await client.on_message(MockMessage(author, channel, "!uncollect k.k. safari"))
         assert channel.last_sent_response == (
             "Unmarked the following songs as collected:\n" "> K.K. Safari"
         )
@@ -3246,14 +3246,14 @@ class TestTurbot:
         everything = ",".join(client.assets["songs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!collected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all songs!**"
 
     async def test_on_message_uncollected_songs_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["songs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
 
-        await client.on_message(MockMessage(BUDDY, channel, f"!uncollected"))
+        await client.on_message(MockMessage(BUDDY, channel, "!uncollected"))
         snap(channel.all_sent_responses[1])
         snap(channel.all_sent_responses[2])
         snap(channel.all_sent_responses[3])

@@ -31,7 +31,9 @@ To provide your Discord bot token either set an environment variable named
 
 For the list of channels you can provide channel names on the command line using
 any number of `--channel "name"` options. Alternatively you can create a file
-named `channels.txt` where each line of the file is a channel name.
+named `channels.txt` where each line of the file is a channel name. You can
+also specify them via the environment variable `TURBOT_CHANNELS` as a semicolon
+delimited string, for example: `export TURBOT_CHANNELS="some;channels;here"`.
 
 More usage help can be found by running `turbot --help`.
 
@@ -91,6 +93,11 @@ These commands can also help users tell fake art from real art.
 - `!search`: Search for someone who needs a fossil or art
 - `!uncollect`: Remove something from your collection
 - `!uncollected`: Get a list of things that you haven't collected yet
+
+### ⚛️ Heroku Support
+
+Turbot supports deployment to Heroku out of the box.
+See our documentation on [Heroku Support](HEROKU.md) for details.
 
 ---
 

@@ -1062,10 +1062,10 @@ class Turbot(discord.Client):
                 items_str = s("needed_lots", limit=limit, kind=kind)
             else:
                 items_str = ", ".join(items_list)
-            lines.append(s(f"needed", name=name, items=items_str))
+            lines.append(s("needed", name=name, items=items_str))
 
         if not lines:
-            return s(f"needed_none", kind=kind), None
+            return s("needed_none", kind=kind), None
 
         return "\n".join(sorted(lines)), None
 
@@ -1574,7 +1574,11 @@ def get_token(token_file):  # pragma: no cover
 
 
 def get_channels(channels_file):  # pragma: no cover
-    """Returns the authorized channels your channels config file."""
+    """Returns the authorized channels the environment or your channels config file."""
+    channels = getenv("TURBOT_CHANNELS", None)
+    if channels:
+        return channels.split(";")
+
     try:
         with open(channels_file, "r") as channels_file:
             return [line.strip() for line in channels_file.readlines()]
@@ -1626,13 +1630,20 @@ def apply_migrations():  # pragma: no cover
     "-c",
     "--channel",
     multiple=True,
-    help="authorize a channel; use this multiple times to authorize multiple channels",
+    help=(
+        "authorize a channel; use this multiple times to authorize multiple channels; "
+        "you can also set the list of channels via the TURBOT_CHANNELS environment "
+        "variable separated by ; (semicolon)."
+    ),
 )
 @click.option(
     "-a",
     "--auth-channels-file",
     default=DEFAULT_CONFIG_CHANNELS,
-    help="read authorized channel names from this file",
+    help=(
+        "read channel names from this file; you can also set the list of channels via "
+        "the TURBOT_CHANNELS environment variable separated by ; (semicolon)."
+    ),
 )
 @click.option(
     "--db-dir", default=DEFAULT_DB_DIR, help="use this directory for user db files"
