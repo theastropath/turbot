@@ -13,7 +13,73 @@ A Discord bot for everything _Animal Crossing: New Horizons_.
 
 ![screenshot](https://user-images.githubusercontent.com/1903876/80841531-787c2f00-8bb4-11ea-8975-cc619b978635.png)
 
-## 🤖 Running the bot
+## 📱 Using Turbot
+
+Once you've connected the bot to your server, you can interact with it over
+Discord via the following commands in any of the authorized channels.
+
+- `!about`: Get information about Turbot
+- `!help`: Provides detailed help about all of the following commands
+
+### 💸 Turnips
+
+These commands help users buy low and sell high in the stalk market.
+
+- `!best`: Look for the current best sell or buy
+- `!buy`: Save a buy price
+- `!clear`: Clear your price data
+- `!graph`: Graph price data
+- `!history`: Get price history
+- `!lastweek`: Get graph for last week's price data
+- `!oops`: Undo the last price data
+- `!predict`: Predict your price data for the rest of the week
+- `!reset`: Reset all users' data
+- `!sell`: Save a sell price
+
+### ℹ️ User Preferences
+
+These commands allow users to set their preferences. These preferences are used
+to make other commands more relevant, for example by converting times to the
+user's preferred timezone.
+
+- `!info`: Get a user's information
+- `!pref`: Set a user preference; use command to get a list of available options
+
+### 📮 Collectables
+
+When a community of users tracks collectables and trades them between each
+other, everyone finishes collecting everything in the game so much more quickly
+than they would on their own. Turbot supports collecting:
+
+- 🦴 Fossils
+- 🐞 Bugs
+- 🐟 Fish
+- 🖼️ Art
+- 🎶 Songs
+
+#### 📈 Managing your Collection
+
+- `!collect`: Make something as collected
+- `!collected`: Show the things you've collected so far
+- `!count`: Count the number of collected things you have
+- `!needed`: Find out what collectables are needed by you and others
+- `!search`: Search for someone who needs a fossil or art
+- `!uncollect`: Remove something from your collection
+- `!uncollected`: Get a list of things that you haven't collected yet
+
+#### 🤔 Helper Utilities
+
+Some collections require additional support such as the `!art` command that
+helps users tell fake art from real art. The `!bugs` and `!fush` commands
+provide on where and when to catch those critters. These commands also know what
+critters you've already caught and will tailor their responses to the user.
+
+- `!art`: Get information on an art piece
+- `!bugs`: Get information on bugs
+- `!fish`: Get information on fish
+- `!new`: Get information on newly available fish and bugs
+
+## 🤖 Running Turbot
 
 First install `turbot` using [`pip`](https://pip.pypa.io/en/stable/):
 
@@ -36,63 +102,6 @@ also specify them via the environment variable `TURBOT_CHANNELS` as a semicolon
 delimited string, for example: `export TURBOT_CHANNELS="some;channels;here"`.
 
 More usage help can be found by running `turbot --help`.
-
-## 📱 Using the bot
-
-Once you've connected the bot to your server, you can interact with it over
-Discord via the following commands in any of the authorized channels.
-
-- `!about`: Get information about Turbot
-- `!help`: Provides detailed help about all of the following commands
-
-### 🤔 User Preferences
-
-These commands allow users to set their preferences. These preferences are used
-to make other commands more relevant, for example by converting times to the
-user's preferred timezone.
-
-- `!info`: Get a user's information
-- `!pref`: Set a user preference; use command to get a list of available options
-
-### 💸 Turnips
-
-These commands help users buy low and sell high in the stalk market.
-
-- `!best`: Look for the current best sell or buy
-- `!buy`: Save a buy price
-- `!clear`: Clear your price data
-- `!graph`: Graph price data
-- `!history`: Get price history
-- `!lastweek`: Get graph for last week's price data
-- `!oops`: Undo the last price data
-- `!predict`: Predict your price data for the rest of the week
-- `!reset`: Reset all users' data
-- `!sell`: Save a sell price
-
-### 🐟 Fish & 🐞 Bugs
-
-Provides users with information on where and when to catch critters.
-
-- `!bugs`: Get information on bugs
-- `!fish`: Get information on fish
-- `!new`: Get information on newly available fish and bugs
-
-### 🦴 Fossils, 🖼️ Art, & 🎶 Songs
-
-When a community of users tracks collectables and trades them between each
-other, everyone finishes collecting everything in the game so much more quickly
-than they would on their own.
-
-These commands can also help users tell fake art from real art.
-
-- `!art`: Get information on an art piece
-- `!collect`: Make something as collected
-- `!collected`: Show the things you've collected so far
-- `!count`: Count the number of collected things you have
-- `!needed`: Find out what collectables are needed by you and others
-- `!search`: Search for someone who needs a fossil or art
-- `!uncollect`: Remove something from your collection
-- `!uncollected`: Get a list of things that you haven't collected yet
 
 ## ⚛️ Heroku Support
 
