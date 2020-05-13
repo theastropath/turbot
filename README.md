@@ -94,7 +94,7 @@ These commands can also help users tell fake art from real art.
 - `!uncollect`: Remove something from your collection
 - `!uncollected`: Get a list of things that you haven't collected yet
 
-### ⚛️ Heroku Support
+## ⚛️ Heroku Support
 
 Turbot supports deployment to Heroku out of the box. All you need is your
 Discord bot token and you're ready to go! Just click the Deploy to Heroku
