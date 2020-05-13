@@ -70,7 +70,7 @@ than they would on their own. Turbot supports collecting:
 #### 🤔 Helper Utilities
 
 Some collections require additional support such as the `!art` command that
-helps users tell fake art from real art. The `!bugs` and `!fush` commands
+helps users tell fake art from real art. The `!bugs` and `!fish` commands
 provide on where and when to catch those critters. These commands also know what
 critters you've already caught and will tailor their responses to the user.
 
