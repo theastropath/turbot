@@ -96,8 +96,13 @@ These commands can also help users tell fake art from real art.
 
 ### ⚛️ Heroku Support
 
-Turbot supports deployment to Heroku out of the box.
-See our documentation on [Heroku Support](HEROKU.md) for details.
+Turbot supports deployment to Heroku out of the box. All you need is your
+Discord bot token and you're ready to go! Just click the Deploy to Heroku
+button, below.
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)][deploy]
+
+For more details see [our documentation on Heroku support](HEROKU.md).
 
 ---
 
@@ -110,11 +115,12 @@ See our documentation on [Heroku Support](HEROKU.md) for details.
 [codecov-badge]:    https://codecov.io/gh/theastropath/turbot/branch/master/graph/badge.svg
 [codecov]:          https://codecov.io/gh/theastropath/turbot
 [contributors]:     https://github.com/theastropath/turbot/graphs/contributors
+[deploy]:           https://heroku.com/deploy
 [lexicalunit]:      http://github.com/lexicalunit
 [mit-badge]:        https://img.shields.io/badge/License-MIT-yellow.svg
 [mit]:              https://opensource.org/licenses/MIT
+[pypi-badge]:       https://img.shields.io/pypi/v/turbot
+[pypi]:             https://pypi.org/project/turbot/
 [python-badge]:     https://img.shields.io/badge/python-3.7+-blue.svg
 [python]:           https://www.python.org/
 [theastropath]:     https://github.com/theastropath
-[pypi]:             https://pypi.org/project/turbot/
-[pypi-badge]:       https://img.shields.io/pypi/v/turbot

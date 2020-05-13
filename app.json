@@ -1,0 +1,25 @@
+{
+  "name": "Turbot",
+  "description": "A Discord bot for everything Animal Crossing: New Horizons",
+  "repository": "https://github.com/theastropath/turbot/",
+  "logo": "https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png",
+  "keywords": ["discord", "turnip", "bot", "animal crossing", "new horizons"],
+  "env": {
+    "TURBOT_TOKEN": {
+      "description": "Your Discord bot token",
+      "value": ""
+    },
+    "TURBOT_CHANNELS": {
+      "description": "List of channel names seperated by ;",
+      "value": "general;"
+    }
+  },
+  "formation": {
+    "worker": {
+      "quantity": 1
+    }
+  },
+  "buildpacks": [{
+    "url": "https://github.com/heroku/heroku-buildpack-python"
+  }]
+}

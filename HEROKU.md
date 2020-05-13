@@ -1,10 +1,13 @@
 # Heroku Support
 
 The `bin` directory contains scripts for use with [Heroku][heroku].
-Additionally, the files `Procfile`, `requirements.txt`, and `runtime.txt` all
-exist to support Heroku.
+Additionally, the files `Procfile`, `requirements.txt`, `runtime.txt`,
+and `app.json` all exist to support Heroku.
 
-## HOWTO: Deploy Turbot to Heroku
+There's a one-click to deploy button on the main [README](README.md) of this
+repository. If you'd rather go through the process manually, read further.
+
+## HOWTO: Manually Deploy Turbot to Heroku
 
 1. Create a Heroku account if you don't already have one.
    Free tier accounts are available.

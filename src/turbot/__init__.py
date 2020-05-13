@@ -1577,7 +1577,7 @@ def get_channels(channels_file):  # pragma: no cover
     """Returns the authorized channels the environment or your channels config file."""
     channels = getenv("TURBOT_CHANNELS", None)
     if channels:
-        return channels.split(";")
+        return list(filter(None, [name.strip() for name in channels.split(";")]))
 
     try:
         with open(channels_file, "r") as channels_file:
