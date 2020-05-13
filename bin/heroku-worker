@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# This script a heroku entry point for a Turbot worker.
+
+set -ue
+
+# I have no idea why any of this is required, basically heroku
+# or poetry or the combination of the two just fucking sucks.
+pip install poetry
+poetry env use system
+poetry config virtualenvs.create false
+
+poetry run turbot -v

@@ -33,13 +33,7 @@ fi
 # bump the version in pyproject.toml
 poetry version "$KIND"
 
-# install the new version
-poetry install
-
-# run once to rebuild the snapshot
-poetry run pytest -k test_on_message_about --snapshot-update 2>/dev/null 1>&2 || true
-
-# run again to ensure the build is good
+# run tests to ensure the build is good
 poetry run pytest
 
 # fetch the version from pyproject.toml

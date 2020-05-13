@@ -15,7 +15,7 @@ max-line-length = 90
 
 [tool.poetry]
 name = 'turbot'
-version = "4.1.0"
+version = "6.2.0"
 license = 'MIT'
 authors = [
     'TheAstropath <theastropath@gmail.com>',
@@ -37,8 +37,8 @@ classifiers = [
 ]
 packages = [
     { include = "turbot", from = "src" },
+    { include = "turnips", from = "src" }
 ]
-include = ["vendor/turnips/turnips-0.6.4.dev6+gc6ce6a0.tar.gz"]
 
 [tool.poetry.dependencies]
 click = "^7.1.2"
@@ -49,11 +49,12 @@ hupper = "^1.10.2"
 matplotlib = "^3.2.1"
 numpy = "^1.18.4"
 pandas = "^1.0.3"
+pydantic = "^1.5.1"
 python = '>=3.7,<4'
 python-dateutil = "^2.8.1"
 pytz = "^2020.1"
 pyyaml = "^5.3.1"
-turnips = {path = "vendor/turnips/turnips-0.6.4.dev6+gc6ce6a0.tar.gz", develop = false}
+unidecode = "^1.1.1"
 
 [tool.poetry.dev-dependencies]
 beautifulsoup4 = "^4.9.0"

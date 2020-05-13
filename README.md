@@ -31,7 +31,9 @@ To provide your Discord bot token either set an environment variable named
 
 For the list of channels you can provide channel names on the command line using
 any number of `--channel "name"` options. Alternatively you can create a file
-named `channels.txt` where each line of the file is a channel name.
+named `channels.txt` where each line of the file is a channel name. You can
+also specify them via the environment variable `TURBOT_CHANNELS` as a semicolon
+delimited string, for example: `export TURBOT_CHANNELS="some;channels;here"`.
 
 More usage help can be found by running `turbot --help`.
 
@@ -56,8 +58,7 @@ user's preferred timezone.
 
 These commands help users buy low and sell high in the stalk market.
 
-- `!bestbuy`: Look for the best buy
-- `!bestsell`: Look for the best sell
+- `!best`: Look for the current best sell or buy
 - `!buy`: Save a buy price
 - `!clear`: Clear your price data
 - `!graph`: Graph price data
@@ -68,7 +69,7 @@ These commands help users buy low and sell high in the stalk market.
 - `!reset`: Reset all users' data
 - `!sell`: Save a sell price
 
-### 🐟 Fish and Bugs
+### 🐟 Fish & 🐞 Bugs
 
 Provides users with information on where and when to catch critters.
 
@@ -76,7 +77,7 @@ Provides users with information on where and when to catch critters.
 - `!fish`: Get information on fish
 - `!new`: Get information on newly available fish and bugs
 
-### 🦴 Fossils & 🖼️ Art
+### 🦴 Fossils, 🖼️ Art, & 🎶 Songs
 
 When a community of users tracks collectables and trades them between each
 other, everyone finishes collecting everything in the game so much more quickly
@@ -84,15 +85,19 @@ than they would on their own.
 
 These commands can also help users tell fake art from real art.
 
-- `!allfossils`: Get a list of all possible fossils
 - `!art`: Get information on an art piece
-- `!collect`: Collect fossils or art
-- `!collected`: Show collected fossils and art
-- `!count`: Count the number of collected fossils and art
-- `!neededfossils`: Get what fossils are needed by users
+- `!collect`: Make something as collected
+- `!collected`: Show the things you've collected so far
+- `!count`: Count the number of collected things you have
+- `!needed`: Find out what collectables are needed by you and others
 - `!search`: Search for someone who needs a fossil or art
-- `!uncollect`: Remove a fossil or art from your collection
-- `!uncollected`: Get fossils and art not yet collected
+- `!uncollect`: Remove something from your collection
+- `!uncollected`: Get a list of things that you haven't collected yet
+
+### ⚛️ Heroku Support
+
+Turbot supports deployment to Heroku out of the box.
+See our documentation on [Heroku Support](HEROKU.md) for details.
 
 ---
 

@@ -1,62 +1,62 @@
 __**Turbot Help!**__
-> **!about**
->    Get information about Turbot.
-> 
-> **!allfossils**
->    Shows all possible fossils that you can donate to the museum.
-> 
-> **!art [List of art pieces]**
->    Get info about pieces of art that are available 
-> 
-> **!bestbuy**
->    Finds the best (and most recent) buying prices logged in the last 12 hours.
-> 
-> **!bestsell**
->    Finds the best (and most recent) selling prices logged in the last 12 hours.
-> 
-> **!bugs [name, leaving, arriving]**
->    Tells you what bugs are available now in your hemisphere.
-> 
-> **!buy <price> [day time]**
->    Log the price that you can buy turnips from Daisy Mae on your island.
-> 
-> **!clear**
->    Clears all of your own historical turnip prices.
-> 
-> **!collect <comma, separated, list, of, things>**
->    Mark collectables as donated to your museum. The names must match the in-game item name exactly. 
-> 
-> **!collected [user]**
->    Lists all collectables that you have already donated. If a user is provided, it gives the same information for that user instead. 
-> 
-> **!count <list of users>**
->    Provides a count of the number of pieces of collectables for the comma-separated list of users. 
-> 
-> **!fish [name, leaving, arriving]**
->    Tells you what fish are available now in your hemisphere.
-> 
-> **!graph**
->    Generates a historical graph of turnip prices for all users.
-> 
-> **!help**
->    Shows this help screen.
-> 
-> **!history [user]**
->    Show the historical turnip prices for a user. If no user is specified, it will display your own prices. 
-> 
-> **!info [user]**
->    Gives you information on a user. 
-> 
-> **!lastweek**
->    Displays the final graph from the last week before the data was reset.
-> 
-> **!neededfossils**
->    Lists all the needed fossils for all the channel members.
-> 
-> **!new**
->    Tells you what new things available in your hemisphere right now.
-> 
-> **!oops**
->    Remove your last logged turnip price.
-> 
-> **!predict [user]**
+
+**!about**
+>  Get information about Turbot.
+
+**!art** _[comma, separated, list, of, art, pieces]_
+>  Get info about pieces of art that are available
+
+**!best** _[buy|sell]_
+>  Finds the best, most recent, buy or sell price currently available. The default is to look for the best sell.
+
+**!bugs** _[name|leaving|arriving]_
+>  Tells you what bugs are available now in your hemisphere.
+
+**!buy** _<price> [day time]_
+>  Log the price that you can buy turnips from Daisy Mae on your island.
+
+**!clear**
+>  Clears all of your own historical turnip prices.
+
+**!collect** _<comma, separated, list, of, things>_
+>  Mark collectables as donated to your museum. The names must match the in-game item name exactly. 
+
+**!collected** _[user]_
+>  Lists all collectables that you have already donated. If a user is provided, it gives the same information for that user instead. 
+
+**!count** _[comma, separated, list, of, users]_
+>  Provides a count of the number of pieces of collectables for the comma-separated list of users. 
+
+**!fish** _[name|leaving|arriving]_
+>  Tells you what fish are available now in your hemisphere.
+
+**!graph**
+>  Generates a historical graph of turnip prices for all users.
+
+**!help**
+>  Shows this help screen.
+
+**!history** _[user]_
+>  Show the historical turnip prices for a user. If no user is specified, it will display your own prices. 
+
+**!info** _[user]_
+>  Gives you information on a user. 
+
+**!lastweek**
+>  Displays the final graph from the last week before the data was reset.
+
+**!needed** _<fossils|bugs|fish|art|songs>_
+>  Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
+
+**!new**
+>  Tells you what new things available in your hemisphere right now.
+
+**!oops**
+>  Remove your last logged turnip price.
+
+**!predict** _[user]_
+>  Get a link to a prediction calculator for a price history. 
+
+**!pref** _<preference> <value>_
+>  Set one of your user preferences. 
+

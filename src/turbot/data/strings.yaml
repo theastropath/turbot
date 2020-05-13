@@ -1,9 +1,6 @@
 allart: '__**All Pieces of Art**__
 
-  >>> $list'
-allfossils: '__**All Possible Fossils**__
-
-  >>> $list'
+  > $list'
 art_fake: '> **$name** can be fake.
 
   > **Description:** $desc
@@ -19,14 +16,17 @@ art_real: '> **$name** is always genuine.
 
   > **Real:** <$real_url>'
 best: '> **$name:** $timestamp for $price bells'
-bestbuy_header: __**Best Buying Prices in the Last 12 Hours**__
-bestsell_header: __**Best Selling Prices in the Last 12 Hours**__
+best_buy_header: __**Best Buying Prices in the Last 12 Hours**__
+best_invalid_param: Please choose either best buy or best sell.
+best_sell_header: __**Best Selling Prices in the Last 12 Hours**__
 bugs: '> **$name** is available $time, $location (sells for $price bells) $alert'
 bugs_header: '```diff
 
   -Eeek! What wretched things. Alas, I am obliged to respond...
 
   ```'
+bugs_none_available: No bugs that you haven't already caught are available at this
+  time.
 bugs_none_found: Did not find any bugs searching for "$search".
 buy: Logged buying price of $price for user $name.
 buy_no_params: Please include buying price after command name.
@@ -41,41 +41,63 @@ collect_art_dupe: 'The following art had already been collected:
 collect_art_new: 'Marked the following art as collected:
 
   > $items'
-collect_bugs: Collecting bugs is not supported yet.
+collect_bugs_dupe: 'The following bugs had already been collected:
+
+  > $items'
+collect_bugs_new: 'Marked the following bugs as collected:
+
+  > $items'
 collect_fish_dupe: 'The following fish had already been collected:
 
   > $items'
 collect_fish_new: 'Marked the following fish as collected:
 
   > $items'
-collect_fossil_dupe: 'The following fossils had already been collected:
+collect_fossils_dupe: 'The following fossils had already been collected:
 
   > $items'
-collect_fossil_new: 'Marked the following fossils as collected:
+collect_fossils_new: 'Marked the following fossils as collected:
 
   > $items'
 collect_no_params: Please provide the name of something to mark as collected.
+collect_songs_dupe: 'The following songs had already been collected:
+
+  > $items'
+collect_songs_new: 'Marked the following songs as collected:
+
+  > $items'
 collected_art: '__**$count pieces of art donated by $name**__
 
-  >>> $items'
+  > $items'
+collected_bugs: '__**$count bugs donated by $name**__
+
+  > $items'
 collected_fish: '__**$count fish donated by $name**__
 
-  >>> $items'
+  > $items'
 collected_fossils: '__**$count fossils donated by $name**__
 
-  >>> $items'
+  > $items'
+collected_songs: '__**$count songs collected by $name**__
+
+  > $items'
 congrats_all_art: '**Congratulations, you''ve collected all art!**'
+congrats_all_bugs: '**Congratulations, you''ve collected all bugs!**'
 congrats_all_fish: '**Congratulations, you''ve collected all fish!**'
 congrats_all_fossils: '**Congratulations, you''ve collected all fossils!**'
+congrats_all_songs: '**Congratulations, you''ve collected all songs!**'
 count_art_valid: '> **$name** has $count pieces of art remaining.'
 count_art_valid_header: __**Art Count**__
+count_bugs_valid: '> **$name** has $count bugs remaining.'
+count_bugs_valid_header: __**Bugs Count**__
 count_fish_valid: '> **$name** has $count fish remaining.'
 count_fish_valid_header: __**Fish Count**__
-count_fossil_valid: '> **$name** has $count fossils remaining.'
-count_fossil_valid_header: __**Fossil Count**__
+count_fossils_valid: '> **$name** has $count fossils remaining.'
+count_fossils_valid_header: __**Fossil Count**__
 count_invalid: '> $name'
 count_invalid_header: __**Did not recognize the following names**__
-count_no_params: Please provide at least one user name to search for.
+count_songs_valid: '> **$name** has $count songs remaining.'
+count_songs_valid_header: __**Songs Count**__
 creator_invalid: Your Animal Crossing creator code should be 12 numbers.
 creature_available_now: __**$kind available right now**__
 creature_available_this_month: __**$kind available this month**__
@@ -102,9 +124,13 @@ invalid_collectable: 'Unrecognized collectable names:
   > $items'
 lastweek: __**Historical Graph from Last Week**__
 lastweek_none: No graph from last week.
-neededfossils: '> **$name** needs $items'
-neededfossils_none: No fossils are known to be needed at this time, new users must
-  collect at least one fossil.
+needed: '> **$name** needs $items'
+needed_invalid_param: 'Invalid parameter, use one of: fossils, bugs, fish, art, or
+  songs.'
+needed_lots: _more than $limit $kind..._
+needed_no_param: 'Please provide a parameter: fossils, bugs, fish, art, or songs.'
+needed_none: No $kind are known to be needed at this time, new users must collect
+  at least one before being considered for this search.
 no_hemisphere: Please enter your hemisphere choice first using the !pref hemisphere
   command.
 not_a_command: Sorry, there is no command named "$request"
@@ -123,14 +149,15 @@ price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
 search_all_not_needed: No one currently needs this.
 search_art_row: '> $name needs arts: $items'
-search_bugs: Searching for bugs is not supported yet.
+search_bugs_row: '> $name needs bugs: $items'
 search_fish_row: '> $name needs fish: $items'
-search_fossil_row: '> $name needs fossils: $items'
+search_fossils_row: '> $name needs fossils: $items'
 search_invalid: 'Did not recognize the following collectables:
 
   > $items'
 search_no_params: Please provide the name of a collectable to search for.
 search_not_needed: '> No one needs: $items'
+search_songs_row: '> $name needs songs: $items'
 sell_higher_price: Logged selling price of $price for user $name. (Higher than last
   selling price of $last_price bells)
 sell_lower_price: Logged selling price of $price for user $name. (Lower than last
@@ -150,23 +177,38 @@ uncollect_art_already: 'The following pieces of art were already marked as not c
 uncollect_art_deleted: 'Unmarked the following pieces of art as collected:
 
   > $items'
-uncollect_bugs: Uncollecting bugs is not supported yet.
+uncollect_bugs_already: 'The following bugs were already marked as not collected:
+
+  > $items'
+uncollect_bugs_deleted: 'Unmarked the following bugs as collected:
+
+  > $items'
 uncollect_fish_already: 'The following fish were already marked as not collected:
 
   > $items'
 uncollect_fish_deleted: 'Unmarked the following fish as collected:
 
   > $items'
-uncollect_fossil_already: 'The following fossils were already marked as not collected:
+uncollect_fossils_already: 'The following fossils were already marked as not collected:
 
   > $items'
-uncollect_fossil_deleted: 'Unmarked the following fossils as collected:
+uncollect_fossils_deleted: 'Unmarked the following fossils as collected:
 
   > $items'
 uncollect_no_params: Please provide the name of something to mark as uncollected.
+uncollect_songs_already: 'The following songs were already marked as not collected:
+
+  > $items'
+uncollect_songs_deleted: 'Unmarked the following songs as collected:
+
+  > $items'
 uncollected_art_count: __**$count Pieces of art remaining for $name**__
-uncollected_art_remaining: '>>> $items'
+uncollected_art_remaining: '> $items'
+uncollected_bugs_count: __**$count bugs remaining for $name**__
+uncollected_bugs_remaining: '> $items'
 uncollected_fish_count: __**$count fish remaining for $name**__
-uncollected_fish_remaining: '>>> $items'
-uncollected_fossils_count: __**$count Fossils remaining for $name**__
-uncollected_fossils_remaining: '>>> $items'
+uncollected_fish_remaining: '> $items'
+uncollected_fossils_count: __**$count fossils remaining for $name**__
+uncollected_fossils_remaining: '> $items'
+uncollected_songs_count: __**$count songs remaining for $name**__
+uncollected_songs_remaining: '> $items'

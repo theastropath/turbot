@@ -2,6 +2,10 @@ __**Fossil Count**__
 > **buddy#82942320688758784** has 73 fossils remaining.
 > **friend#82169952898912256** has 73 fossils remaining.
 > **guy#82988021019836416** has 73 fossils remaining.
+__**Bugs Count**__
+> **buddy#82942320688758784** has 80 bugs remaining.
+> **friend#82169952898912256** has 80 bugs remaining.
+> **guy#82988021019836416** has 80 bugs remaining.
 __**Fish Count**__
 > **buddy#82942320688758784** has 79 fish remaining.
 > **friend#82169952898912256** has 78 fish remaining.
@@ -10,5 +14,9 @@ __**Art Count**__
 > **buddy#82942320688758784** has 43 pieces of art remaining.
 > **friend#82169952898912256** has 43 pieces of art remaining.
 > **guy#82988021019836416** has 43 pieces of art remaining.
+__**Songs Count**__
+> **buddy#82942320688758784** has 95 songs remaining.
+> **friend#82169952898912256** has 95 songs remaining.
+> **guy#82988021019836416** has 95 songs remaining.
 __**Did not recognize the following names**__
 > punk

@@ -1,0 +1,10 @@
+__**Fossil Count**__
+> **buddy** has 73 fossils remaining.
+__**Bugs Count**__
+> **buddy** has 80 bugs remaining.
+__**Fish Count**__
+> **buddy** has 80 fish remaining.
+__**Art Count**__
+> **buddy** has 43 pieces of art remaining.
+__**Songs Count**__
+> **buddy** has 95 songs remaining.
