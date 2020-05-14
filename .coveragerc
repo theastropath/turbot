@@ -1,7 +1,9 @@
 [run]
 branch = True
 source = src/turbot
-omit = src/turbot/_version.py
+omit =
+    src/turbot/_version.py
+    src/turbot/versions/env.py
 
 [report]
 ignore_errors = True

@@ -1,0 +1,33 @@
+scripts
+tests
+
+# documentation
+*.md
+!README*.md
+turbot.png
+
+# covreage
+.coverage*
+coverage*
+
+# config
+.gitignore
+.pytest_cache
+.python-version
+Dockerfile
+tox.ini
+
+# heroku
+app.json
+bin
+Procfile
+requirements.txt
+runtime.txt
+
+# artifacts
+.tox
+dist
+
+# application state
+db
+tmp

@@ -56,7 +56,7 @@ def ingest(writer, art_type):
             writer.writerow(dbentry)
 
 
-with open(Path("src") / "turbot" / "data" / "art.csv", "w", newline="") as out:
+with open(Path("src") / "turbot" / "assets" / "art.csv", "w", newline="") as out:
     writer = csv.writer(out, lineterminator=os.linesep)
     writer.writerow(
         ["name", "has_fake", "fake_description", "fake_image_url", "real_image_url",]

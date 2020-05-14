@@ -113,6 +113,11 @@ button, below.
 
 For more details see [our documentation on Heroku support](HEROKU.md).
 
+## 🐳 Docker Support
+
+You can also run Turbot via docker. See
+[our documentation on Docker Support](DOCKER.md) for help.
+
 ---
 
 [MIT][mit] © [TheAstropath][theastropath], [lexicalunit][lexicalunit] et [al][contributors]

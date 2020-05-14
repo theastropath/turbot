@@ -1,92 +1,150 @@
-from io import StringIO
+from os.path import dirname, realpath
 from pathlib import Path
 
+import alembic
+import alembic.config
 import pandas as pd
+import pytz
+from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship, sessionmaker
+
+PACKAGE_ROOT = Path(dirname(realpath(__file__)))
+ASSETS_DIR = PACKAGE_ROOT / "assets"
+ALEMBIC_INI = ASSETS_DIR / "alembic.ini"
+VERSIONS_DIR = PACKAGE_ROOT / "versions"
 
 
-class StoreFrame(pd.DataFrame):
-    _metadata = ["data_type"]
+Base = declarative_base()
 
-    @property
-    def _constructor(self):
-        s = StoreFrame
-        s.data_type = self.data_type
-        return s
 
-    @property
-    def _constructor_sliced(self):
-        s = pd.Series
-        s.data_type = self.data_type
-        return s
+class Fossil(Base):
+    __tablename__ = "fossils"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    name = Column(String(50), nullable=False)
+
+
+class Art(Base):
+    __tablename__ = "art"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    name = Column(String(50), nullable=False)
+
+
+class Fish(Base):
+    __tablename__ = "fish"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    name = Column(String(50), nullable=False)
+
+
+class Bug(Base):
+    __tablename__ = "bugs"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    name = Column(String(50), nullable=False)
+
+
+class Song(Base):
+    __tablename__ = "songs"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    name = Column(String(50), nullable=False)
+
+
+class Price(Base):
+    __tablename__ = "prices"
+    id = Column(Integer, primary_key=True, nullable=False)
+    author = Column(Integer, ForeignKey("users.author"))
+    kind = Column(String(20), nullable=False)
+    price = Column(Integer, nullable=False)
+    timestamp = Column(String(30), nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+    author = Column(Integer, primary_key=True, nullable=False)
+    hemisphere = Column(String(15))
+    hemisphere = Column(String(50))
+    timezone = Column(String(50))
+    island = Column(String(50))
+    friend = Column(String(20))
+    fruit = Column(String(10))
+    nickname = Column(String(50))
+    creator = Column(String(20))
+
+    prices = relationship("Price", backref="user")
+    songs = relationship("Song", backref="user")
+    bugs = relationship("Bug", backref="user")
+    fish = relationship("Fish", backref="user")
+    art = relationship("Art", backref="user")
+    fossils = relationship("Fossil", backref="user")
+
+    def get_timezone(self):
+        return pytz.timezone(self.timezone) if self.timezone else pytz.UTC
+
+
+def create_all(connection, db_url):
+    config = alembic.config.Config(str(ALEMBIC_INI))
+    config.set_main_option("script_location", str(VERSIONS_DIR))
+    config.set_main_option("sqlalchemy.url", db_url)
+    config.attributes["connection"] = connection
+    alembic.command.upgrade(config, "head")
+
+
+def reverse_all(connection, db_url):
+    config = alembic.config.Config(str(ALEMBIC_INI))
+    config.set_main_option("script_location", str(VERSIONS_DIR))
+    config.set_main_option("sqlalchemy.url", db_url)
+    config.attributes["connection"] = connection
+    alembic.command.downgrade(config, "base")
 
 
 class Data:
     """Persistent and in-memory store for user data."""
 
-    def __init__(self, *, db_dir):
-        self.db_dir = db_dir
-        self.config = {
-            "fossils": {"columns": {"author": "int64", "name": "str"},},
-            "art": {"columns": {"author": "int64", "name": "str"}},
-            "fish": {"columns": {"author": "int64", "name": "str"}},
-            "bugs": {"columns": {"author": "int64", "name": "str"}},
-            "songs": {"columns": {"author": "int64", "name": "str"}},
-            "prices": {
-                "columns": {
-                    "author": "int64",
-                    "kind": "object",
-                    "price": "int64",
-                    "timestamp": "datetime64[ns, UTC]",
-                },
-            },
-            "users": {
-                "columns": {
-                    "author": "int64",
-                    "hemisphere": "str",
-                    "timezone": "str",
-                    "island": "str",
-                    "friend": "str",
-                    "fruit": "str",
-                    "nickname": "str",
-                    "creator": "str",
-                },
-            },
+    def __init__(self, db_url):
+        self.db_url = db_url
+        self.engine = create_engine(db_url)
+        self.conn = self.engine.connect()
+        create_all(self.conn, db_url)
+        self.Session = sessionmaker(bind=self.engine)
+        self.metadata = Base.metadata
+        self.data_types = self.metadata.tables.keys()
+        self.columns = {
+            data_type: list(
+                filter(
+                    lambda name: name != "id",
+                    (column.name for column in self.metadata.tables[data_type].columns),
+                )
+            )
+            for data_type in self.data_types
         }
-        for data_type in self.config.keys():
-            self.config[data_type]["file"] = db_dir / f"{data_type}.csv"
-        self.in_memory = {data_type: None for data_type in self.config.keys()}
-
-    def file(self, data_type):
-        return self.config[data_type]["file"]
-
-    def commit(self, sf):
-        f_out = self.config[sf.data_type]["file"]
-        sf.to_csv(f_out, index=False)
-        self.in_memory[sf.data_type] = sf
+        self.dtypes = {
+            data_type: {
+                column: (
+                    "int64"
+                    if column in ["author", "price"]
+                    else "datetime64[ns, UTC]"
+                    if column == "timestamp"
+                    else "str"
+                )
+                for column in self.columns[data_type]
+            }
+            for data_type in self.data_types
+        }
+        self.models = {}
+        for cls in Base._decl_class_registry.values():
+            if hasattr(cls, "__tablename__") and cls.__tablename__ in self.columns:
+                self.models[cls.__tablename__] = cls
 
     def __getattr__(self, attr):
-        if attr not in self.config.keys():
+        if attr not in self.data_types:
             raise RuntimeError(f"there is no data store for {attr}")
 
-        cfg = self.config[attr]
-        columns = cfg["columns"]
-
-        def add_metadata(df):
-            sf = StoreFrame(df.fillna("").astype(columns))
-            sf.data_type = attr
-            return sf
-
-        df = self.in_memory[attr]
-        if df is not None:
-            return add_metadata(df)
-
-        f_in = cfg["file"]
-        cnames = list(columns.keys())
-        dtypes = list(columns.values())
-        if Path(f_in).exists():
-            parse_dates = any("datetime" in dtype for dtype in dtypes)
-            df = pd.read_csv(f_in, names=cnames, parse_dates=parse_dates, skiprows=1)
-        else:
-            df = pd.read_csv(StringIO(""), names=cnames, dtype=columns)
-
-        return add_metadata(df)
+        columns = self.columns[attr]
+        parse_dates = "timestamp" in columns
+        query = f"SELECT {','.join(columns)} FROM {attr};"
+        df = pd.read_sql_query(query, self.conn, parse_dates=parse_dates)
+        return df.fillna("").astype(self.dtypes[attr])

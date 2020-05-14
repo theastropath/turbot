@@ -1,0 +1,44 @@
+[
+    {
+        "fields": [
+            {
+                "inline": true,
+                "name": "Nickname",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Friend code",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Creator code",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Island",
+                "value": "Not set"
+            },
+            {
+                "inline": true,
+                "name": "Hemisphere",
+                "value": "Not Set"
+            },
+            {
+                "inline": true,
+                "name": "Native fruit",
+                "value": "Not Set"
+            }
+        ],
+        "footer": {
+            "text": "Current time is 12:00 AM UTC"
+        },
+        "thumbnail": {
+            "url": "http://example.com/avatar.png"
+        },
+        "title": "dude",
+        "type": "rich"
+    }
+]

@@ -23,41 +23,34 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
+from sqlalchemy import Date, and_, cast, desc, func
 from unidecode import unidecode
 
 from turbot._version import __version__
 from turbot.assets import Assets, s
-from turbot.data import Data
+from turbot.data import Data, Price, User
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
 
 matplotlib.use("Agg")
 
+# Application Paths
 RUNTIME_ROOT = Path(".")
 SCRIPTS_DIR = RUNTIME_ROOT / "scripts"
-DEFAULT_DB_DIR = RUNTIME_ROOT / "db"
+DB_DIR = RUNTIME_ROOT / "db"
+DEFAULT_DB_URL = f"sqlite:///{DB_DIR}/turbot.db"
 DEFAULT_CONFIG_TOKEN = RUNTIME_ROOT / "token.txt"
 DEFAULT_CONFIG_CHANNELS = RUNTIME_ROOT / "channels.txt"
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
-MIGRATIONS_FILE = DEFAULT_DB_DIR / "migrations.txt"
+MIGRATIONS_FILE = DB_DIR / "migrations.txt"
 MIGRATIONS_DIR = SCRIPTS_DIR / "migrations"
 
+# Application Settings
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
-
-USER_PREFRENCES = [
-    "hemisphere",
-    "timezone",
-    "island",
-    "friend",
-    "fruit",
-    "nickname",
-    "creator",
-]
-
-# Based on values from datetime.isoweekday()
-DAYS = {
+BASE_PROPHET_URL = "https://turnipprophet.io/?prices="
+DAYS = {  # Based on values from datetime.isoweekday()
     "monday": 1,
     "tuesday": 2,
     "wednesday": 3,
@@ -66,10 +59,21 @@ DAYS = {
     "saturday": 6,
     "sunday": 7,
 }
-IDAYS = dict(map(reversed, DAYS.items()))
+IDAYS = dict(map(reversed, DAYS.items()))  # Reverse lookup from DAYS dict
 
 
-class Validate:
+class PrefValidate:
+    """Provides utilites for validating user input of preferences"""
+
+    PREFRENCES = [
+        "hemisphere",
+        "timezone",
+        "island",
+        "friend",
+        "fruit",
+        "nickname",
+        "creator",
+    ]
     FRUITS = ["apple", "cherry", "orange", "peach", "pear"]
     HEMISPHERES = ["northern", "southern"]
 
@@ -122,6 +126,7 @@ def day_and_time(dt):
 
 
 def sanitize_collectable(item):
+    """Converts a user inputed item to a form suitable for comparing against assets."""
     return unidecode(item.strip().lower())
 
 
@@ -229,7 +234,14 @@ def is_turbot_admin(channel, user_or_member):
     return any(role.name == "Turbot Admin" for role in member.roles) if member else False
 
 
+def ensure_application_directories_exist():
+    """Idempotent function to make sure needed application directories are there."""
+    TMP_DIR.mkdir(exist_ok=True)
+    DB_DIR.mkdir(exist_ok=True)
+
+
 def command(f):
+    """Decorator for Tubot command methods."""
     f.is_command = True
     return f
 
@@ -237,17 +249,22 @@ def command(f):
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
-    def __init__(
-        self, token="", channels=[], db_dir=DEFAULT_DB_DIR, log_level=None,
-    ):
+    def __init__(self, token="", channels=[], db_url=DEFAULT_DB_URL, log_level=None):
         if log_level:  # pragma: no cover
             logging.basicConfig(level=log_level)
         super().__init__()
         self.token = token
         self.channels = channels
-        self.base_prophet_url = "https://turnipprophet.io/?prices="
-        self._last_backup_filename = None
-        self.data = Data(db_dir=db_dir)
+        self.last_backup_filename = None
+
+        # During the processing of a command there will be valid SQLAlchemy session
+        # object available for use, commits and rollbacks are handled automatically.
+        self.session = None
+
+        # We have to make sure that DB_DIR exists before we try to create
+        # the database as part of instantiating the Data object.
+        ensure_application_directories_exist()
+        self.data = Data(db_url)
 
         # build a list of commands supported by this bot by fetching @command methods
         members = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -263,17 +280,11 @@ class Turbot(discord.Client):
     def run(self):  # pragma: no cover
         super().run(self.token)
 
-    def last_backup_filename(self):
-        """Return the name of the last known backup file for prices or None if unknown."""
-        return self._last_backup_filename
-
     def backup_prices(self, data):
         """Backs up the prices data to a datetime stamped file."""
-        filename = datetime.now(pytz.utc).strftime(
-            "prices-%Y-%m-%d.csv"  # TODO: configurable?
-        )
-        filepath = Path(self.data.file("prices")).parent / filename
-        self._last_backup_filename = filepath
+        filename = datetime.now(pytz.utc).strftime("prices-%Y-%m-%d.csv")
+        filepath = Path(DB_DIR) / filename
+        self.last_backup_filename = filepath
         data.to_csv(filepath, index=False)
 
     def _get_island_data(self, user):
@@ -405,49 +416,29 @@ class Turbot(discord.Client):
         """Adds a price to the prices data file for the given author and kind."""
         at = datetime.now(pytz.utc) if not at else at
         at = at.astimezone(pytz.utc)  # always store data in UTC
-        prices = self.data.prices
-        row = pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]])
-        prices = prices.append(row, ignore_index=True)
-        self.data.commit(prices)
+        new_price = Price(author=author.id, kind=kind, price=price, timestamp=str(at))
+        self.session.add(new_price)
 
     def get_last_price(self, user_id):
         """Returns the last sell price for the given user id."""
-        prices = self.data.prices
-        last = (
-            prices[(prices.author == user_id) & (prices.kind == "sell")]
-            .sort_values(by=["timestamp"])
-            .tail(1)
-            .price
-        )
-        return last.iloc[0] if last.any() else None
-
-    def get_user_prefs(self, user_id):
-        users = self.data.users
-        row = users[users.author == user_id].tail(1)
-        if row.empty:
-            return {}
-
-        prefs = {}
-        data = row.to_dict(orient="records")[0]
-        for column in users.columns[1:]:
-            if not data[column]:
-                continue
-            if column == "timezone":
-                butt = data[column]
-                prefs[column] = pytz.timezone(butt)
-            else:
-                prefs[column] = data[column]
-        return prefs
+        most_recent = (
+            self.session.query(Price)
+            .filter_by(author=user_id, kind="sell")
+            .order_by(desc(cast(Price.timestamp, Date)), desc(Price.id))
+        ).first()
+        return most_recent.price if most_recent else None
 
     def get_user_timeline(self, user_id):
+        # TODO: Use user.prices relation to get a user's prices.
         prices = self.data.prices
         past = datetime.now(pytz.utc) - timedelta(days=12)
         yours = prices[(prices.author == user_id) & (prices.timestamp > past)]
         yours = yours.sort_values(by=["timestamp"])
 
         # convert all timestamps to the target user's timezone
-        target_timezone = self.get_user_prefs(user_id).get("timezone", pytz.UTC)
-        yours["timestamp"] = yours.timestamp.dt.tz_convert(target_timezone)
+        user = self.session.query(User).get(user_id)
+        timezone = user.get_timezone() if user else pytz.UTC
+        yours["timestamp"] = yours.timestamp.dt.tz_convert(timezone)
 
         recent_buy = yours[yours.kind == "buy"].tail(1)
         if recent_buy.empty:  # no buy found
@@ -490,23 +481,23 @@ class Turbot(discord.Client):
         return timeline
 
     def to_usertime(self, author_id, dt):
-        user_timezone = self.get_user_prefs(author_id).get("timezone", pytz.UTC)
+        user = self.session.query(User).get(author_id)
+        timezone = user.get_timezone() if user else pytz.UTC
         if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
-            return dt.tz_convert(user_timezone)
+            return dt.tz_convert(timezone)
         elif hasattr(dt, "astimezone"):  # python-datetime-like objects
-            return dt.astimezone(user_timezone)
+            return dt.astimezone(timezone)
         else:  # pragma: no cover
             logging.warning(f"can't convert tz on {dt} for user {author_id}")
             return dt
 
     def set_user_pref(self, author, pref, value):
-        users = self.data.users
-        row = users[users.author == author.id].tail(1)
-        if row.empty:
-            users = users.append({"author": author.id, pref: value}, ignore_index=True)
-        else:
-            users.at[row.index, pref] = value
-        self.data.commit(users)
+        self.session.merge(User(author=author.id, **{pref: value}))
+
+    def ensure_user_exists(self, user):
+        """Ensures that the user row exists for the given discord user."""
+        if not self.session.query(User).get(user.id):
+            self.session.add(User(author=user.id))
 
     def paginate(self, text):
         """Discord responses must be 2000 characters of less; paginate breaks them up."""
@@ -558,7 +549,15 @@ class Turbot(discord.Client):
             logging.debug("%s (author=%s, params=%s)", command, message.author, params)
             method = getattr(self, command)
             async with message.channel.typing():
-                response, attachment = method(message.channel, message.author, params)
+                self.session = self.data.Session()
+                try:
+                    response, attachment = method(message.channel, message.author, params)
+                    self.session.commit()
+                except:
+                    self.session.rollback()
+                    raise
+                finally:
+                    self.session.close()
             if not isinstance(response, list):
                 response = [response]
             last_reply_index = len(response) - 1
@@ -712,6 +711,7 @@ class Turbot(discord.Client):
             return s(err.key), None
 
         logging.debug("saving sell price of %s bells for user id %s", price, author.id)
+        self.ensure_user_exists(author)
         self.append_price(author=author, kind="sell", price=price, at=price_time)
 
         key = (
@@ -748,6 +748,7 @@ class Turbot(discord.Client):
             return s(err.key), None
 
         logging.debug("saving buy price of %s bells for user id %s", price, author.id)
+        self.ensure_user_exists(author)
         self.append_price(author=author, kind="buy", price=price, at=price_time)
 
         return s("buy", price=price, name=author), None
@@ -762,13 +763,22 @@ class Turbot(discord.Client):
             return s("not_admin"), None
 
         self.generate_graph(channel, None, LASTWEEKCMD_FILE)
-        prices = self.data.prices
-        self.backup_prices(prices)
+        # TODO: Backup prices to a table instead of csv file.
+        self.backup_prices(self.data.prices)
 
-        buys = prices[prices.kind == "buy"].sort_values(by="timestamp")
-        idx = buys.groupby(by="author")["timestamp"].idxmax()
-        prices = buys.loc[idx]
-        self.data.commit(prices)
+        subq = (
+            self.session.query(Price.id, func.max(Price.timestamp).label("maxdate"),)
+            .filter(Price.kind == "buy")
+            .group_by(Price.author)
+            .subquery("t2")
+        )
+        keep_rows = self.session.query(Price).join(
+            subq, and_(Price.id == subq.c.id, Price.timestamp == subq.c.maxdate),
+        )
+        keep_ids = [row.id for row in keep_rows]
+        self.session.query(Price).filter(~Price.id.in_(keep_ids)).delete(
+            synchronize_session=False
+        )
         return s("reset"), None
 
     @command
@@ -801,6 +811,7 @@ class Turbot(discord.Client):
         if not target_name or not target_id:
             return s("cant_find_user", name=target), None
 
+        # TODO: Get prices via user.prices relation.
         prices = self.data.prices
         yours = prices[prices.author == target_id]
         lines = [s("history_header", name=target_name)]
@@ -823,9 +834,11 @@ class Turbot(discord.Client):
         """
         target = author.id
         target_name = discord_user_name(channel, target)
-        prices = self.data.prices
-        prices = prices.drop(prices[prices.author == author.id].tail(1).index)
-        self.data.commit(prices)
+        user = self.session.query(User).get(author.id)
+        if not user or len(user.prices) < 1:
+            return s("oops_no_data"), None
+        last_price = user.prices[-1]
+        self.session.delete(last_price)
         return s("oops", name=target_name), None
 
     @command
@@ -834,9 +847,7 @@ class Turbot(discord.Client):
         Clears all of your own historical turnip prices.
         """
         user_id = discord_user_id(channel, str(author))
-        prices = self.data.prices
-        prices = prices[prices.author != user_id]
-        self.data.commit(prices)
+        self.session.query(Price).filter_by(author=user_id).delete()
         return s("clear", name=author), None
 
     @command
@@ -871,32 +882,34 @@ class Turbot(discord.Client):
         if not params:
             return s("collect_no_params"), None
 
+        self.ensure_user_exists(author)
         items = set(sanitize_collectable(item) for item in " ".join(params).split(","))
         valid, invalid = self.assets.validate(items)
 
         lines = []
 
-        def add_lines(kind, valid_items, fullset):
+        def add_lines(user, kind, valid_items, fullset):
             if not valid_items:
                 return
-            store = getattr(self.data, kind)
-            yours = store[store.author == author.id]
-            dupes = yours.loc[yours.name.isin(valid_items)].name.values.tolist()
-            new_items = list(set(valid_items) - set(dupes))
-            new_data = [[author.id, name] for name in new_items]
-            new_fossils = pd.DataFrame(columns=store.columns, data=new_data)
-            store = store.append(new_fossils, ignore_index=True)
-            yours = store[store.author == author.id]  # re-fetch for congrats
-            self.data.commit(store)
+
+            model = self.data.models[kind]
+            yours = getattr(user, kind)
+            dupes = set(item.name for item in yours if item.name in valid_items)
+            new_items = valid_items - dupes
+            collected_all = len(yours) + len(new_items) == len(fullset)
+            for item in new_items:
+                self.session.add(model(author=author.id, name=item))
+
             if new_items:
                 lines.append(s(f"collect_{kind}_new", items=", ".join(sorted(new_items))))
             if dupes:
                 lines.append(s(f"collect_{kind}_dupe", items=", ".join(sorted(dupes))))
-            if len(fullset) == len(yours.index):
+            if collected_all:
                 lines.append(s(f"congrats_all_{kind}"))
 
+        user = self.session.query(User).get(author.id)
         for kind in self.assets.collectables:
-            add_lines(kind, valid[kind], self.assets[kind].all)
+            add_lines(user, kind, valid[kind], self.assets[kind].all)
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -912,19 +925,24 @@ class Turbot(discord.Client):
         if not params:
             return s("uncollect_no_params"), None
 
+        self.ensure_user_exists(author)
         items = set(sanitize_collectable(item) for item in " ".join(params).split(","))
         valid, invalid = self.assets.validate(items)
 
         lines = []
 
-        def add_lines(kind, valid_items):
-            store = getattr(self.data, kind)
-            yours = store[store.author == author.id]
-            previously_collected = yours.loc[yours.name.isin(valid_items)]
-            deleted = set(previously_collected.name.values.tolist())
-            didnt_have = valid_items - deleted
-            store = store.drop(previously_collected.index)
-            self.data.commit(store)
+        def add_lines(user, kind, valid_items):
+            if not valid_items:
+                return
+
+            model = self.data.models[kind]
+            yours = getattr(user, kind)
+            to_delete = [item for item in yours if item.name in valid_items]
+            self.session.query(model).filter(
+                model.id.in_([item.id for item in to_delete])
+            ).delete(synchronize_session=False)
+            deleted = set(item.name for item in to_delete)
+            didnt_have = [item for item in valid_items if item not in deleted]
             if deleted:
                 items_str = ", ".join(sorted(deleted))
                 lines.append(s(f"uncollect_{kind}_deleted", items=items_str))
@@ -932,8 +950,9 @@ class Turbot(discord.Client):
                 items_str = ", ".join(sorted(didnt_have))
                 lines.append(s(f"uncollect_{kind}_already", items=items_str))
 
+        user = self.session.query(User).get(author.id)
         for kind in self.assets.collectables:
-            add_lines(kind, valid[kind])
+            add_lines(user, kind, valid[kind])
 
         if invalid:
             lines.append(s("invalid_collectable", items=", ".join(sorted(invalid))))
@@ -1131,7 +1150,7 @@ class Turbot(discord.Client):
 
         success = self.generate_graph(channel, target_user, GRAPHCMD_FILE)
         query = ".".join((str(price) if price else "") for price in timeline).rstrip(".")
-        url = f"{self.base_prophet_url}{query}"
+        url = f"{BASE_PROPHET_URL}{query}"
         attach = discord.File(GRAPHCMD_FILE) if success else None
         return s("predict", name=target_name, url=url), attach
 
@@ -1141,16 +1160,16 @@ class Turbot(discord.Client):
         Set one of your user preferences. @ <preference> <value>
         """
         if not params:
-            return s("pref_no_params", prefs=", ".join(USER_PREFRENCES)), None
+            return s("pref_no_params", prefs=", ".join(PrefValidate.PREFRENCES)), None
 
         pref = params[0].lower()
-        if pref not in USER_PREFRENCES:
-            return s("pref_invalid_pref", prefs=", ".join(USER_PREFRENCES)), None
+        if pref not in PrefValidate.PREFRENCES:
+            return s("pref_invalid_pref", prefs=", ".join(PrefValidate.PREFRENCES)), None
         if len(params) <= 1:
             return s("pref_no_value", pref=pref), None
 
         value = " ".join(params[1:])
-        validated_value = getattr(Validate, pref)(value)
+        validated_value = getattr(PrefValidate, pref)(value)
         if not validated_value:
             return s(f"{pref}_invalid"), None
 
@@ -1302,8 +1321,8 @@ class Turbot(discord.Client):
 
     def _creatures(self, *, author, params, kind, source, force_text=False):
         """The fish and bugs commands are so similar; I factored them out to a helper."""
-        hemisphere = self.get_user_prefs(author.id).get("hemisphere", None)
-        if not hemisphere:
+        user = self.session.query(User).get(author.id)
+        if not user or not user.hemisphere:
             return s("no_hemisphere")
 
         now = self.to_usertime(author.id, datetime.now(pytz.utc))
@@ -1311,7 +1330,9 @@ class Turbot(discord.Client):
         first_this_month = now.replace(day=1)
         last_month = (first_this_month - timedelta(days=1)).strftime("%b").lower()
         next_month = (first_this_month + relativedelta(months=1)).strftime("%b").lower()
-        available = source[(source.hemisphere == hemisphere) & (source[this_month] == 1)]
+        available = source[
+            (source.hemisphere == user.hemisphere) & (source[this_month] == 1)
+        ]
 
         def details(row):
             alert = (
@@ -1343,9 +1364,11 @@ class Turbot(discord.Client):
                 return s(f"{kind}_none_found", search=user_input)
         else:
             if kind == "fish":
+                # TODO: Get a user's caught fish via user.fish relationship.
                 caught = self.data.fish
                 caught = caught[caught.author == author.id]
             else:  # kind == "bugs"
+                # TODO: Get a user's caught bugs via user.bugs relationship.
                 caught = self.data.bugs
                 caught = caught[caught.author == author.id]
 
@@ -1459,38 +1482,38 @@ class Turbot(discord.Client):
         return [*bugs, *fish], None
 
     def _info_embed(self, user):
-        prefs = self.get_user_prefs(user.id)
+        prefs = self.session.query(User).get(user.id)
 
         embed = discord.Embed(title=user.name)
         embed.set_thumbnail(url=user.avatar_url)
 
-        nickname = prefs.get("nickname", None)
+        nickname = prefs.nickname
         if nickname:
             embed.add_field(name="Nickname", value=nickname)
         else:
             embed.add_field(name="Nickname", value="Not set")
 
-        code = prefs.get("friend", None)
+        code = prefs.friend
         if code:
             code_str = f"SW-{code[0:4]}-{code[4:8]}-{code[8:12]}"
             embed.add_field(name="Friend code", value=code_str)
         else:
             embed.add_field(name="Friend code", value="Not set")
 
-        code = prefs.get("creator", None)
+        code = prefs.creator
         if code:
             code_str = f"MA-{code[0:4]}-{code[4:8]}-{code[8:12]}"
             embed.add_field(name="Creator code", value=code_str)
         else:
             embed.add_field(name="Creator code", value="Not set")
 
-        island = prefs.get("island", "Not set")
+        island = prefs.island or "Not set"
         embed.add_field(name="Island", value=island)
 
-        hemisphere = prefs.get("hemisphere", "Not set").title()
+        hemisphere = (prefs.hemisphere or "Not set").title()
         embed.add_field(name="Hemisphere", value=hemisphere)
 
-        fruit = prefs.get("fruit", "Not set").title()
+        fruit = (prefs.fruit or "Not set").title()
         embed.add_field(name="Native fruit", value=fruit)
 
         now = self.to_usertime(user.id, datetime.now(pytz.UTC))
@@ -1509,6 +1532,7 @@ class Turbot(discord.Client):
 
         query = " ".join(params).lower()  # allow spaces in names
 
+        # TODO: Potentially use SQLAlchemy's yield_per() here to avoid memory overuse.
         for _, row in self.data.users.iterrows():
             user_id = int(row["author"])
             user_name = discord_user_name(channel, user_id)
@@ -1518,11 +1542,6 @@ class Turbot(discord.Client):
                 user = discord_user_from_name(channel, user_name)
                 return self._info_embed(user), None
 
-        # check if user exists, they just don't have any info
-        for member in channel.members:
-            if member.name.lower().find(query) != -1:
-                return s("info_no_prefs", user=member), None
-
         return s("info_not_found"), None
 
     @command
@@ -1531,20 +1550,15 @@ class Turbot(discord.Client):
         Get information about Turbot.
         """
         embed = discord.Embed(title="Turbot")
-        embed.set_thumbnail(
-            url="https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png"
-        )
-        embed.add_field(
-            name="Version",
-            value=f"[{__version__}](https://pypi.org/project/turbot/{__version__}/)",
-        )
+        thumb = "https://raw.githubusercontent.com/theastropath/turbot/master/turbot.png"
+        embed.set_thumbnail(url=thumb)
+        version = f"[{__version__}](https://pypi.org/project/turbot/{__version__}/)"
+        embed.add_field(name="Version", value=version)
         embed.add_field(name="Package", value="[PyPI](https://pypi.org/project/turbot/)")
-        embed.add_field(
-            name="Author", value="[TheAstropath](https://github.com/theastropath)"
-        )
-        embed.add_field(
-            name="Maintainer", value="[lexicalunit](https://github.com/lexicaluit)"
-        )
+        author = "[TheAstropath](https://github.com/theastropath)"
+        embed.add_field(name="Author", value=author)
+        maintainer = "[lexicalunit](https://github.com/lexicaluit)"
+        embed.add_field(name="Maintainer", value=maintainer)
         embed.description = (
             "A Discord bot for everything _Animal Crossing: New Horizons._\n"
             "\n"
@@ -1586,6 +1600,11 @@ def get_channels(channels_file):  # pragma: no cover
         return []
 
 
+def get_db_url(fallback):  # pragma: no cover
+    """Returns the database url from the environment or else the given fallback."""
+    return getenv("TURBOT_DB_URL", fallback)
+
+
 def apply_migrations():  # pragma: no cover
     """Applies any migration scripts that haven't already been applied."""
 
@@ -1618,20 +1637,20 @@ def apply_migrations():  # pragma: no cover
     type=click.Choice(["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]),
     default="ERROR",
 )
-@click.option("-v", "--verbose", count=True, help="sets log level to DEBUG")
+@click.option("-v", "--verbose", count=True, help="Sets log level to DEBUG.")
 @click.option(
     "-b",
     "--bot-token-file",
     default=DEFAULT_CONFIG_TOKEN,
-    help="read your discord bot token from this file; "
-    "you can also set the token directly via the environment variable TURBOT_TOKEN",
+    help="Read your discord bot token from this file; "
+    "you can also set the token directly via the environment variable TURBOT_TOKEN.",
 )
 @click.option(
     "-c",
     "--channel",
     multiple=True,
     help=(
-        "authorize a channel; use this multiple times to authorize multiple channels; "
+        "Authorize a channel; use this multiple times to authorize multiple channels; "
         "you can also set the list of channels via the TURBOT_CHANNELS environment "
         "variable separated by ; (semicolon)."
     ),
@@ -1641,12 +1660,18 @@ def apply_migrations():  # pragma: no cover
     "--auth-channels-file",
     default=DEFAULT_CONFIG_CHANNELS,
     help=(
-        "read channel names from this file; you can also set the list of channels via "
+        "Read channel names from this file; you can also set the list of channels via "
         "the TURBOT_CHANNELS environment variable separated by ; (semicolon)."
     ),
 )
 @click.option(
-    "--db-dir", default=DEFAULT_DB_DIR, help="use this directory for user db files"
+    "-d",
+    "--database-url",
+    default=DEFAULT_DB_URL,
+    help=(
+        "Database url connection string; "
+        "you can also set this via the TURBOT_DB_URL environment variable."
+    ),
 )
 @click.version_option(version=__version__)
 @click.option(
@@ -1656,25 +1681,28 @@ def apply_migrations():  # pragma: no cover
     help="Development mode, automatically reload bot when source changes",
 )
 def main(
-    log_level, verbose, bot_token_file, channel, auth_channels_file, db_dir, dev,
+    log_level, verbose, bot_token_file, channel, auth_channels_file, database_url, dev
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
     if not auth_channels:
         print("error: you must provide at least one authorized channel", file=sys.stderr)
         sys.exit(1)
 
-    # ensure transient application directories exist
-    db_dir.mkdir(exist_ok=True)
-    TMP_DIR.mkdir(exist_ok=True)
+    database_url = get_db_url(database_url)
+
+    # We have to make sure that application directories exist
+    # before we try to create we can run any of the migrations.
+    ensure_application_directories_exist()
+
+    # Make sure to apply any migrations **before** a client is created!
+    apply_migrations()
 
     client = Turbot(
         token=get_token(bot_token_file),
         channels=auth_channels,
-        db_dir=db_dir,
+        db_url=database_url,
         log_level=getattr(logging, "DEBUG" if verbose else log_level),
     )
-
-    apply_migrations()
 
     if dev:
         reloader = hupper.start_reloader("turbot.main")

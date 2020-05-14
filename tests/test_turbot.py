@@ -1,8 +1,8 @@
+import csv
 import inspect
 import json
 import random
 import re
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from os import chdir
@@ -11,10 +11,12 @@ from pathlib import Path
 from subprocess import run
 from unittest.mock import MagicMock, Mock
 
+import pandas as pd
 import pytest
 import pytz
 import toml
 from callee import Matching
+from pandas.testing import assert_frame_equal
 
 import turbot
 from turbot.assets import load_strings
@@ -144,7 +146,7 @@ UNAUTHORIZED_CHANNEL = "bad channel"
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
 
 TST_ROOT = dirname(realpath(__file__))
-DAT_ROOT = Path(TST_ROOT) / "data"
+FIXTURES_ROOT = Path(TST_ROOT) / "fixtures"
 REPO_ROOT = Path(TST_ROOT).parent
 SRC_ROOT = REPO_ROOT / "src"
 
@@ -227,22 +229,8 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot.Turbot, "generate_graph", mocker.Mock(return_value=False))
 
     freezer.move_to(NOW)
-    return turbot.Turbot(
-        token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_dir=tmp_path,
-    )
-
-
-@pytest.fixture
-def lines():
-    wrote_lines = defaultdict(int)
-
-    def next(path):
-        with open(path, "r") as f:
-            rvalue = f.readlines()[wrote_lines[path] :]
-            wrote_lines[path] += len(rvalue)
-            return rvalue
-
-    return next
+    db_url = f"sqlite:///{tmp_path}/turbot.db"
+    return turbot.Turbot(token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_url=db_url)
 
 
 @pytest.fixture
@@ -298,6 +286,15 @@ def with_bugs_header(monkeypatch):
 @pytest.fixture
 def without_bugs_header(monkeypatch):
     monkeypatch.setattr(random, "randint", lambda l, h: 0)  # 0% chance of bugs header
+
+
+@pytest.fixture
+def spoof_session(client):
+    """
+    The client creates a session when processing a command,
+    we have to create one ourselves when not in a command context.
+    """
+    client.session = client.data.Session()
 
 
 ##############################
@@ -371,7 +368,7 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             await client.on_message(MockMessage(someone(), channel, "!help"))
 
-    async def test_on_message_sell_at_time_with_tz(self, client, channel, lines, freezer):
+    async def test_on_message_sell_at_time_with_tz(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -392,12 +389,11 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},sell,{amount},{monday_evening_adjust}\n",
+        assert client.data.prices.values.tolist() == [
+            [author.id, "sell", amount, monday_evening_adjust],
         ]
 
-    async def test_get_user_timeline(self, client, channel, lines, freezer):
+    async def test_get_user_timeline(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -434,7 +430,7 @@ class TestTurbot:
             None,
         ]
 
-    async def test_get_user_timeline_buy_monday(self, client, channel, lines, freezer):
+    async def test_get_user_timeline_buy_monday(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -468,7 +464,7 @@ class TestTurbot:
             None,
         ]
 
-    async def test_get_user_timeline_buy_at_sunday(self, client, channel, lines, freezer):
+    async def test_get_user_timeline_buy_at_sunday(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -485,7 +481,7 @@ class TestTurbot:
             "> Can buy turnips from Daisy Mae for 90 bells 3 days ago (Sunday am)"
         )
 
-    async def test_get_user_timeline_no_sells(self, client, channel, lines, freezer):
+    async def test_get_user_timeline_no_sells(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -512,7 +508,7 @@ class TestTurbot:
             None,
         ]
 
-    async def test_get_user_timeline_sunday_sells(self, client, channel, lines, freezer):
+    async def test_get_user_timeline_sunday_sells(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -548,7 +544,7 @@ class TestTurbot:
             None,
         ]
 
-    async def test_on_message_sell_at_time(self, client, channel, lines, freezer):
+    async def test_on_message_sell_at_time(self, client, channel, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
         monday_evening = monday_morning + timedelta(hours=13)
         command_time = monday_morning + timedelta(days=3)
@@ -562,9 +558,8 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},sell,{amount},{monday_evening}\n",
+        assert client.data.prices.values.tolist() == [
+            [author.id, "sell", amount, monday_evening]
         ]
 
     async def test_on_message_sell_bad_time(self, client, channel):
@@ -599,19 +594,16 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!sell 0"))
         assert channel.last_sent_response == ("Selling price must be greater than zero.")
 
-    async def test_on_message_sell_extra_space(self, client, channel, lines):
+    async def test_on_message_sell_extra_space(self, client, channel):
         author = someone()
         amount = somebells()
         await client.on_message(MockMessage(author, channel, f"!sell  {amount}"))
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},sell,{amount},{NOW}\n",
-        ]
+        assert client.data.prices.values.tolist() == [[author.id, "sell", amount, NOW]]
 
-    async def test_on_message_sell(self, client, channel, lines):
+    async def test_on_message_sell(self, client, channel):
         # initial sale
         author = someone()
         amount = somebells()
@@ -619,10 +611,6 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged selling price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},sell,{amount},{NOW}\n",
-        ]
 
         # same price sale
         await client.on_message(MockMessage(author, channel, f"!sell {amount}"))
@@ -630,7 +618,6 @@ class TestTurbot:
             f"Logged selling price of {amount} for user {author}. "
             f"(Same as last selling price)"
         )
-        assert lines(client.data.file("prices")) == [f"{author.id},sell,{amount},{NOW}\n"]
 
         # higher price sale
         new_amount = amount + somebells()
@@ -639,9 +626,6 @@ class TestTurbot:
             f"Logged selling price of {new_amount} for user {author}. "
             f"(Higher than last selling price of {amount} bells)"
         )
-        assert lines(client.data.file("prices")) == [
-            f"{author.id},sell,{new_amount},{NOW}\n"
-        ]
 
         # lower price sale
         last_amount = round(amount / 2)
@@ -650,11 +634,15 @@ class TestTurbot:
             f"Logged selling price of {last_amount} for user {author}. "
             f"(Lower than last selling price of {new_amount} bells)"
         )
-        assert lines(client.data.file("prices")) == [
-            f"{author.id},sell,{last_amount},{NOW}\n"
+
+        assert client.data.prices.values.tolist() == [
+            [author.id, "sell", amount, NOW],
+            [author.id, "sell", amount, NOW],
+            [author.id, "sell", new_amount, NOW],
+            [author.id, "sell", last_amount, NOW],
         ]
 
-    async def test_on_message_buy_at_time_with_tz(self, client, channel, lines, freezer):
+    async def test_on_message_buy_at_time_with_tz(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -675,12 +663,11 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},buy,{amount},{monday_evening_adjust}\n",
+        assert client.data.prices.values.tolist() == [
+            [author.id, "buy", amount, monday_evening_adjust]
         ]
 
-    async def test_on_message_buy_at_time(self, client, channel, lines, freezer):
+    async def test_on_message_buy_at_time(self, client, channel, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
         monday_evening = monday_morning + timedelta(hours=13)
         command_time = monday_morning + timedelta(days=3)
@@ -694,9 +681,8 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},buy,{amount},{monday_evening}\n",
+        assert client.data.prices.values.tolist() == [
+            [author.id, "buy", amount, monday_evening]
         ]
 
     async def test_on_message_buy_bad_time(self, client, channel):
@@ -731,17 +717,14 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!buy 0"))
         assert channel.last_sent_response == ("Buying price must be greater than zero.")
 
-    async def test_on_message_buy(self, client, channel, lines):
+    async def test_on_message_buy(self, client, channel):
         author = someone()
         amount = somebells()
         await client.on_message(MockMessage(author, channel, f"!buy {amount}"))
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},buy,{amount},{NOW}\n",
-        ]
+        assert client.data.prices.values.tolist() == [[author.id, "buy", amount, NOW]]
 
     async def test_on_message_help(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!help"))
@@ -749,7 +732,7 @@ class TestTurbot:
             snap(response)
         assert len(channel.all_sent_calls) == 2
 
-    async def test_on_message_clear(self, client, channel, lines):
+    async def test_on_message_clear(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, f"!buy {somebells()}"))
         await client.on_message(MockMessage(author, channel, f"!sell {somebells()}"))
@@ -757,7 +740,7 @@ class TestTurbot:
 
         await client.on_message(MockMessage(author, channel, "!clear"))
         assert channel.last_sent_response == (f"**Cleared history for {author}.**")
-        assert lines(client.data.file("prices")) == ["author,kind,price,timestamp\n"]
+        assert client.data.prices.values.tolist() == []
 
     async def test_on_message_best_bad_param(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!best dog"))
@@ -809,7 +792,7 @@ class TestTurbot:
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 200 bells"
         )
 
-    async def test_on_message_oops(self, client, channel, lines):
+    async def test_on_message_oops(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!buy 1"))
         await client.on_message(MockMessage(author, channel, "!sell 2"))
@@ -819,11 +802,15 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"**Deleting last logged price for {author}.**"
         )
-        assert lines(client.data.file("prices")) == [
-            "author,kind,price,timestamp\n",
-            f"{author.id},buy,1,{NOW}\n",
-            f"{author.id},sell,2,{NOW}\n",
+        assert client.data.prices.values.tolist() == [
+            [author.id, "buy", 1, NOW],
+            [author.id, "sell", 2, NOW],
         ]
+
+    async def test_on_message_oops_no_prices(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!oops"))
+        assert channel.last_sent_response == "Sorry, you have no data to delete."
 
     async def test_on_message_history_bad_name(self, client, channel):
         author = someone()
@@ -964,7 +951,7 @@ class TestTurbot:
             "__**Historical Graph from Last Week**__", file=Matching(is_discord_file)
         )
 
-    async def test_on_message_reset_not_admin(self, client, channel, lines, freezer):
+    async def test_on_message_reset_not_admin(self, client, channel, freezer):
         # first log some buy and sell prices
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
@@ -989,19 +976,16 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
-        old_data = lines(client.data.file("prices"))
+        old_data = client.data.prices
 
         # then reset price data
         await client.on_message(MockMessage(somenonturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("User is not a Turbot Admin")
-        with open(client.data.file("prices")) as f:
-            assert f.readlines() == old_data
+        assert_frame_equal(old_data, client.data.prices)
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
 
-    async def test_on_message_reset_admin(
-        self, client, channel, lines, freezer, lastweek
-    ):
+    async def test_on_message_reset_admin(self, client, channel, freezer, lastweek):
         # first log some buy and sell prices
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
@@ -1026,26 +1010,39 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         await client.on_message(MockMessage(GUY, channel, "!sell 802"))
 
-        old_data = lines(client.data.file("prices"))
+        # then jump back to the past log some more, so that there are old
+        # prices that appear in the dataset with higher primary key ids...
+        past = NOW - timedelta(days=7)
+        freezer.move_to(past)
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 81"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 82"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 83"))
+        await client.on_message(MockMessage(BUDDY, channel, "!sell 84"))
+        await client.on_message(MockMessage(GUY, channel, "!buy 85"))
+        await client.on_message(MockMessage(GUY, channel, "!sell 86"))
+
+        old_data = client.data.prices.values.tolist()
 
         # then reset price data
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("**Resetting data for a new week!**")
-        with open(client.data.file("prices")) as f:
-            assert f.readlines() == [
-                "author,kind,price,timestamp\n",
-                f"{FRIEND.id},buy,102,{later}\n",
-                f"{BUDDY.id},buy,122,{later}\n",
-                f"{GUY.id},buy,102,{later}\n",
-            ]
+        assert client.data.prices.values.tolist() == [
+            [FRIEND.id, "buy", 102, later],
+            [BUDDY.id, "buy", 122, later],
+            [GUY.id, "buy", 102, later],
+        ]
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
 
         # ensure the backup is correct
-        backup_file = Path(client.last_backup_filename())
+        backup_file = Path(client.last_backup_filename)
         assert backup_file.exists()
-        with open(backup_file) as f:
-            assert old_data == f.readlines()
+        with open(backup_file, "r", newline="") as f:
+            reader = csv.reader(f)
+            next(reader)  # skip header
+            backup_data = [row for row in reader]
+            for lhs, rhs in zip(backup_data, old_data):
+                assert lhs == [str(col) for col in rhs]
 
     async def test_on_message_collect_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect"))
@@ -1053,7 +1050,7 @@ class TestTurbot:
             "Please provide the name of something to mark as collected."
         )
 
-    async def test_on_message_collect_fossils(self, client, channel, lines):
+    async def test_on_message_collect_fossils(self, client, channel):
         # first collect some valid fossils
         author = someone()
         fossils = "amber, ammonite  ,ankylo skull,amber, a foot"
@@ -1064,12 +1061,15 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        assert set(lines(client.data.file("fossils"))) == {
-            "author,name\n",
-            f"{author.id},amber\n",
-            f"{author.id},ankylo skull\n",
-            f"{author.id},ammonite\n",
-        }
+
+        assert all(
+            item in client.data.fossils.values.tolist()
+            for item in [
+                [author.id, "amber"],
+                [author.id, "ammonite"],
+                [author.id, "ankylo skull"],
+            ]
+        )
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {fossils}"))
@@ -1091,18 +1091,23 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> an arm"
         )
-        assert lines(client.data.file("fossils")) == [f"{author.id},plesio body\n"]
+        assert client.data.fossils.tail(1).values.tolist() == [[author.id, "plesio body"]]
 
-    async def test_on_message_collect_songs_unicode(self, client, channel, lines):
+    async def test_on_message_collect_songs_unicode(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect Café K.K."))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n> Café K.K."
         )
 
-    async def test_on_message_collect_songs_fuzzy(self, client, channel, lines):
+    async def test_on_message_collect_songs_fuzzy(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect cafe"))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n> Café K.K."
+        )
+
+        await client.on_message(MockMessage(someone(), channel, "!collect rockin"))
+        assert channel.last_sent_response == (
+            "Marked the following songs as collected:\n> Rockin' K.K."
         )
 
     async def test_on_message_collect_fossils_congrats(self, client, channel):
@@ -1131,7 +1136,7 @@ class TestTurbot:
             "**Congratulations, you've collected all fossils!**"
         )
 
-    async def test_on_message_uncollect_art(self, client, channel, lines):
+    async def test_on_message_uncollect_art(self, client, channel):
         # first collect some fossils
         author = someone()
         art = "great statue, sinking painting ,academic painting"
@@ -1148,8 +1153,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("art")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},sinking painting\n"]
+        assert client.data.art.values.tolist() == [[author.id, "sinking painting"]]
 
         # then delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {art}"))
@@ -1159,8 +1163,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("art")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},sinking painting\n"]
+        assert client.data.art.values.tolist() == [[author.id, "sinking painting"]]
 
         # and delete one more
         await client.on_message(
@@ -1169,8 +1172,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following pieces of art as collected:\n" "> sinking painting"
         )
-        with open(client.data.file("art")) as f:
-            assert f.readlines() == ["author,name\n"]
+        assert client.data.art.values.tolist() == []
 
     async def test_on_message_search_art_no_need_with_bad(self, client, channel):
         await client.on_message(
@@ -1348,7 +1350,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_collect_art(self, client, channel, lines):
+    async def test_on_message_collect_art(self, client, channel):
         # first collect some art
         author = BUDDY
         art = "academic painting, sinking painting, anime waifu"
@@ -1359,11 +1361,13 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.data.file("art"))) == {
-            "author,name\n",
-            f"{author.id},academic painting\n",
-            f"{author.id},sinking painting\n",
-        }
+        assert all(
+            item in client.data.art.values.tolist()
+            for item in [
+                [author.id, "academic painting"],
+                [author.id, "sinking painting"],
+            ]
+        )
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {art}"))
@@ -1385,8 +1389,9 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> body pillow"
         )
-
-        assert lines(client.data.file("art")) == [f"{author.id},tremendous statue\n"]
+        assert client.data.art.tail(1).values.tolist() == [
+            [author.id, "tremendous statue"]
+        ]
 
     async def test_on_message_collect_art_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["art"].all))
@@ -1562,8 +1567,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        with open(client.data.file("fossils")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
+        assert client.data.fossils.values.tolist() == [[author.id, "ammonite"]]
 
         # delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {fossils}"))
@@ -1573,16 +1577,14 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> a foot"
         )
-        with open(client.data.file("fossils")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},ammonite\n"]
+        assert client.data.fossils.values.tolist() == [[author.id, "ammonite"]]
 
         # and delete one more
         await client.on_message(MockMessage(author, channel, "!uncollect ammonite"))
         assert channel.last_sent_response == (
             "Unmarked the following fossils as collected:\n> ammonite"
         )
-        with open(client.data.file("fossils")) as f:
-            assert f.readlines() == ["author,name\n"]
+        assert client.data.fossils.values.tolist() == []
 
     async def test_on_message_uncollect_with_only_bad(self, client, channel):
         fossils = "a foot, unicorn bits"
@@ -1878,9 +1880,9 @@ class TestTurbot:
             file=Matching(is_discord_file),
         )
 
-    async def test_get_last_price(self, client, channel, freezer):
+    async def test_get_last_price(self, client, channel, freezer, spoof_session):
         # when there's no data for the user
-        assert client.get_last_price(GUY) is None
+        assert client.get_last_price(GUY.id) is None
 
         # when there's only buy data
         freezer.move_to(NOW + timedelta(days=1))
@@ -2033,30 +2035,6 @@ class TestTurbot:
     async def test_load_prices_new(self, client):
         prices = client.data.prices
         assert prices.empty
-
-        loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
-        assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
-
-    async def test_load_prices_existing(self, client):
-        data = [
-            ["author", "kind", "price", "timestamp",],
-            ["82169952898912256", "buy", "94", "2020-04-12 13:11:22.759958744+00:00"],
-            ["82169952898912256", "sell", "66", "2020-04-13 12:51:41.321097374+00:00"],
-            ["82169952898912256", "sell", "57", "2020-04-13 16:09:53.589281321+00:00"],
-            ["82169952898912256", "sell", "130", "2020-04-14 13:04:16.417927504+00:00"],
-            ["82226367030108160", "sell", "76", "2020-04-15 12:51:36.569223404+00:00"],
-            ["82226367030108160", "sell", "134", "2020-04-15 16:03:58.559760571+00:00"],
-            ["93126903363301376", "buy", "99", "2020-04-12 13:40:10.002708912+00:00"],
-            ["93126903363301376", "sell", "87", "2020-04-13 14:25:10.902356148+00:00"],
-            ["93126903363301376", "sell", "84", "2020-04-13 16:35:31.403252602+00:00"],
-        ]
-        with open(client.data.file("prices"), "w") as f:
-            for line in data:
-                f.write(f"{','.join(line)}\n")
-
-        prices = client.data.prices
-        loaded_data = [[str(i) for i in row.tolist()] for _, row in prices.iterrows()]
-        assert loaded_data == data[1:]
 
         loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
         assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
@@ -2214,21 +2192,21 @@ class TestTurbot:
         assert subject("") == [""]
         assert subject("four") == ["four"]
 
-        with open(Path(DAT_ROOT) / "ipsum_2011.txt") as f:
+        with open(Path(FIXTURES_ROOT) / "ipsum_2011.txt") as f:
             text = f.read()
             pages = subject(text)
             assert len(pages) == 2
             assert all(len(page) <= 2000 for page in pages)
             assert pages == [text[0:1937], text[1937:]]
 
-        with open(Path(DAT_ROOT) / "aaa_2001.txt") as f:
+        with open(Path(FIXTURES_ROOT) / "aaa_2001.txt") as f:
             text = f.read()
             pages = subject(text)
             assert len(pages) == 2
             assert all(len(page) <= 2000 for page in pages)
             assert pages == [text[0:2000], text[2000:]]
 
-        with open(Path(DAT_ROOT) / "quotes.txt") as f:
+        with open(Path(FIXTURES_ROOT) / "quotes.txt") as f:
             text = f.read()
             pages = subject(text)
             assert len(pages) == 2
@@ -2283,63 +2261,6 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == len(prefs) * 2
 
-    async def test_get_user_prefs(self, client, channel):
-        author = DUDE
-        prefs = {
-            "hemisphere": "norTHErn",
-            "timezone": "America/Los_Angeles",
-            "island": "Kriti",
-            "friend": "Sw-1111----2222-3333",
-            # "fruit": Not Set,
-            "nickname": "Phèdre nó Delaunay de Montrève",
-            "creator": "ma---  4444----555 5-6666--",
-        }
-        for pref, value in prefs.items():
-            await client.on_message(MockMessage(author, channel, f"!pref {pref} {value}"))
-
-        assert client.get_user_prefs(author.id) == {
-            "friend": "111122223333",
-            "hemisphere": "northern",
-            "island": "Kriti",
-            "nickname": "Phèdre nó Delaunay de Montrève",
-            "timezone": pytz.timezone(prefs["timezone"]),
-            "creator": "444455556666",
-        }
-
-        # unload in-memory users data
-        client._users_data = None
-
-        assert client.get_user_prefs(author.id) == {
-            "friend": "111122223333",
-            "hemisphere": "northern",
-            "island": "Kriti",
-            "nickname": "Phèdre nó Delaunay de Montrève",
-            "timezone": pytz.timezone(prefs["timezone"]),
-            "creator": "444455556666",
-        }
-
-        assert client.get_user_prefs(PUNK.id) == {}
-
-    async def test_get_user_prefs_friend_code(self, client, channel):
-        author = someone()
-        with open(client.data.file("users"), "w") as f:
-            f.writelines(
-                [
-                    "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                    f"{author.id},,,,111122223333.0,,,\n",
-                ]
-            )
-        assert client.get_user_prefs(author.id) == {"friend": "111122223333.0"}
-        await client.on_message(MockMessage(author, channel, f"!info {author.name}"))
-        assert (
-            next(
-                f["value"]
-                for f in channel.last_sent_embed["fields"]
-                if f["name"] == "Friend code"
-            )
-            == "SW-1111-2222-3333"
-        )
-
     async def test_on_message_about(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!about"))
         assert len(channel.all_sent_calls) == 1
@@ -2385,11 +2306,12 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
         assert channel.last_sent_response == "No users found."
 
-    async def test_on_message_info_no_prefs(self, client, channel):
-        author = someone()
+    async def test_on_message_info_no_prefs(self, client, channel, snap):
+        author = DUDE
         await client.on_message(MockMessage(author, channel, "!buy 100"))
         await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
-        assert channel.last_sent_response == f"> **{author}** has no preferences."
+        snap(channel.all_sent_embeds_json)
+        assert len(channel.all_sent_calls) == 2
 
     async def test_on_message_info_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!info"))
@@ -2435,21 +2357,17 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered hemisphere preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},southern,,,,,,\n",
-            ]
+        assert client.data.users[["author", "hemisphere"]].values.tolist() == [
+            [author.id, "southern"]
+        ]
 
         await client.on_message(MockMessage(author, channel, "!pref hemisphere NoRthErn"))
         assert channel.last_sent_response == (
             f"Registered hemisphere preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},northern,,,,,,\n",
-            ]
+        assert client.data.users[["author", "hemisphere"]].values.tolist() == [
+            [author.id, "northern"]
+        ]
 
     async def test_on_message_pref_friend_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref friend upwards"))
@@ -2463,11 +2381,9 @@ class TestTurbot:
             MockMessage(author, channel, "!pref friend sw-1234-5678-9012")
         )
         assert channel.last_sent_response == f"Registered friend preference for {author}."
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,,,123456789012,,,\n",
-            ]
+        assert client.data.users[["author", "friend"]].values.tolist() == [
+            [author.id, "123456789012"]
+        ]
 
     async def test_on_message_pref_creator_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref creator upwards"))
@@ -2483,11 +2399,9 @@ class TestTurbot:
         assert (
             channel.last_sent_response == f"Registered creator preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,,,,,,123456789012\n",
-            ]
+        assert client.data.users[["author", "creator"]].values.tolist() == [
+            [author.id, "123456789012"]
+        ]
 
     async def test_on_message_pref_fruit_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref fruit upwards"))
@@ -2501,11 +2415,9 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered fruit preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,,,,apple,,\n",
-            ]
+        assert client.data.users[["author", "fruit"]].values.tolist() == [
+            [author.id, "apple"]
+        ]
 
     async def test_on_message_pref_timezone_invalid(self, client, channel):
         await client.on_message(
@@ -2525,11 +2437,9 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered timezone preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,America/Los_Angeles,,,,,\n",
-            ]
+        assert client.data.users[["author", "timezone"]].values.tolist() == [
+            [author.id, "America/Los_Angeles"]
+        ]
 
         await client.on_message(
             MockMessage(author, channel, "!pref timezone Canada/Saskatchewan")
@@ -2537,11 +2447,9 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered timezone preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,Canada/Saskatchewan,,,,,\n",
-            ]
+        assert client.data.users[["author", "timezone"]].values.tolist() == [
+            [author.id, "Canada/Saskatchewan"]
+        ]
 
     async def test_on_message_pref_island(self, client, channel):
         author = someone()
@@ -2550,11 +2458,9 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered island preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,,{island},,,,\n",
-            ]
+        assert client.data.users[["author", "island"]].values.tolist() == [
+            [author.id, island]
+        ]
 
     async def test_on_message_pref_nickname(self, client, channel):
         author = someone()
@@ -2563,13 +2469,11 @@ class TestTurbot:
         assert channel.last_sent_response == (
             f"Registered nickname preference for {author}."
         )
-        with open(client.data.file("users")) as f:
-            assert f.readlines() == [
-                "author,hemisphere,timezone,island,friend,fruit,nickname,creator\n",
-                f"{author.id},,,,,,{name},\n",
-            ]
+        assert client.data.users[["author", "nickname"]].values.tolist() == [
+            [author.id, name]
+        ]
 
-    async def test_on_message_uncollect_fish(self, client, channel, lines):
+    async def test_on_message_uncollect_fish(self, client, channel):
         # first collect some fossils
         author = someone()
         fish = "giant snakehead, snapping turtle ,bluegill"
@@ -2586,8 +2490,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("fish")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},snapping turtle\n"]
+        assert client.data.fish.values.tolist() == [[author.id, "snapping turtle"]]
 
         # then delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {fish}"))
@@ -2599,8 +2502,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("fish")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},snapping turtle\n"]
+        assert client.data.fish.values.tolist() == [[author.id, "snapping turtle"]]
 
         # and delete one more
         await client.on_message(
@@ -2609,8 +2511,7 @@ class TestTurbot:
         assert channel.last_sent_response == (
             "Unmarked the following fish as collected:\n" "> snapping turtle"
         )
-        with open(client.data.file("fish")) as f:
-            assert f.readlines() == ["author,name\n"]
+        assert client.data.fish.values.tolist() == []
 
     async def test_on_message_search_fish_no_need_with_bad(self, client, channel):
         await client.on_message(
@@ -2733,7 +2634,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_collect_fish(self, client, channel, lines):
+    async def test_on_message_collect_fish(self, client, channel):
         # first collect some fish
         author = BUDDY
         fish = "bluegill, snapping turtle, anime waifu"
@@ -2744,11 +2645,10 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.data.file("fish"))) == {
-            "author,name\n",
-            f"{author.id},bluegill\n",
-            f"{author.id},snapping turtle\n",
-        }
+        assert all(
+            item in client.data.fish.values.tolist()
+            for item in [[author.id, "bluegill"], [author.id, "snapping turtle"],]
+        )
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {fish}"))
@@ -2771,7 +2671,7 @@ class TestTurbot:
             "> body pillow"
         )
 
-        assert lines(client.data.file("fish")) == [f"{author.id},tadpole\n"]
+        assert client.data.fish.tail(1).values.tolist() == [[author.id, "tadpole"]]
 
     async def test_on_message_collect_fish_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["fish"].all))
@@ -2810,8 +2710,6 @@ class TestTurbot:
     async def test_creatures_available_now(self, client):
         def creature(name, time):
             return ["northern", name, "image-url", 50, "everywhere", time] + [1] * 12
-
-        import pandas as pd
 
         creatures = pd.DataFrame(
             columns=client.assets["bugs"].data.columns,
@@ -2885,7 +2783,7 @@ class TestTurbot:
         assert subject(datetime(2020, 4, 6, 22)) == {"seven", "nine", "three", "two"}
         assert subject(datetime(2020, 4, 6, 23)) == {"seven", "nine", "three"}
 
-    async def test_on_message_uncollect_bugs(self, client, channel, lines):
+    async def test_on_message_uncollect_bugs(self, client, channel):
         # first collect some bugs
         author = someone()
         bugs = "great purple emperor, stinkbug ,bell cricket"
@@ -2902,8 +2800,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("bugs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
+        assert client.data.bugs.values.tolist() == [[author.id, "stinkbug"]]
 
         # then delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {bugs}"))
@@ -2915,16 +2812,14 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("bugs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},stinkbug\n"]
+        assert client.data.bugs.values.tolist() == [[author.id, "stinkbug"]]
 
         # and delete one more
         await client.on_message(MockMessage(author, channel, "!uncollect stinkbug"))
         assert channel.last_sent_response == (
             "Unmarked the following bugs as collected:\n" "> stinkbug"
         )
-        with open(client.data.file("bugs")) as f:
-            assert f.readlines() == ["author,name\n"]
+        assert client.data.bugs.values.tolist() == []
 
     async def test_on_message_search_bugs_no_need_with_bad(self, client, channel):
         await client.on_message(
@@ -3045,7 +2940,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_collect_bugs(self, client, channel, lines):
+    async def test_on_message_collect_bugs(self, client, channel):
         # first collect some bugs
         author = BUDDY
         bugs = "bell cricket, stinkbug, anime waifu"
@@ -3056,11 +2951,10 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.data.file("bugs"))) == {
-            "author,name\n",
-            f"{author.id},bell cricket\n",
-            f"{author.id},stinkbug\n",
-        }
+        assert all(
+            item in client.data.bugs.values.tolist()
+            for item in [[author.id, "bell cricket"], [author.id, "stinkbug"]]
+        )
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {bugs}"))
@@ -3082,8 +2976,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> body pillow"
         )
-
-        assert lines(client.data.file("bugs")) == [f"{author.id},tiger beetle\n"]
+        assert client.data.bugs.tail(1).values.tolist() == [[author.id, "tiger beetle"]]
 
     async def test_on_message_collect_bugs_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["bugs"].all))
@@ -3119,7 +3012,7 @@ class TestTurbot:
         )
         assert len(channel.all_sent_calls) == 3
 
-    async def test_on_message_uncollect_songs(self, client, channel, lines):
+    async def test_on_message_uncollect_songs(self, client, channel):
         # first collect some songs
         author = someone()
         songs = "k.k. groove, k.k. safari ,k.k. bazaar"
@@ -3136,8 +3029,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("songs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},K.K. Safari\n"]
+        assert client.data.songs.values.tolist() == [[author.id, "K.K. Safari"]]
 
         # then delete the same ones again
         await client.on_message(MockMessage(author, channel, f"!uncollect {songs}"))
@@ -3147,16 +3039,14 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        with open(client.data.file("songs")) as f:
-            assert f.readlines() == ["author,name\n", f"{author.id},K.K. Safari\n"]
+        assert client.data.songs.values.tolist() == [[author.id, "K.K. Safari"]]
 
         # and delete one more
         await client.on_message(MockMessage(author, channel, "!uncollect k.k. safari"))
         assert channel.last_sent_response == (
             "Unmarked the following songs as collected:\n" "> K.K. Safari"
         )
-        with open(client.data.file("songs")) as f:
-            assert f.readlines() == ["author,name\n"]
+        assert client.data.songs.values.tolist() == []
 
     async def test_on_message_search_songs_no_need_with_bad(self, client, channel):
         await client.on_message(
@@ -3275,7 +3165,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_collect_songs(self, client, channel, lines):
+    async def test_on_message_collect_songs(self, client, channel):
         # first collect some songs
         author = BUDDY
         songs = "k.k. bazaar, k.k. safari, anime waifu"
@@ -3286,11 +3176,10 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> anime waifu"
         )
-        assert set(lines(client.data.file("songs"))) == {
-            "author,name\n",
-            f"{author.id},K.K. Bazaar\n",
-            f"{author.id},K.K. Safari\n",
-        }
+        assert all(
+            item in client.data.songs.values.tolist()
+            for item in [[author.id, "K.K. Bazaar"], [author.id, "K.K. Safari"],]
+        )
 
         # collect them again
         await client.on_message(MockMessage(author, channel, f"!collect {songs}"))
@@ -3312,8 +3201,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n"
             "> body pillow"
         )
-
-        assert lines(client.data.file("songs")) == [f"{author.id},K.K. Tango\n"]
+        assert client.data.songs.tail(1).values.tolist() == [[author.id, "K.K. Tango"]]
 
     async def test_on_message_collect_songs_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["songs"].all))
@@ -3343,79 +3231,97 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             client.data.foobar
 
+    async def test_exception_from_command(self, client, channel, monkeypatch):
+        def boom(*_):
+            raise RuntimeError("Ka-boom!")
+
+        monkeypatch.setattr(client, "sell", boom)
+        with pytest.raises(RuntimeError):
+            await client.on_message(MockMessage(someone(), channel, "!sell 100"))
+
 
 class TestFigures:
-    # Some realistic price data sampled from the wild.
+    # Some realistic price data sampled from the wild:
     PRICES = [
-        "author,kind,price,timestamp\n",
-        f"{FRIEND.id},buy,103,2020-04-05 09:00:00+00:00\n",  # Sunday_AM
-        f"{FRIEND.id},sell,112,2020-04-06 09:00:00+00:00\n",  # Monday_AM
-        f"{FRIEND.id},sell,116,2020-04-06 13:00:00+00:00\n",  # Monday_PM
-        f"{FRIEND.id},sell,80,2020-04-07 09:00:00+00:00\n",  # Tuesday_AM
-        # f"{FRIEND.id},sell,None,2020-04-07 13:00:00+00:00\n",  # Tuesday_PM
-        f"{FRIEND.id},sell,100,2020-04-08 09:00:00+00:00\n",  # Wednesday_AM
-        # f"{FRIEND.id},sell,None,2020-04-08 13:00:00+00:00\n",  # Wednesday_PM
-        f"{FRIEND.id},sell,95,2020-04-09 09:00:00+00:00\n",  # Thursday_AM
-        # f"{FRIEND.id},sell,None,2020-04-09 13:00:00+00:00\n",  # Thursday_PM
-        f"{FRIEND.id},sell,80,2020-04-10 09:00:00+00:00\n",  # Friday_AM
-        # f"{FRIEND.id},sell,None,2020-04-10 13:00:00+00:00\n",  # Friday_PM
-        # f"{FRIEND.id},sell,None,2020-04-11 09:00:00+00:00\n",  # Saturday_AM
-        # f"{FRIEND.id},sell,None,2020-04-11 13:00:00+00:00\n",  # Saturday_PM
-        f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",  # Sunday_AM
-        f"{DUDE.id},sell,88,2020-04-06 09:00:00+00:00\n",  # Monday_AM
-        f"{DUDE.id},sell,84,2020-04-06 13:00:00+00:00\n",  # Monday_PM
-        f"{DUDE.id},sell,81,2020-04-07 09:00:00+00:00\n",  # Tuesday_AM
-        f"{DUDE.id},sell,76,2020-04-07 13:00:00+00:00\n",  # Tuesday_PM
-        # f"{DUDE.id},sell,None,2020-04-08 09:00:00+00:00\n",# Wednesday_AM
-        # f"{DUDE.id},sell,None,2020-04-08 13:00:00+00:00\n",# Wednesday_PM
-        f"{DUDE.id},sell,138,2020-04-09 09:00:00+00:00\n",  # Thursday_AM
-        f"{DUDE.id},sell,336,2020-04-09 13:00:00+00:00\n",  # Thursday_PM
-        f"{DUDE.id},sell,191,2020-04-10 09:00:00+00:00\n",  # Friday_AM
-        f"{DUDE.id},sell,108,2020-04-10 13:00:00+00:00\n",  # Friday_PM
-        # f"{DUDE.id},sell,None,2020-04-11 09:00:00+00:00\n",  # Saturday_AM
-        # f"{DUDE.id},sell,None,2020-04-11 13:00:00+00:00\n",  # Saturday_PM
+        [FRIEND.id, "buy", 103, "2020-04-05 09:00:00+00:00"],  # Sunday_AM
+        [FRIEND.id, "sell", 112, "2020-04-06 09:00:00+00:00"],  # Monday_AM
+        [FRIEND.id, "sell", 116, "2020-04-06 13:00:00+00:00"],  # Monday_PM
+        [FRIEND.id, "sell", 80, "2020-04-07 09:00:00+00:00"],  # Tuesday_AM
+        # [FRIEND.id, 'sell', None, "2020-04-07 13:00:00+00:00"],  # Tuesday_PM
+        [FRIEND.id, "sell", 100, "2020-04-08 09:00:00+00:00"],  # Wednesday_AM
+        # [FRIEND.id, 'sell', None, "2020-04-08 13:00:00+00:00"],  # Wednesday_PM
+        [FRIEND.id, "sell", 95, "2020-04-09 09:00:00+00:00"],  # Thursday_AM
+        # [FRIEND.id, 'sell', None, "2020-04-09 13:00:00+00:00"],  # Thursday_PM
+        [FRIEND.id, "sell", 80, "2020-04-10 09:00:00+00:00"],  # Friday_AM
+        # [FRIEND.id, 'sell', None, "2020-04-10 13:00:00+00:00"],  # Friday_PM
+        # [FRIEND.id, 'sell', None, "2020-04-11 09:00:00+00:00"],  # Saturday_AM
+        # [FRIEND.id, 'sell', None, "2020-04-11 13:00:00+00:00"],  # Saturday_PM
+        [DUDE.id, "buy", 98, "2020-04-05 09:00:00+00:00"],  # Sunday_AM
+        [DUDE.id, "sell", 88, "2020-04-06 09:00:00+00:00"],  # Monday_AM
+        [DUDE.id, "sell", 84, "2020-04-06 13:00:00+00:00"],  # Monday_PM
+        [DUDE.id, "sell", 81, "2020-04-07 09:00:00+00:00"],  # Tuesday_AM
+        [DUDE.id, "sell", 76, "2020-04-07 13:00:00+00:00"],  # Tuesday_PM
+        # [DUDE.id, 'sell', None, "2020-04-08 09:00:00+00:00"],  # Wednesday_AM
+        # [DUDE.id, 'sell', None, "2020-04-08 13:00:00+00:00"],  # Wednesday_PM
+        [DUDE.id, "sell", 138, "2020-04-09 09:00:00+00:00"],  # Thursday_AM
+        [DUDE.id, "sell", 336, "2020-04-09 13:00:00+00:00"],  # Thursday_PM
+        [DUDE.id, "sell", 191, "2020-04-10 09:00:00+00:00"],  # Friday_AM
+        [DUDE.id, "sell", 108, "2020-04-10 13:00:00+00:00"],  # Friday_PM
+        # [DUDE.id, 'sell', None, "2020-04-11 09:00:00+00:00"],  # Saturday_AM
+        # [DUDE.id, 'sell', None, "2020-04-11 13:00:00+00:00"],  # Saturday_PM
     ]
 
     def set_example_prices(self, client):
-        with open(client.data.file("prices"), "w") as f:
-            f.writelines(self.PRICES)
+        c = client.data.conn
+        values = [f"({row[0]}, '{row[1]}', {row[2]}, '{row[3]}')" for row in self.PRICES]
+        c.execute(
+            f"""
+            INSERT INTO prices (author, kind, price, timestamp)
+            VALUES
+            {','.join(values)};
+            """
+        )
 
     def set_bogus_prices(self, client):
-        with open(client.data.file("prices"), "w") as f:
-            f.writelines(
-                [
-                    "author,kind,price,timestamp\n",
-                    # user that's not in the channel:
-                    f"{PUNK.id},buy,100,1982-04-24 01:00:00+00:00\n",
-                    # some actually valid data:
-                    f"{FRIEND.id},buy,103,2020-04-05 09:00:00+00:00\n",
-                    f"{FRIEND.id},sell,112,2020-04-06 09:00:00+00:00\n",
-                    # a user with only buy data, no sell data:
-                    f"{DUDE.id},buy,98,2020-04-05 09:00:00+00:00\n",
-                ]
-            )
+        c = client.data.conn
+        c.execute(
+            f"""
+            INSERT INTO prices (author, kind, price, timestamp)
+            VALUES
+            /* user that's not in the channel: */
+            ({PUNK.id}, 'buy', 100, '1982-04-24 01:00:00+00:00'),
+
+            /* some actually valid data: */
+            ({FRIEND.id}, 'buy', 103,'2020-04-05 09:00:00+00:00'),
+            ({FRIEND.id}, 'sell', 112,'2020-04-06 09:00:00+00:00'),
+
+            /* a user with only buy data, no sell data: */
+            ({DUDE.id}, 'buy', 98,'2020-04-05 09:00:00+00:00');
+            """
+        )
 
     def set_error_prices(self, client):
-        with open(client.data.file("prices"), "w") as f:
-            f.writelines(
-                [
-                    "author,kind,price,timestamp\n",
-                    # for some reason this sequence of prices errors out the turnips lib
-                    f"{BUDDY.id},buy,102,2020-04-05 09:00:00+00:00\n",
-                    f"{BUDDY.id},sell,93,2020-04-06 09:00:00+00:00\n",
-                    f"{BUDDY.id},sell,87,2020-04-06 13:00:00+00:00\n",
-                    f"{BUDDY.id},sell,86,2020-04-07 09:00:00+00:00\n",
-                    f"{BUDDY.id},sell,79,2020-04-07 13:00:00+00:00\n",
-                    f"{BUDDY.id},sell,69,2020-04-08 13:00:00+00:00\n",
-                ]
-            )
+        c = client.data.conn
+        c.execute(
+            f"""
+            INSERT INTO prices (author, kind, price, timestamp)
+            VALUES
+            /* for some reason this sequence of prices errors out the turnips lib: */
+            ({BUDDY.id}, 'buy', 102, '2020-04-05 09:00:00+00:00'),
+            ({BUDDY.id}, 'sell', 93, '2020-04-06 09:00:00+00:00'),
+            ({BUDDY.id}, 'sell', 87, '2020-04-06 13:00:00+00:00'),
+            ({BUDDY.id}, 'sell', 86, '2020-04-07 09:00:00+00:00'),
+            ({BUDDY.id}, 'sell', 79, '2020-04-07 13:00:00+00:00'),
+            ({BUDDY.id}, 'sell', 69, '2020-04-08 13:00:00+00:00');
+            """
+        )
 
-    def test_get_graph_predictive_error(self, client, channel):
+    def test_get_graph_predictive_error(self, client, channel, spoof_session):
         self.set_error_prices(client)
         client.get_graph(channel, BUDDY, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
-    def test_get_graph_predictive_bad_user(self, client, channel):
+    def test_get_graph_predictive_bad_user(self, client, channel, spoof_session):
         self.set_example_prices(client)
         client.get_graph(channel, PUNK, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
@@ -3424,7 +3330,7 @@ class TestFigures:
         client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
-    def test_get_graph_predictive_no_data(self, client, channel):
+    def test_get_graph_predictive_no_data(self, client, channel, spoof_session):
         client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
@@ -3440,14 +3346,27 @@ class TestFigures:
         return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_predictive_friend(self, client, channel):
+    def test_get_graph_predictive_friend(self, client, channel, spoof_session):
         self.set_example_prices(client)
         return client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_predictive_dude(self, client, channel):
+    def test_get_graph_predictive_dude(self, client, channel, spoof_session):
         self.set_example_prices(client)
         return client.get_graph(channel, DUDE, turbot.GRAPHCMD_FILE)
+
+
+class TestMigrations:
+    def test_alembic(self, tmp_path):
+        from turbot.data import create_all, reverse_all
+        from sqlalchemy import create_engine
+
+        db_file = tmp_path / "turbot.db"
+        connection_url = f"sqlite:///{db_file}"
+        engine = create_engine(connection_url)
+        connection = engine.connect()
+        create_all(connection, connection_url)
+        reverse_all(connection, connection_url)
 
 
 class TestCodebase:
