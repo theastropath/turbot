@@ -247,7 +247,7 @@ class Turbot(discord.Client):
         self.channels = channels
         self.base_prophet_url = "https://turnipprophet.io/?prices="
         self._last_backup_filename = None
-        self.data = Data(db_dir=db_dir)
+        self.data = Data(db_file=Path(db_dir) / "turbot.db")
 
         # build a list of commands supported by this bot by fetching @command methods
         members = inspect.getmembers(self, predicate=inspect.ismethod)
@@ -269,12 +269,13 @@ class Turbot(discord.Client):
 
     def backup_prices(self, data):
         """Backs up the prices data to a datetime stamped file."""
-        filename = datetime.now(pytz.utc).strftime(
-            "prices-%Y-%m-%d.csv"  # TODO: configurable?
-        )
-        filepath = Path(self.data.file("prices")).parent / filename
-        self._last_backup_filename = filepath
-        data.to_csv(filepath, index=False)
+        pass
+        # filename = datetime.now(pytz.utc).strftime(
+        #     "prices-%Y-%m-%d.csv"  # TODO: configurable?
+        # )
+        # filepath = Path(self.data.file("prices")).parent / filename
+        # self._last_backup_filename = filepath
+        # data.to_csv(filepath, index=False)
 
     def _get_island_data(self, user):
         timeline = self.get_user_timeline(user.id)
@@ -406,7 +407,9 @@ class Turbot(discord.Client):
         at = datetime.now(pytz.utc) if not at else at
         at = at.astimezone(pytz.utc)  # always store data in UTC
         prices = self.data.prices
-        row = pd.DataFrame(columns=prices.columns, data=[[author.id, kind, price, at]])
+        row = pd.DataFrame(
+            columns=prices.columns, data=[[author.id, kind, price, str(at)]]
+        )
         prices = prices.append(row, ignore_index=True)
         self.data.commit(prices)
 
