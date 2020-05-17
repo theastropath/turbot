@@ -23,7 +23,7 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
-from sqlalchemy import Date, and_, cast, desc, func
+from sqlalchemy import Date, and_, cast, desc
 from unidecode import unidecode
 
 from turbot._version import __version__
@@ -766,19 +766,20 @@ class Turbot(discord.Client):
         # TODO: Backup prices to a table instead of csv file.
         self.backup_prices(self.data.prices)
 
-        subq = (
-            self.session.query(Price.id, func.max(Price.timestamp).label("maxdate"),)
-            .filter(Price.kind == "buy")
-            .group_by(Price.author)
-            .subquery("t2")
-        )
-        keep_rows = self.session.query(Price).join(
-            subq, and_(Price.id == subq.c.id, Price.timestamp == subq.c.maxdate),
-        )
-        keep_ids = [row.id for row in keep_rows]
-        self.session.query(Price).filter(~Price.id.in_(keep_ids)).delete(
-            synchronize_session=False
-        )
+        prices = self.data.prices
+        self.backup_prices(prices)
+
+        query = "SELECT * FROM prices WHERE kind = 'buy';"
+        members = [member.id for member in channel.guild.members]
+        df = pd.read_sql_query(query, self.data.conn, parse_dates=True)
+        df = df.fillna("").astype({"timestamp": "datetime64[ns, UTC]"})
+        df = df.sort_values(by="timestamp")
+        keep_idx = df.groupby(by="author")["timestamp"].idxmax()
+        keep_df = df.loc[keep_idx]
+        keep_ids = [row["id"] for _, row in keep_df.iterrows()]
+        self.session.query(Price).filter(
+            and_(~Price.id.in_(keep_ids), Price.author.in_(members))
+        ).delete(synchronize_session=False)
         return s("reset"), None
 
     @command
@@ -869,8 +870,9 @@ class Turbot(discord.Client):
         lines = [s(f"best_{kind}_header")]
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
-            timestamp = h(self.to_usertime(row.author, row.timestamp))
-            lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
+            if name:
+                timestamp = h(self.to_usertime(row.author, row.timestamp))
+                lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
         return "\n".join(lines), None
 
     @command
@@ -981,7 +983,8 @@ class Turbot(discord.Client):
                 needers = np.setdiff1d(users, havers).tolist()
                 for needer in needers:
                     name = discord_user_from_id(channel, needer)
-                    results[name].append(collected_item)
+                    if name:
+                        results[name].append(collected_item)
             return results
 
         results = {}
@@ -1602,7 +1605,8 @@ def get_channels(channels_file):  # pragma: no cover
 
 def get_db_url(fallback):  # pragma: no cover
     """Returns the database url from the environment or else the given fallback."""
-    return getenv("TURBOT_DB_URL", fallback)
+    value = getenv("TURBOT_DB_URL", fallback)
+    return value or fallback
 
 
 def apply_migrations():  # pragma: no cover

@@ -147,7 +147,8 @@ pref_no_params: Please provide a preference and a value, possible preferences in
 pref_no_value: Please provide the value for your $pref preference.
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
-search_all_not_needed: No one currently needs this.
+search_all_not_needed: No one currently needs this. Note that new users must have
+  collected at least one item before they are considered for this search.
 search_art_row: '> $name needs arts: $items'
 search_bugs_row: '> $name needs bugs: $items'
 search_fish_row: '> $name needs fish: $items'

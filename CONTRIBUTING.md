@@ -213,5 +213,25 @@ looks good.
 > need to have non-interactive `poetry publish` enabled by running:
 > `poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"`.
 
+## Database Migrations
+
+We use [alembic][alembic] for database migrations. It can detect changes you've
+made to an existing database and generate migration scripts necessary to apply
+_and_ reverse those changes. First, make the changes in the database and in
+the models. Then to autogenerate migration scripts use:
+
+```shell
+poetry run scripts/create_db_revision.py \
+    "<your sqlalchemy database connection url>" \
+    "<Some description of your changes>"
+```
+
+This will create a revision script in the `src/turbot/versions/versions`
+directory with a name like `REVISIONID_some_description_of_your_changes.py`.
+You will have to edit this script manually to ensure that it is correct as
+the autogenerate facility of `alembic revision` is not perfect, especially
+if you are using sqlite which doesn't support many database features.
+
+[alembic]:          https://alembic.sqlalchemy.org/
 [black]:            https://github.com/psf/black
 [wiki]:             https://animalcrossing.fandom.com/
