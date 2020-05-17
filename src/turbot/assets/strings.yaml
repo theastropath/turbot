@@ -117,7 +117,6 @@ history_buy: '> Can buy turnips from Daisy Mae for $price bells $timestamp ($day
 history_header: __**Historical info for $name**__
 history_sell: '> Can sell turnips to Timmy & Tommy for $price bells $timestamp ($day_and_time)'
 info_no_params: Please provide a search term.
-info_no_prefs: '> **$user** has no preferences.'
 info_not_found: No users found.
 invalid_collectable: 'Unrecognized collectable names:
 
@@ -136,6 +135,7 @@ no_hemisphere: Please enter your hemisphere choice first using the !pref hemisph
 not_a_command: Sorry, there is no command named "$request"
 not_admin: User is not a Turbot Admin
 oops: '**Deleting last logged price for $name.**'
+oops_no_data: Sorry, you have no data to delete.
 predict: '__**Predictive Graph for $name**__
 
   Details: <$url>'

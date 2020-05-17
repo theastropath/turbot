@@ -7,8 +7,8 @@ from pathlib import Path
 from yaml import dump, load
 
 SRC_ROOT = Path(dirname(realpath(__file__))).parent
-DATA_DIR = SRC_ROOT / "src" / "turbot" / "data"
-STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
+ASSETS_DIR = SRC_ROOT / "src" / "turbot" / "assets"
+STRINGS_DATA_FILE = ASSETS_DIR / "strings.yaml"
 
 try:
     from yaml import CLoader as Loader, CDumper as Dumper

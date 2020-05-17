@@ -13,8 +13,8 @@ except ImportError:  # pragma: no cover
     from yaml import Loader
 
 PACKAGE_ROOT = Path(dirname(realpath(__file__)))
-DATA_DIR = PACKAGE_ROOT / "data"
-STRINGS_DATA_FILE = DATA_DIR / "strings.yaml"
+ASSETS_DIR = PACKAGE_ROOT / "assets"
+STRINGS_DATA_FILE = ASSETS_DIR / "strings.yaml"
 
 
 def load_strings():
@@ -41,7 +41,7 @@ class Assets:
         all_items = set()
         self.asset = {}
         for kind in self.collectables:
-            file = DATA_DIR / f"{kind}.csv"
+            file = ASSETS_DIR / f"{kind}.csv"
             data = pd.read_csv(file)
             items = frozenset(data.drop_duplicates(subset="name").name.tolist())
             all_items.update(items)
@@ -50,7 +50,7 @@ class Assets:
 
     def validate(self, items, *, kinds=None):
         def clean(item):
-            return re.sub(" ?k.k. ?", "", unidecode(item).lower())
+            return re.sub(" ?k.k. ?|'", "", unidecode(item).lower())
 
         items = [clean(item) for item in items]
         valid = {}
@@ -76,7 +76,7 @@ class Assets:
 
 
 def s(key, **kwargs):
-    """Returns a string from data/strings.yaml with subsitutions."""
+    """Returns a string from strings.yaml asset with subsitutions."""
     if not s.strings:
         s.strings = load_strings()
 

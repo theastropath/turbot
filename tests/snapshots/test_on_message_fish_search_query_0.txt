@@ -38,7 +38,7 @@
             {
                 "inline": true,
                 "name": "price",
-                "value": "800"
+                "value": "1000"
             },
             {
                 "inline": true,

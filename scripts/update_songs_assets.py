@@ -11,7 +11,7 @@ page = requests.get(
 tree = BeautifulSoup(page.content, "lxml")
 
 
-with open(Path("src") / "turbot" / "data" / "songs.csv", "w", newline="") as out:
+with open(Path("src") / "turbot" / "assets" / "songs.csv", "w", newline="") as out:
 
     def data_from(item):
         title = item.select("a")[1]

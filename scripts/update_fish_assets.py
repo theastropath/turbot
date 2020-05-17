@@ -41,12 +41,13 @@ def ingest(writer, hemisphere):
                 hemisphere.name.lower(),
                 data[0].lower(),
                 data[1],
-                *[d.lower() for d in data[2:]],
+                int(data[2].replace(",", "")),
+                *[d.lower() for d in data[3:]],
             ]
             writer.writerow(corrected)
 
 
-with open(Path("src") / "turbot" / "data" / "fish.csv", "w", newline="") as out:
+with open(Path("src") / "turbot" / "assets" / "fish.csv", "w", newline="") as out:
     writer = csv.writer(out)
     writer.writerow(
         [
