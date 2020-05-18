@@ -20,46 +20,46 @@ Base = declarative_base()
 
 class Fossil(Base):
     __tablename__ = "fossils"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Art(Base):
     __tablename__ = "art"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Fish(Base):
     __tablename__ = "fish"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Bug(Base):
     __tablename__ = "bugs"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Song(Base):
     __tablename__ = "songs"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Price(Base):
     __tablename__ = "prices"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     kind = Column(String(20), nullable=False)
     price = Column(Integer, nullable=False)
-    timestamp = Column(String(30), nullable=False)
+    timestamp = Column(String(50), nullable=False)
 
 
 class User(Base):
@@ -87,7 +87,7 @@ class User(Base):
 
 class AuthorizedChannel(Base):
     __tablename__ = "authorized_channels"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     guild = Column(BigInteger, primary_key=True, nullable=False)
     name = Column(String(100), nullable=False)
 
