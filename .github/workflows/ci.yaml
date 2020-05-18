@@ -42,7 +42,7 @@ jobs:
     - name: Run Tests
       run: tox
       env:
-        TURBOT_DB_URL: ${{ matrix.database-url }}
+        TEST_TURBOT_DB_URL: ${{ matrix.database-url }}
 
     - name: Send Reports to Codecov
       uses: codecov/codecov-action@v1

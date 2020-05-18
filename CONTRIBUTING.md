@@ -129,6 +129,15 @@ After running the _full test suite_ you can view code coverage reports in the
 open coverage/py37/index.html
 ```
 
+## Running tests against different databases
+
+If you want to run the tests against something other than the default sqlite
+database, you can set the environment variable `TEST_TURBOT_DB_URL` and the
+tests will attempt to connect to your database using that connection string.
+The tests will not use the normal `TURBOT_DB_URL` variable. This is to prevent
+the test suite from possibly blowing away your user data by connecting to
+whatever database you have configured via `TURBOT_DB_URL`.
+
 ## Formatting and linting
 
 Codebase consistency is maintained by the industry standard [black][black]. For
@@ -213,7 +222,7 @@ looks good.
 > need to have non-interactive `poetry publish` enabled by running:
 > `poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"`.
 
-## Database Migrations
+## Database migrations
 
 We use [alembic][alembic] for database migrations. It can detect changes you've
 made compared to an existing database and generate migration scripts necessary

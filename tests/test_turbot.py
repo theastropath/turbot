@@ -233,7 +233,7 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     freezer.move_to(NOW)
 
     # Fallback to using sqlite for tests, but use the environment variable if it's set.
-    db_url = turbot.get_db_url(f"sqlite:///{tmp_path}/turbot.db")
+    db_url = turbot.get_db_url("TEST_TURBOT_DB_URL", f"sqlite:///{tmp_path}/turbot.db")
     bot = turbot.Turbot(token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_url=db_url)
 
     # Each test should have a clean slate. If we're using sqlite this is ensured

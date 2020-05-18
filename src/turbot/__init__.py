@@ -1642,9 +1642,9 @@ def get_channels(channels_file):  # pragma: no cover
         return []
 
 
-def get_db_url(fallback):  # pragma: no cover
+def get_db_url(database_env, fallback):  # pragma: no cover
     """Returns the database url from the environment or else the given fallback."""
-    value = getenv("TURBOT_DB_URL", fallback)
+    value = getenv(database_env, fallback)
     return value or fallback
 
 
@@ -1716,6 +1716,15 @@ def apply_migrations():  # pragma: no cover
         "you can also set this via the TURBOT_DB_URL environment variable."
     ),
 )
+@click.option(
+    "--database-env",
+    default="TURBOT_DB_URL",
+    help=(
+        "By default Turbot look in the environment variable TURBOT_DB_URL for the "
+        "database connection string. If you need it to look in a different variable "
+        "you can set it with this option. For example Heroku uses DATABASE_URL."
+    ),
+)
 @click.version_option(version=__version__)
 @click.option(
     "--dev",
@@ -1724,10 +1733,17 @@ def apply_migrations():  # pragma: no cover
     help="Development mode, automatically reload bot when source changes",
 )
 def main(
-    log_level, verbose, bot_token_file, channel, auth_channels_file, database_url, dev
+    log_level,
+    verbose,
+    bot_token_file,
+    channel,
+    auth_channels_file,
+    database_url,
+    database_env,
+    dev,
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
-    database_url = get_db_url(database_url)
+    database_url = get_db_url(database_env, database_url)
 
     # We have to make sure that application directories exist
     # before we try to create we can run any of the migrations.
