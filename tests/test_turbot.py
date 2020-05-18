@@ -236,18 +236,12 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     db_url = turbot.get_db_url(f"sqlite:///{tmp_path}/turbot.db")
     bot = turbot.Turbot(token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_url=db_url)
 
-    # Each test should have a clean slate, if we're using sqlite this is ensured
+    # Each test should have a clean slate. If we're using sqlite this is ensured
     # automatically as each test will create its own new turbot.db file. With other
-    # databases we'll have to ensure that we clean out any existing data before each test
-    # as the previous tests could have left data behind.
-    bot.data.conn.execute("DELETE FROM bugs;")
-    bot.data.conn.execute("DELETE FROM fossils;")
-    bot.data.conn.execute("DELETE FROM songs;")
-    bot.data.conn.execute("DELETE FROM art;")
-    bot.data.conn.execute("DELETE FROM fish;")
-    bot.data.conn.execute("DELETE FROM prices;")
-    bot.data.conn.execute("DELETE FROM users;")
-    bot.data.conn.execute("DELETE FROM authorized_channels;")
+    # databases we'll have to manually clean out any existing data before each
+    # test as the previous tests could have left data behind.
+    for table in bot.data.data_types:
+        bot.data.conn.execute(f"DELETE FROM {table};")
 
     yield bot
 
