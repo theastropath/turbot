@@ -15,6 +15,7 @@ art_invalid: 'Did not recognize the following pieces of art:
 art_real: '> **$name** is always genuine.
 
   > **Real:** <$real_url>'
+authorize: 'Turbot is now authorized to operate in the following channels: $channels.'
 best: '> **$name:** $timestamp for $price bells'
 best_buy_header: __**Best Buying Prices in the Last 12 Hours**__
 best_invalid_param: Please choose either best buy or best sell.
@@ -133,7 +134,7 @@ needed_none: No $kind are known to be needed at this time, new users must collec
 no_hemisphere: Please enter your hemisphere choice first using the !pref hemisphere
   command.
 not_a_command: Sorry, there is no command named "$request"
-not_admin: User is not a Turbot Admin
+not_admin: Sorry, you are not a Turbot Admin.
 oops: '**Deleting last logged price for $name.**'
 oops_no_data: Sorry, you have no data to delete.
 predict: '__**Predictive Graph for $name**__
@@ -147,7 +148,8 @@ pref_no_params: Please provide a preference and a value, possible preferences in
 pref_no_value: Please provide the value for your $pref preference.
 price_time_invalid: Please provide both the day of the week and time of day.
 reset: '**Resetting data for a new week!**'
-search_all_not_needed: No one currently needs this.
+search_all_not_needed: No one currently needs this. Note that new users must have
+  collected at least one item before they are considered for this search.
 search_art_row: '> $name needs arts: $items'
 search_bugs_row: '> $name needs bugs: $items'
 search_fish_row: '> $name needs fish: $items'

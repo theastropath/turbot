@@ -23,12 +23,12 @@ import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
 from humanize import naturaltime
-from sqlalchemy import Date, and_, cast, desc, func
+from sqlalchemy import Date, and_, cast, desc
 from unidecode import unidecode
 
 from turbot._version import __version__
 from turbot.assets import Assets, s
-from turbot.data import Data, Price, User
+from turbot.data import AuthorizedChannel, Data, Price, User
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
 
@@ -590,13 +590,36 @@ class Turbot(discord.Client):
 
     async def on_message(self, message):
         """Behavior when the client gets a message from Discord."""
+        # only respond in text channels
+        if str(message.channel.type) != "text":
+            return
+
+        # don't respond to yourself
+        if message.author.id == self.user.id:
+            return
+
+        # only respond to command-like messages
+        if not message.content.startswith("!"):
+            return
+
+        # check for admin authorized channels on this server
+        guild_id = message.channel.guild.id
+        rows = self.data.conn.execute(
+            f"SELECT * FROM authorized_channels WHERE guild = {guild_id};"
+        )
+        authorized_channels = set(row["name"] for row in rows)
+        if authorized_channels and message.channel.name not in authorized_channels:
+            return
+
+        # fallback to checking against channels authorized at application startup time
         if (
-            str(message.channel.type) == "text"
-            and message.author.id != self.user.id
-            and message.channel.name in self.channels
-            and message.content.startswith("!")
+            not authorized_channels
+            and self.channels
+            and message.channel.name not in self.channels
         ):
-            await self.process(message)
+            return
+
+        await self.process(message)
 
     async def on_ready(self):
         """Behavior when the client has successfully connected to Discord."""
@@ -766,19 +789,20 @@ class Turbot(discord.Client):
         # TODO: Backup prices to a table instead of csv file.
         self.backup_prices(self.data.prices)
 
-        subq = (
-            self.session.query(Price.id, func.max(Price.timestamp).label("maxdate"),)
-            .filter(Price.kind == "buy")
-            .group_by(Price.author)
-            .subquery("t2")
-        )
-        keep_rows = self.session.query(Price).join(
-            subq, and_(Price.id == subq.c.id, Price.timestamp == subq.c.maxdate),
-        )
-        keep_ids = [row.id for row in keep_rows]
-        self.session.query(Price).filter(~Price.id.in_(keep_ids)).delete(
-            synchronize_session=False
-        )
+        prices = self.data.prices
+        self.backup_prices(prices)
+
+        query = "SELECT * FROM prices WHERE kind = 'buy';"
+        members = [member.id for member in channel.guild.members]
+        df = pd.read_sql_query(query, self.data.conn, parse_dates=True)
+        df = df.fillna("").astype({"timestamp": "datetime64[ns, UTC]"})
+        df = df.sort_values(by="timestamp")
+        keep_idx = df.groupby(by="author")["timestamp"].idxmax()
+        keep_df = df.loc[keep_idx]
+        keep_ids = [row["id"] for _, row in keep_df.iterrows()]
+        self.session.query(Price).filter(
+            and_(~Price.id.in_(keep_ids), Price.author.in_(members))
+        ).delete(synchronize_session=False)
         return s("reset"), None
 
     @command
@@ -869,8 +893,9 @@ class Turbot(discord.Client):
         lines = [s(f"best_{kind}_header")]
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
-            timestamp = h(self.to_usertime(row.author, row.timestamp))
-            lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
+            if name:
+                timestamp = h(self.to_usertime(row.author, row.timestamp))
+                lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
         return "\n".join(lines), None
 
     @command
@@ -981,7 +1006,8 @@ class Turbot(discord.Client):
                 needers = np.setdiff1d(users, havers).tolist()
                 for needer in needers:
                     name = discord_user_from_id(channel, needer)
-                    results[name].append(collected_item)
+                    if name:
+                        results[name].append(collected_item)
             return results
 
         results = {}
@@ -1570,6 +1596,22 @@ class Turbot(discord.Client):
         embed.color = discord.Color(0xFFFDC3)
         return embed, None
 
+    @command
+    def authorize(self, channel, author, params):
+        """
+        Set the list of channels where Turbot is authorized to respond.
+        | <your, list, of, channels>
+        """
+        if not is_turbot_admin(channel, author):
+            return s("not_admin"), None
+        names = [name.strip() for name in " ".join(params).split(",")]
+        session = self.data.Session()
+        session.query(AuthorizedChannel).filter_by(guild=channel.guild.id).delete()
+        for name in names:
+            session.add(AuthorizedChannel(guild=channel.guild.id, name=name))
+        session.commit()
+        return s("authorize", channels=", ".join(names)), None
+
 
 def get_token(token_file):  # pragma: no cover
     """Returns the discord token from the environment or your token config file."""
@@ -1602,7 +1644,8 @@ def get_channels(channels_file):  # pragma: no cover
 
 def get_db_url(fallback):  # pragma: no cover
     """Returns the database url from the environment or else the given fallback."""
-    return getenv("TURBOT_DB_URL", fallback)
+    value = getenv("TURBOT_DB_URL", fallback)
+    return value or fallback
 
 
 def apply_migrations():  # pragma: no cover
@@ -1684,10 +1727,6 @@ def main(
     log_level, verbose, bot_token_file, channel, auth_channels_file, database_url, dev
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
-    if not auth_channels:
-        print("error: you must provide at least one authorized channel", file=sys.stderr)
-        sys.exit(1)
-
     database_url = get_db_url(database_url)
 
     # We have to make sure that application directories exist

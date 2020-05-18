@@ -25,6 +25,7 @@ repository. If you'd rather go through the process manually, read further.
     heroku git:remote -a <your-heroku-app-name>
     heroku config:set TURBOT_TOKEN=<your-discord-bot-token>
     heroku config:set TURBOT_CHANNELS=<your;authorized;channel;names;>
+    heroku config:set TURBOT_DB_URL=<your-turbot-database-url>
     heroku buildpacks:clear
     heroku buildpacks:add heroku/python
     git push heroku master
@@ -32,6 +33,8 @@ repository. If you'd rather go through the process manually, read further.
 
 7. Go to the resources tab in your Heroku app, you should see a worker there.
    Click the edit button and turn the worker on.
+
+> **Note:** Don't set `TURBOT_DB_URL` if you want to use sqlite3.
 
 At this point your worker should be running. If you encounter issues, check your
 Heroku app logs. You can stop the worker from within the settings tab where you

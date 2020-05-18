@@ -5,7 +5,7 @@ import alembic
 import alembic.config
 import pandas as pd
 import pytz
-from sqlalchemy import Column, ForeignKey, Integer, String, create_engine
+from sqlalchemy import BigInteger, Column, ForeignKey, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
@@ -21,42 +21,42 @@ Base = declarative_base()
 class Fossil(Base):
     __tablename__ = "fossils"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Art(Base):
     __tablename__ = "art"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Fish(Base):
     __tablename__ = "fish"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Bug(Base):
     __tablename__ = "bugs"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Song(Base):
     __tablename__ = "songs"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     name = Column(String(50), nullable=False)
 
 
 class Price(Base):
     __tablename__ = "prices"
     id = Column(Integer, primary_key=True, nullable=False)
-    author = Column(Integer, ForeignKey("users.author"))
+    author = Column(BigInteger, ForeignKey("users.author"), nullable=False)
     kind = Column(String(20), nullable=False)
     price = Column(Integer, nullable=False)
     timestamp = Column(String(30), nullable=False)
@@ -64,7 +64,7 @@ class Price(Base):
 
 class User(Base):
     __tablename__ = "users"
-    author = Column(Integer, primary_key=True, nullable=False)
+    author = Column(BigInteger, primary_key=True, nullable=False)
     hemisphere = Column(String(15))
     hemisphere = Column(String(50))
     timezone = Column(String(50))
@@ -83,6 +83,13 @@ class User(Base):
 
     def get_timezone(self):
         return pytz.timezone(self.timezone) if self.timezone else pytz.UTC
+
+
+class AuthorizedChannel(Base):
+    __tablename__ = "authorized_channels"
+    id = Column(Integer, primary_key=True, nullable=False)
+    guild = Column(BigInteger, primary_key=True, nullable=False)
+    name = Column(String(100), nullable=False)
 
 
 def create_all(connection, db_url):
@@ -125,7 +132,7 @@ class Data:
             data_type: {
                 column: (
                     "int64"
-                    if column in ["author", "price"]
+                    if column in ["author", "guild", "price"]
                     else "datetime64[ns, UTC]"
                     if column == "timestamp"
                     else "str"

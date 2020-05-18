@@ -12,6 +12,10 @@
     "TURBOT_CHANNELS": {
       "description": "List of channel names seperated by ;",
       "value": "general;"
+    },
+    "TURBOT_DB_URL": {
+      "description": "Your SQLAlchemy database connection url, leave blank for sqlite3",
+      "value": ""
     }
   },
   "formation": {

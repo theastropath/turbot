@@ -48,16 +48,17 @@ class MockRole:
 
 
 class MockGuild:
-    def __init__(self, members):
+    def __init__(self, channel_id, members):
         self.members = members
+        self.id = channel_id
 
 
 class MockChannel:
-    def __init__(self, channel_type, channel_name, members):
+    def __init__(self, channel_id, channel_type, channel_name, members):
         self.type = channel_type
         self.name = channel_name
         self.members = members
-        self.guild = MockGuild(members)
+        self.guild = MockGuild(channel_id, members)
 
         # sent is a spy for tracking calls to send(), it doesn't exist on the real object.
         # There are also helpers for inspecting calls to sent defined on this class of
@@ -228,9 +229,31 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     # instead of client.generate_graph().
     monkeypatch.setattr(turbot.Turbot, "generate_graph", mocker.Mock(return_value=False))
 
+    # Unless changed in the test itself, all tests will assume the same datetime.
     freezer.move_to(NOW)
-    db_url = f"sqlite:///{tmp_path}/turbot.db"
-    return turbot.Turbot(token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_url=db_url)
+
+    # Fallback to using sqlite for tests, but use the environment variable if it's set.
+    db_url = turbot.get_db_url(f"sqlite:///{tmp_path}/turbot.db")
+    bot = turbot.Turbot(token=CLIENT_TOKEN, channels=[AUTHORIZED_CHANNEL], db_url=db_url)
+
+    # Each test should have a clean slate, if we're using sqlite this is ensured
+    # automatically as each test will create its own new turbot.db file. With other
+    # databases we'll have to ensure that we clean out any existing data before each test
+    # as the previous tests could have left data behind.
+    bot.data.conn.execute("DELETE FROM bugs;")
+    bot.data.conn.execute("DELETE FROM fossils;")
+    bot.data.conn.execute("DELETE FROM songs;")
+    bot.data.conn.execute("DELETE FROM art;")
+    bot.data.conn.execute("DELETE FROM fish;")
+    bot.data.conn.execute("DELETE FROM prices;")
+    bot.data.conn.execute("DELETE FROM users;")
+    bot.data.conn.execute("DELETE FROM authorized_channels;")
+
+    yield bot
+
+    # For sqlite closing the connection when we're done isn't necessary, but for other
+    # databases our test suite can quickly exhaust their connection pools.
+    bot.data.conn.close()
 
 
 @pytest.fixture
@@ -257,7 +280,7 @@ def lastweek(mocker, monkeypatch):
 
 @pytest.fixture
 def channel():
-    return MockChannel("text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+    return MockChannel(1, "text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
 
 
 SNAPSHOTS_USED = set()
@@ -314,7 +337,7 @@ class TestTurbot:
     async def test_on_message_non_text(self, client, channel):
         invalid_channel_type = "voice"
         channel = MockChannel(
-            invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
+            6, invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
         )
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
@@ -324,7 +347,7 @@ class TestTurbot:
         channel.sent.assert_not_called()
 
     async def test_on_message_in_unauthorized_channel(self, client):
-        channel = MockChannel("text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+        channel = MockChannel(5, "text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
 
@@ -755,6 +778,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
         await client.on_message(MockMessage(BUDDY, channel, "!sell 600"))
         await client.on_message(MockMessage(GUY, channel, "!buy 800"))
+        await client.on_message(MockMessage(PUNK, channel, "!sell 200"))
 
         await client.on_message(MockMessage(someone(), channel, "!best sell"))
         assert channel.last_sent_response == (
@@ -980,7 +1004,7 @@ class TestTurbot:
 
         # then reset price data
         await client.on_message(MockMessage(somenonturbotadmin(), channel, "!reset"))
-        assert channel.last_sent_response == ("User is not a Turbot Admin")
+        assert channel.last_sent_response == ("Sorry, you are not a Turbot Admin.")
         assert_frame_equal(old_data, client.data.prices)
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
@@ -999,6 +1023,7 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!sell 800"))
         await client.on_message(MockMessage(GUY, channel, "!buy 101"))
         await client.on_message(MockMessage(GUY, channel, "!sell 801"))
+        await client.on_message(MockMessage(PUNK, channel, "!buy 90"))
 
         # then jump ahead a week and log some more
         later = NOW + timedelta(days=7)
@@ -1009,6 +1034,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 92"))
         await client.on_message(MockMessage(GUY, channel, "!buy 102"))
         await client.on_message(MockMessage(GUY, channel, "!sell 802"))
+        await client.on_message(MockMessage(PUNK, channel, "!sell 85"))
 
         # then jump back to the past log some more, so that there are old
         # prices that appear in the dataset with higher primary key ids...
@@ -1020,6 +1046,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!sell 84"))
         await client.on_message(MockMessage(GUY, channel, "!buy 85"))
         await client.on_message(MockMessage(GUY, channel, "!sell 86"))
+        await client.on_message(MockMessage(PUNK, channel, "!sell 86"))
 
         old_data = client.data.prices.values.tolist()
 
@@ -1027,9 +1054,12 @@ class TestTurbot:
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("**Resetting data for a new week!**")
         assert client.data.prices.values.tolist() == [
+            [PUNK.id, "buy", 90, NOW],
             [FRIEND.id, "buy", 102, later],
             [BUDDY.id, "buy", 122, later],
             [GUY.id, "buy", 102, later],
+            [PUNK.id, "sell", 85, later],
+            [PUNK.id, "sell", 86, past],
         ]
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
         assert Path(turbot.LASTWEEKCMD_FILE).exists()
@@ -1206,9 +1236,10 @@ class TestTurbot:
         await client.on_message(
             MockMessage(GUY, channel, "!collect sinking painting, great statue")
         )
+        await client.on_message(MockMessage(PUNK, channel, "!collect sinking painting"))
 
         query = "sinking painting, great statue, wistful painting"
-        await client.on_message(MockMessage(PUNK, channel, f"!search {query}"))
+        await client.on_message(MockMessage(someone(), channel, f"!search {query}"))
         channel.last_sent_response == (
             "__**Art Search**__\n"
             f"> {BUDDY} needs: great statue, wistful painting\n"
@@ -1487,7 +1518,10 @@ class TestTurbot:
         )
 
         await client.on_message(MockMessage(PUNK, channel, "!search amber, ammonite"))
-        assert channel.last_sent_response == ("No one currently needs this.")
+        assert channel.last_sent_response == (
+            "No one currently needs this. Note that new users must have collected at "
+            "least one item before they are considered for this search."
+        )
 
     async def test_on_message_search_fossil_no_need_with_bad(self, client, channel):
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
@@ -1637,6 +1671,9 @@ class TestTurbot:
 
         fossils = ",".join(everything)
         await client.on_message(MockMessage(FRIEND, channel, f"!collect {fossils}"))
+
+        fossils = ",".join(everything[5:10])
+        await client.on_message(MockMessage(PUNK, channel, f"!collect {fossils}"))
 
         await client.on_message(MockMessage(someone(), channel, "!needed fossils"))
         assert channel.last_sent_response == (
@@ -3239,6 +3276,35 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             await client.on_message(MockMessage(someone(), channel, "!sell 100"))
 
+    async def test_on_message_authorize_non_admin(self, client, channel):
+        author = somenonturbotadmin()
+        channels = "some, list of, channels"
+        await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
+        assert channel.last_sent_response == "Sorry, you are not a Turbot Admin."
+        assert client.data.authorized_channels.values.tolist() == []
+
+    async def test_on_message_authorize_admin(self, client, channel):
+        author = someturbotadmin()
+        channels = "some, list of, channels"
+        await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
+        assert channel.last_sent_response == (
+            "Turbot is now authorized to operate in the following channels: "
+            "some, list of, channels."
+        )
+        assert client.data.authorized_channels.values.tolist() == [
+            [channel.guild.id, "some"],
+            [channel.guild.id, "list of"],
+            [channel.guild.id, "channels"],
+        ]
+
+        bad = MockChannel(channel.guild.id, "text", "bob", members=CHANNEL_MEMBERS)
+        await client.on_message(MockMessage(someone(), bad, "!sell 100"))
+        assert len(bad.all_sent_calls) == 0
+
+        good = MockChannel(channel.guild.id, "text", "some", members=CHANNEL_MEMBERS)
+        await client.on_message(MockMessage(someone(), good, "!sell 100"))
+        assert len(good.all_sent_calls) == 1
+
 
 class TestFigures:
     # Some realistic price data sampled from the wild:
@@ -3273,6 +3339,8 @@ class TestFigures:
 
     def set_example_prices(self, client):
         c = client.data.conn
+        c.execute(f"INSERT INTO users (author) VALUES ({FRIEND.id});")
+        c.execute(f"INSERT INTO users (author) VALUES ({DUDE.id});")
         values = [f"({row[0]}, '{row[1]}', {row[2]}, '{row[3]}')" for row in self.PRICES]
         c.execute(
             f"""
@@ -3284,6 +3352,9 @@ class TestFigures:
 
     def set_bogus_prices(self, client):
         c = client.data.conn
+        c.execute(f"INSERT INTO users (author) VALUES ({PUNK.id});")
+        c.execute(f"INSERT INTO users (author) VALUES ({FRIEND.id});")
+        c.execute(f"INSERT INTO users (author) VALUES ({DUDE.id});")
         c.execute(
             f"""
             INSERT INTO prices (author, kind, price, timestamp)
@@ -3302,6 +3373,7 @@ class TestFigures:
 
     def set_error_prices(self, client):
         c = client.data.conn
+        c.execute(f"INSERT INTO users (author) VALUES ({BUDDY.id});")
         c.execute(
             f"""
             INSERT INTO prices (author, kind, price, timestamp)

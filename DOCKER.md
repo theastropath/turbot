@@ -18,7 +18,10 @@ doesn't get blown away whenever you kill and remove the image.
 docker run \
     -e TURBOT_TOKEN="<your-discord-bot-token>" \
     -e TURBOT_CHANNELS="<some;channels;here>" \
+    -e TURBOT_DB_URL="<your-turbot-database-url> \
     -v "$(pwd)/db":/db \
     --rm
     turbot
 ```
+
+> **Note:** Don't set `TURBOT_DB_URL` if you want to use sqlite3.
