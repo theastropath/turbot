@@ -11,7 +11,7 @@
 
 A Discord bot for everything _Animal Crossing: New Horizons_.
 
-![screenshot](https://user-images.githubusercontent.com/1903876/80841531-787c2f00-8bb4-11ea-8975-cc619b978635.png)
+[![add-bot][add-img]][add-bot]
 
 ## 📱 Using Turbot
 
@@ -22,6 +22,8 @@ Discord via the following commands in any of the authorized channels.
 - `!help`: Provides detailed help about all of the following commands
 
 ### 💸 Turnips
+
+![predictions](https://user-images.githubusercontent.com/1903876/82263275-63730000-9917-11ea-94d1-38661784097c.png)
 
 These commands help users buy low and sell high in the stalk market.
 
@@ -38,6 +40,8 @@ These commands help users buy low and sell high in the stalk market.
 
 ### ℹ️ User Preferences
 
+![user-info](https://user-images.githubusercontent.com/1903876/82263272-61a93c80-9917-11ea-9e8c-ded5eb1f652e.png)
+
 These commands allow users to set their preferences. These preferences are used
 to make other commands more relevant, for example by converting times to the
 user's preferred timezone.
@@ -46,6 +50,8 @@ user's preferred timezone.
 - `!pref`: Set a user preference; use command to get a list of available options
 
 ### 📮 Collectables
+
+![collecting](https://user-images.githubusercontent.com/1903876/82263264-5f46e280-9917-11ea-9c1e-90d4077013ca.png)
 
 When a community of users tracks collectables and trades them between each
 other, everyone finishes collecting everything in the game so much more quickly
@@ -134,6 +140,8 @@ You can also run Turbot via docker. See
 
 [MIT][mit] © [TheAstropath][theastropath], [lexicalunit][lexicalunit] et [al][contributors]
 
+[add-bot]:          https://discordapp.com/api/oauth2/authorize?client_id=699774176155926599&permissions=247872&scope=bot
+[add-img]:          https://user-images.githubusercontent.com/1903876/82262797-71745100-9916-11ea-8b65-b3f656115e4f.png
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
 [build-badge]:      https://github.com/theastropath/turbot/workflows/build/badge.svg
