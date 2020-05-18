@@ -48,16 +48,17 @@ class MockRole:
 
 
 class MockGuild:
-    def __init__(self, members):
+    def __init__(self, channel_id, members):
         self.members = members
+        self.id = channel_id
 
 
 class MockChannel:
-    def __init__(self, channel_type, channel_name, members):
+    def __init__(self, channel_id, channel_type, channel_name, members):
         self.type = channel_type
         self.name = channel_name
         self.members = members
-        self.guild = MockGuild(members)
+        self.guild = MockGuild(channel_id, members)
 
         # sent is a spy for tracking calls to send(), it doesn't exist on the real object.
         # There are also helpers for inspecting calls to sent defined on this class of
@@ -246,6 +247,7 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     bot.data.conn.execute("DELETE FROM fish;")
     bot.data.conn.execute("DELETE FROM prices;")
     bot.data.conn.execute("DELETE FROM users;")
+    bot.data.conn.execute("DELETE FROM authorized_channels;")
 
     yield bot
 
@@ -278,7 +280,7 @@ def lastweek(mocker, monkeypatch):
 
 @pytest.fixture
 def channel():
-    return MockChannel("text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+    return MockChannel(1, "text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
 
 
 SNAPSHOTS_USED = set()
@@ -335,7 +337,7 @@ class TestTurbot:
     async def test_on_message_non_text(self, client, channel):
         invalid_channel_type = "voice"
         channel = MockChannel(
-            invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
+            6, invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
         )
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
@@ -345,7 +347,7 @@ class TestTurbot:
         channel.sent.assert_not_called()
 
     async def test_on_message_in_unauthorized_channel(self, client):
-        channel = MockChannel("text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+        channel = MockChannel(5, "text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
 
@@ -1002,7 +1004,7 @@ class TestTurbot:
 
         # then reset price data
         await client.on_message(MockMessage(somenonturbotadmin(), channel, "!reset"))
-        assert channel.last_sent_response == ("User is not a Turbot Admin")
+        assert channel.last_sent_response == ("Sorry, you are not a Turbot Admin.")
         assert_frame_equal(old_data, client.data.prices)
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
@@ -3273,6 +3275,35 @@ class TestTurbot:
         monkeypatch.setattr(client, "sell", boom)
         with pytest.raises(RuntimeError):
             await client.on_message(MockMessage(someone(), channel, "!sell 100"))
+
+    async def test_on_message_authorize_non_admin(self, client, channel):
+        author = somenonturbotadmin()
+        channels = "some, list of, channels"
+        await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
+        assert channel.last_sent_response == "Sorry, you are not a Turbot Admin."
+        assert client.data.authorized_channels.values.tolist() == []
+
+    async def test_on_message_authorize_admin(self, client, channel):
+        author = someturbotadmin()
+        channels = "some, list of, channels"
+        await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
+        assert channel.last_sent_response == (
+            "Turbot is now authorized to operate in the following channels: "
+            "some, list of, channels."
+        )
+        assert client.data.authorized_channels.values.tolist() == [
+            [channel.guild.id, "some"],
+            [channel.guild.id, "list of"],
+            [channel.guild.id, "channels"],
+        ]
+
+        bad = MockChannel(channel.guild.id, "text", "bob", members=CHANNEL_MEMBERS)
+        await client.on_message(MockMessage(someone(), bad, "!sell 100"))
+        assert len(bad.all_sent_calls) == 0
+
+        good = MockChannel(channel.guild.id, "text", "some", members=CHANNEL_MEMBERS)
+        await client.on_message(MockMessage(someone(), good, "!sell 100"))
+        assert len(good.all_sent_calls) == 1
 
 
 class TestFigures:

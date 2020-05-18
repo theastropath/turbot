@@ -18,5 +18,4 @@ message = sys.argv[2]
 config = alembic.config.Config(str(ALEMBIC_INI))
 config.set_main_option("script_location", str(VERSIONS_DIR))
 config.set_main_option("sqlalchemy.url", url)
-alembic.command.stamp(config, "head")
 alembic.command.revision(config, message=message, autogenerate=True)

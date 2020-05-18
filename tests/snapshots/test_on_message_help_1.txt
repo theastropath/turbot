@@ -1,3 +1,8 @@
+>  Get a link to a prediction calculator for a price history. 
+
+**!pref** _<preference> <value>_
+>  Set one of your user preferences. 
+
 **!reset**
 >  Only Turbot Admin members can run this command. Generates a final graph for use with !lastweek and resets all data for all users.
 

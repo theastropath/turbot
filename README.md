@@ -79,6 +79,10 @@ critters you've already caught and will tailor their responses to the user.
 - `!fish`: Get information on fish
 - `!new`: Get information on newly available fish and bugs
 
+### 👑 Administration
+
+- `!authorize`: Configure which channels Turbot can operate in
+
 ## 🤖 Running Turbot
 
 First install `turbot` using [`pip`](https://pip.pypa.io/en/stable/):
@@ -90,7 +94,7 @@ pip install turbot
 Then you must configure two things:
 
 1. Your Discord bot token.
-2. The list of channels you want `turbot` to monitor.
+2. The list of channels you want `turbot` to monitor. (Default: All channels)
 
 To provide your Discord bot token either set an environment variable named
 `TURBOT_TOKEN` to the token or paste it into a file named `token.txt`.
@@ -100,6 +104,8 @@ any number of `--channel "name"` options. Alternatively you can create a file
 named `channels.txt` where each line of the file is a channel name. You can
 also specify them via the environment variable `TURBOT_CHANNELS` as a semicolon
 delimited string, for example: `export TURBOT_CHANNELS="some;channels;here"`.
+You can also leave this unspecified and Turbot will operate within all channels,
+then you can specify a smaller set of channels using the `!authorize` command.
 
 By default Turbot will use sqlite3 as its database. You can however choose to
 use another database by providing a [SQLAlchemy Connection URL][db-url]. This

@@ -28,7 +28,7 @@ from unidecode import unidecode
 
 from turbot._version import __version__
 from turbot.assets import Assets, s
-from turbot.data import Data, Price, User
+from turbot.data import AuthorizedChannel, Data, Price, User
 from turnips.archipelago import Archipelago
 from turnips.plots import plot_models_range
 
@@ -590,13 +590,36 @@ class Turbot(discord.Client):
 
     async def on_message(self, message):
         """Behavior when the client gets a message from Discord."""
+        # only respond in text channels
+        if str(message.channel.type) != "text":
+            return
+
+        # don't respond to yourself
+        if message.author.id == self.user.id:
+            return
+
+        # only respond to command-like messages
+        if not message.content.startswith("!"):
+            return
+
+        # check for admin authorized channels on this server
+        guild_id = message.channel.guild.id
+        rows = self.data.conn.execute(
+            f"SELECT * FROM authorized_channels WHERE guild = {guild_id};"
+        )
+        authorized_channels = set(row["name"] for row in rows)
+        if authorized_channels and message.channel.name not in authorized_channels:
+            return
+
+        # fallback to checking against channels authorized at application startup time
         if (
-            str(message.channel.type) == "text"
-            and message.author.id != self.user.id
-            and message.channel.name in self.channels
-            and message.content.startswith("!")
+            not authorized_channels
+            and self.channels
+            and message.channel.name not in self.channels
         ):
-            await self.process(message)
+            return
+
+        await self.process(message)
 
     async def on_ready(self):
         """Behavior when the client has successfully connected to Discord."""
@@ -1573,6 +1596,22 @@ class Turbot(discord.Client):
         embed.color = discord.Color(0xFFFDC3)
         return embed, None
 
+    @command
+    def authorize(self, channel, author, params):
+        """
+        Set the list of channels where Turbot is authorized to respond.
+        | <your, list, of, channels>
+        """
+        if not is_turbot_admin(channel, author):
+            return s("not_admin"), None
+        names = [name.strip() for name in " ".join(params).split(",")]
+        session = self.data.Session()
+        session.query(AuthorizedChannel).filter_by(guild=channel.guild.id).delete()
+        for name in names:
+            session.add(AuthorizedChannel(guild=channel.guild.id, name=name))
+        session.commit()
+        return s("authorize", channels=", ".join(names)), None
+
 
 def get_token(token_file):  # pragma: no cover
     """Returns the discord token from the environment or your token config file."""
@@ -1688,10 +1727,6 @@ def main(
     log_level, verbose, bot_token_file, channel, auth_channels_file, database_url, dev
 ):  # pragma: no cover
     auth_channels = get_channels(auth_channels_file) + list(channel)
-    if not auth_channels:
-        print("error: you must provide at least one authorized channel", file=sys.stderr)
-        sys.exit(1)
-
     database_url = get_db_url(database_url)
 
     # We have to make sure that application directories exist

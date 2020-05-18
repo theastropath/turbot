@@ -85,6 +85,12 @@ class User(Base):
         return pytz.timezone(self.timezone) if self.timezone else pytz.UTC
 
 
+class AuthorizedChannel(Base):
+    __tablename__ = "authorized_channels"
+    guild = Column(BigInteger, primary_key=True, nullable=False)
+    name = Column(String(100))
+
+
 def create_all(connection, db_url):
     config = alembic.config.Config(str(ALEMBIC_INI))
     config.set_main_option("script_location", str(VERSIONS_DIR))
@@ -125,7 +131,7 @@ class Data:
             data_type: {
                 column: (
                     "int64"
-                    if column in ["author", "price"]
+                    if column in ["author", "guild", "price"]
                     else "datetime64[ns, UTC]"
                     if column == "timestamp"
                     else "str"

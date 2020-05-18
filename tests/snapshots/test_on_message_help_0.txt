@@ -6,6 +6,9 @@ __**Turbot Help!**__
 **!art** _[comma, separated, list, of, art, pieces]_
 >  Get info about pieces of art that are available
 
+**!authorize**
+>  Set the list of channels where Turbot is authorized to respond. | <your, list, of, channels>
+
 **!best** _[buy|sell]_
 >  Finds the best, most recent, buy or sell price currently available. The default is to look for the best sell.
 
@@ -55,8 +58,3 @@ __**Turbot Help!**__
 >  Remove your last logged turnip price.
 
 **!predict** _[user]_
->  Get a link to a prediction calculator for a price history. 
-
-**!pref** _<preference> <value>_
->  Set one of your user preferences. 
-
