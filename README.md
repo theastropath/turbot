@@ -65,11 +65,11 @@ than they would on their own. Turbot supports collecting:
 
 #### 📈 Managing your Collection
 
-- `!collect`: Make something as collected
+- `!collect`: Mark something as collected
 - `!collected`: Show the things you've collected so far
 - `!count`: Count the number of collected things you have
 - `!needed`: Find out what collectables are needed by you and others
-- `!search`: Search for someone who needs a fossil or art
+- `!search`: Search for someone who needs something you're looking to give away
 - `!uncollect`: Remove something from your collection
 - `!uncollected`: Get a list of things that you haven't collected yet
 
@@ -77,8 +77,8 @@ than they would on their own. Turbot supports collecting:
 
 Some collections require additional support such as the `!art` command that
 helps users tell fake art from real art. The `!bugs` and `!fish` commands
-provide on where and when to catch those critters. These commands also know what
-critters you've already caught and will tailor their responses to the user.
+tell users when and where to catch those critters. These commands also know what
+you've already collected and will tailor their responses to the user.
 
 - `!art`: Get information on an art piece
 - `!bugs`: Get information on bugs
