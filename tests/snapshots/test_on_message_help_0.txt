@@ -6,8 +6,8 @@ __**Turbot Help!**__
 **!art** _[comma, separated, list, of, art, pieces]_
 >  Get info about pieces of art that are available
 
-**!authorize**
->  Set the list of channels where Turbot is authorized to respond. | <your, list, of, channels>
+**!authorize** _<your, list, of, channels>_
+>  Set the list of channels where Turbot is authorized to respond.
 
 **!best** _[buy|sell]_
 >  Finds the best, most recent, buy or sell price currently available. The default is to look for the best sell.

@@ -1600,7 +1600,7 @@ class Turbot(discord.Client):
     def authorize(self, channel, author, params):
         """
         Set the list of channels where Turbot is authorized to respond.
-        | <your, list, of, channels>
+        @ <your, list, of, channels>
         """
         if not is_turbot_admin(channel, author):
             return s("not_admin"), None
