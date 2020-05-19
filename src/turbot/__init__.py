@@ -103,7 +103,13 @@ class PrefValidate:
 
     @classmethod
     def timezone(cls, value):
-        return value if value in pytz.all_timezones_set else None
+        if value in pytz.all_timezones_set:
+            return value
+        value = value.lower().replace(" ", "/").replace("-", "/")
+        matches = [zone for zone in pytz.common_timezones_set if value in zone.lower()]
+        if not matches:
+            return None
+        return matches[0] if len(matches) == 1 else sorted(matches)
 
     @classmethod
     def island(cls, value):
@@ -1196,6 +1202,8 @@ class Turbot(discord.Client):
 
         value = " ".join(params[1:])
         validated_value = getattr(PrefValidate, pref)(value)
+        if isinstance(validated_value, list):
+            return s("did_you_mean", possible=", ".join(validated_value)), None
         if not validated_value:
             return s(f"{pref}_invalid"), None
 

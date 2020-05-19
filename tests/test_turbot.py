@@ -2482,6 +2482,17 @@ class TestTurbot:
             [author.id, "Canada/Saskatchewan"]
         ]
 
+        await client.on_message(MockMessage(author, channel, "!pref timezone mountain"))
+        assert channel.last_sent_response == "Did you mean: Canada/Mountain, US/Mountain?"
+
+        await client.on_message(MockMessage(author, channel, "!pref timezone us eastern"))
+        assert channel.last_sent_response == (
+            f"Registered timezone preference for {author}."
+        )
+        assert client.data.users[["author", "timezone"]].values.tolist() == [
+            [author.id, "US/Eastern"]
+        ]
+
     async def test_on_message_pref_island(self, client, channel):
         author = someone()
         island = "Koholint Island"
