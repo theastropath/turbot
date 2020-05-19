@@ -78,6 +78,22 @@ class PrefValidate:
     HEMISPHERES = ["northern", "southern"]
 
     @classmethod
+    def key(cls, value):
+        value = value.lower()
+        if value in cls.PREFRENCES:
+            return value
+        return {
+            "code": "friendcode",
+            "friendcode": "friend",
+            "hemi": "hemisphere",
+            "name": "nickname",
+            "nativefruit": "fruit",
+            "nick": "nickname",
+            "tz": "timezone",
+            "zone": "timezone",
+        }.get(value, None)
+
+    @classmethod
     def friend(cls, value):
         code = re.sub("[^0-9]", "", value)
         return code if len(code) == 12 and code.isdigit() else None
@@ -1188,8 +1204,8 @@ class Turbot(discord.Client):
         if not params:
             return s("pref_no_params", prefs=", ".join(PrefValidate.PREFRENCES)), None
 
-        pref = params[0].lower()
-        if pref not in PrefValidate.PREFRENCES:
+        pref = PrefValidate.key(params[0])
+        if not pref:
             return s("pref_invalid_pref", prefs=", ".join(PrefValidate.PREFRENCES)), None
         if len(params) <= 1:
             return s("pref_no_value", pref=pref), None

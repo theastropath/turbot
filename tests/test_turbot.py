@@ -2416,6 +2416,14 @@ class TestTurbot:
             [author.id, "123456789012"]
         ]
 
+        await client.on_message(
+            MockMessage(author, channel, "!pref friendcode sw-1111-2222-3333")
+        )
+        assert channel.last_sent_response == f"Registered friend preference for {author}."
+        assert client.data.users[["author", "friend"]].values.tolist() == [
+            [author.id, "111122223333"]
+        ]
+
     async def test_on_message_pref_creator_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref creator upwards"))
         assert channel.last_sent_response == (
