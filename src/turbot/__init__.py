@@ -467,9 +467,7 @@ class Turbot(discord.Client):
             return [None] * 13
 
         buy_date = recent_buy.timestamp.iloc[0]
-        if (
-            buy_date.to_pydatetime().isoweekday() != DAYS["sunday"]
-        ):  # buy isn't on a sunday
+        if buy_date.to_pydatetime().isoweekday() != DAYS["sunday"]:  # buy not on a sunday
             return [None] * 13
 
         buy_price = int(recent_buy.price.iloc[0])
@@ -773,8 +771,10 @@ class Turbot(discord.Client):
     @command
     def buy(self, channel, author, params):
         """
-        Log the price that you can buy turnips from Daisy Mae on your island.
-        @ <price> [day time]
+        Log the price that you can buy turnips from Daisy Mae on your island. If used
+        outside of Sunday morning, we assume you mean for the price to be set to your
+        most recent previous Sunday morning.
+        @ <price>
         """
         if not params:
             return s("buy_no_params"), None
@@ -787,10 +787,14 @@ class Turbot(discord.Client):
         if price <= 0:
             return s("buy_nonpositive_price"), None
 
-        try:
-            price_time = self._get_price_time(author.id, params)
-        except Turbot._PriceTimeError as err:
-            return s(err.key), None
+        now = self.to_usertime(author.id, datetime.now(pytz.utc))
+        if now.isoweekday() == DAYS["sunday"] and now.hour < 12:
+            price_time = now
+        else:
+            start = now - timedelta(days=now.isoweekday() % 7)  # start of week
+            start = datetime(start.year, start.month, start.day, tzinfo=start.tzinfo)
+            day_offset = DAYS["sunday"] % 7
+            price_time = start + timedelta(days=day_offset)
 
         logging.debug("saving buy price of %s bells for user id %s", price, author.id)
         self.ensure_user_exists(author)

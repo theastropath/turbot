@@ -15,8 +15,8 @@ __**Turbot Help!**__
 **!bugs** _[name|leaving|arriving]_
 >  Tells you what bugs are available now in your hemisphere.
 
-**!buy** _<price> [day time]_
->  Log the price that you can buy turnips from Daisy Mae on your island.
+**!buy** _<price>_
+>  Log the price that you can buy turnips from Daisy Mae on your island. If used outside of Sunday morning, we assume you mean for the price to be set to your most recent previous Sunday morning.
 
 **!clear**
 >  Clears all of your own historical turnip prices.
@@ -52,9 +52,3 @@ __**Turbot Help!**__
 >  Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
 
 **!new**
->  Tells you what new things available in your hemisphere right now.
-
-**!oops**
->  Remove your last logged turnip price.
-
-**!predict** _[user]_
