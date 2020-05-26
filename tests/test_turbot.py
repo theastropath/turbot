@@ -773,8 +773,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!best sell"))
         assert channel.last_sent_response == (
             "__**Best Selling Prices in the Last 12 Hours**__\n"
-            f"> **{BUDDY}:** now for 600 bells\n"
-            f"> **{FRIEND}:** now for 200 bells"
+            f"> **{BUDDY}:** now for 600 bells (21 hours remaining)\n"
+            f"> **{FRIEND}:** now for 200 bells (21 hours remaining)"
         )
 
     async def test_on_message_best_sell_timezone(self, client, channel):
@@ -802,8 +802,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!best"))
         assert channel.last_sent_response == (
             "__**Best Selling Prices in the Last 12 Hours**__\n"
-            f"> **{BUDDY}:** {turbot.h(buddy_now)} for 600 bells\n"
-            f"> **{FRIEND}:** {turbot.h(friend_now)} for 200 bells"
+            f"> **{BUDDY}:** {turbot.h(buddy_now)} for 600 bells (3 hours remaining)\n"
+            f"> **{FRIEND}:** {turbot.h(friend_now)} for 200 bells (5 hours remaining)"
         )
 
     async def test_on_message_oops(self, client, channel):
@@ -901,8 +901,21 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
             "__**Best Buying Prices in the Last 12 Hours**__\n"
-            f"> **{FRIEND}:** now for 100 bells\n"
-            f"> **{BUDDY}:** now for 120 bells"
+            f"> **{FRIEND}:** now for 100 bells (2 hours remaining)\n"
+            f"> **{BUDDY}:** now for 120 bells (2 hours remaining)"
+        )
+
+    async def test_on_message_best_buy_no_time_remaining(self, client, channel, freezer):
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
+
+        freezer.move_to(sunday_am + timedelta(hours=5))
+        await client.on_message(MockMessage(someone(), channel, "!best buy"))
+        assert channel.last_sent_response == (
+            "__**Best Buying Prices in the Last 12 Hours**__\n" "> None found"
         )
 
     async def test_on_message_best_buy_timezone(self, client, channel, freezer):
@@ -929,8 +942,8 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
             "__**Best Buying Prices in the Last 12 Hours**__\n"
-            f"> **{BUDDY}:** {turbot.h(buddy_now)} for 60 bells\n"
-            f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells"
+            f"> **{BUDDY}:** {turbot.h(buddy_now)} for 60 bells (8 hours remaining)\n"
+            f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells (9 hours remaining)"
         )
 
     async def test_on_message_graph(self, client, channel, graph):
