@@ -1,3 +1,9 @@
+>  Tells you what new things available in your hemisphere right now.
+
+**!oops**
+>  Remove your last logged turnip price.
+
+**!predict** _[user]_
 >  Get a link to a prediction calculator for a price history. 
 
 **!pref** _<preference> <value>_

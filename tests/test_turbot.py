@@ -145,6 +145,7 @@ AUTHORIZED_CHANNEL = "good channel"
 UNAUTHORIZED_CHANNEL = "bad channel"
 
 NOW = datetime(year=1982, month=4, day=24, tzinfo=pytz.utc)
+LAST_SUNDAY = datetime(year=1982, month=4, day=18, tzinfo=pytz.utc)
 
 TST_ROOT = dirname(realpath(__file__))
 FIXTURES_ROOT = Path(TST_ROOT) / "fixtures"
@@ -454,24 +455,25 @@ class TestTurbot:
             MockMessage(author, channel, f"!pref timezone {author_tz.zone}")
         )
 
-        sunday_am = datetime(2020, 4, 27, 9, tzinfo=pytz.utc)
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
         await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         amount = 100
         monday_am = sunday_am + timedelta(days=1)
         for offset in range(0, 50):
-            freezer.move_to(monday_am + timedelta(hours=offset))
+            price_time = monday_am + timedelta(hours=offset)
+            freezer.move_to(price_time)
             await client.on_message(MockMessage(author, channel, f"!sell {amount}"))
             amount += 5
 
         assert client.get_user_timeline(author.id) == [
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
+            90,
+            145,
+            205,
+            265,
+            325,
+            345,
             None,
             None,
             None,
@@ -490,7 +492,7 @@ class TestTurbot:
 
         sunday_am = datetime(2020, 5, 4, 6, tzinfo=pytz.utc)
         freezer.move_to(sunday_am + timedelta(days=2, hours=12))
-        await client.on_message(MockMessage(author, channel, "!buy 90 sunday morning"))
+        await client.on_message(MockMessage(author, channel, "!buy 90"))
 
         await client.on_message(MockMessage(author, channel, "!history"))
         assert channel.last_sent_response == (
@@ -666,59 +668,62 @@ class TestTurbot:
             MockMessage(author, channel, f"!pref timezone {author_tz.zone}")
         )
 
-        monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
-        monday_evening = monday_morning + timedelta(hours=13)
+        sunday_morning = datetime(2020, 5, 24, tzinfo=pytz.utc)
+        sunday_evening = sunday_morning + timedelta(hours=13)
         # user's time is 8 hours ahead of utc on this date:
-        monday_evening_adjust = monday_evening + timedelta(hours=8)
-        command_time = monday_morning + timedelta(days=3)
+        sunday_morning_adjust = sunday_morning + timedelta(hours=8)
+        command_time = sunday_evening + timedelta(days=3)
         freezer.move_to(command_time)
 
         amount = somebells()
-        await client.on_message(
-            MockMessage(author, channel, f"!buy {amount} monday evening")
-        )
+        await client.on_message(MockMessage(author, channel, f"!buy {amount}"))
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert client.data.prices.values.tolist() == [
-            [author.id, "buy", amount, monday_evening_adjust]
-        ]
+        data = client.data.prices.values.tolist()
+        assert len(data) == 1
+        assert data[0][0] == author.id
+        assert data[0][1] == "buy"
+        assert data[0][2] == amount
+        assert data[0][3].year == sunday_morning_adjust.year
+        assert data[0][3].month == sunday_morning_adjust.month
+        assert data[0][3].day == sunday_morning_adjust.day
+        assert data[0][3].hour < 12
 
     async def test_on_message_buy_at_time(self, client, channel, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
-        monday_evening = monday_morning + timedelta(hours=13)
         command_time = monday_morning + timedelta(days=3)
+        sunday_morning = monday_morning - timedelta(days=1)
         freezer.move_to(command_time)
 
         author = someone()
         amount = somebells()
-        await client.on_message(
-            MockMessage(author, channel, f"!buy {amount} monday evening")
-        )
+        await client.on_message(MockMessage(author, channel, f"!buy {amount}"))
         assert channel.last_sent_response == (
             f"Logged buying price of {amount} for user {author}."
         )
-        assert client.data.prices.values.tolist() == [
-            [author.id, "buy", amount, monday_evening]
-        ]
+        data = client.data.prices.values.tolist()
+        assert len(data) == 1
+        assert data[0][0] == author.id
+        assert data[0][1] == "buy"
+        assert data[0][2] == amount
+        assert data[0][3].year == sunday_morning.year
+        assert data[0][3].month == sunday_morning.month
+        assert data[0][3].day == sunday_morning.day
+        assert data[0][3].hour < 12
 
-    async def test_on_message_buy_bad_time(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!buy 100 funday"))
-        assert channel.last_sent_response == (
-            "Please provide both the day of the week and time of day."
+    async def test_on_message_buy_invalid_data(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!sell 50"))
+        c = client.data.conn
+        c.execute(
+            f"""
+            INSERT INTO prices (author, kind, price, timestamp)
+            VALUES /* a buy that isn't on a sunday morning */
+            ({author.id}, 'buy', 100, '1982-04-24 13:00:00+00:00');
+            """
         )
-
-    async def test_on_message_buy_bad_day(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!buy 100 fun morning"))
-        assert channel.last_sent_response == (
-            "Please use monday, wednesday, tuesday, etc for the day parameter."
-        )
-
-    async def test_on_message_buy_incomplete_time(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!buy 100 friday pants"))
-        assert channel.last_sent_response == (
-            "Please use either morning or evening as the time parameter."
-        )
+        assert client.get_user_timeline(author.id) == [None] * 13
 
     async def test_on_message_buy_no_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy"))
@@ -733,15 +738,6 @@ class TestTurbot:
     async def test_on_message_buy_nonpositive_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy 0"))
         assert channel.last_sent_response == ("Buying price must be greater than zero.")
-
-    async def test_on_message_buy(self, client, channel):
-        author = someone()
-        amount = somebells()
-        await client.on_message(MockMessage(author, channel, f"!buy {amount}"))
-        assert channel.last_sent_response == (
-            f"Logged buying price of {amount} for user {author}."
-        )
-        assert client.data.prices.values.tolist() == [[author.id, "buy", amount, NOW]]
 
     async def test_on_message_help(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!help"))
@@ -821,7 +817,7 @@ class TestTurbot:
             f"**Deleting last logged price for {author}.**"
         )
         assert client.data.prices.values.tolist() == [
-            [author.id, "buy", 1, NOW],
+            [author.id, "buy", 1, LAST_SUNDAY],
             [author.id, "sell", 2, NOW],
         ]
 
@@ -848,12 +844,13 @@ class TestTurbot:
         await client.on_message(MockMessage(author, channel, "!buy 3"))
 
         await client.on_message(MockMessage(author, channel, "!history"))
-        ts = f"{turbot.h(NOW)} ({turbot.day_and_time(NOW)})"
+        sell_ts = f"{turbot.h(NOW)} ({turbot.day_and_time(NOW)})"
+        buy_ts = f"{turbot.h(LAST_SUNDAY)} ({turbot.day_and_time(LAST_SUNDAY)})"
         assert channel.last_sent_response == (
             f"__**Historical info for {author}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells {ts}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells {ts}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells {ts}"
+            f"> Can buy turnips from Daisy Mae for 1 bells {buy_ts}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells {sell_ts}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells {buy_ts}"
         )
 
     async def test_on_message_history_with_name(self, client, channel):
@@ -862,12 +859,13 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!buy 3"))
 
         await client.on_message(MockMessage(GUY, channel, f"!history {BUDDY.name}"))
-        ts = f"{turbot.h(NOW)} ({turbot.day_and_time(NOW)})"
+        sell_ts = f"{turbot.h(NOW)} ({turbot.day_and_time(NOW)})"
+        buy_ts = f"{turbot.h(LAST_SUNDAY)} ({turbot.day_and_time(LAST_SUNDAY)})"
         assert channel.last_sent_response == (
             f"__**Historical info for {BUDDY}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells {ts}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells {ts}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells {ts}"
+            f"> Can buy turnips from Daisy Mae for 1 bells {buy_ts}\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells {sell_ts}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells {buy_ts}"
         )
 
     async def test_on_message_history_timezone(self, client, channel):
@@ -877,56 +875,56 @@ class TestTurbot:
             MockMessage(author, channel, f"!pref timezone {their_tz}")
         )
         their_now = NOW.astimezone(pytz.timezone(their_tz))
+        their_last_sunday = LAST_SUNDAY.astimezone(pytz.timezone(their_tz))
+        ddays = (their_now - their_last_sunday).days
 
         await client.on_message(MockMessage(author, channel, "!buy 1"))
         await client.on_message(MockMessage(author, channel, "!sell 2"))
         await client.on_message(MockMessage(author, channel, "!buy 3"))
 
         await client.on_message(MockMessage(author, channel, "!history"))
-        ts = f"{turbot.h(their_now)} ({turbot.day_and_time(their_now)})"
+        sell_ts = f"{turbot.h(their_now)} ({turbot.day_and_time(their_now)})"
         assert channel.last_sent_response == (
             f"__**Historical info for {author}**__\n"
-            f"> Can buy turnips from Daisy Mae for 1 bells {ts}\n"
-            f"> Can sell turnips to Timmy & Tommy for 2 bells {ts}\n"
-            f"> Can buy turnips from Daisy Mae for 3 bells {ts}"
+            f"> Can buy turnips from Daisy Mae for 1 bells {ddays} days ago (Sunday am)\n"
+            f"> Can sell turnips to Timmy & Tommy for 2 bells {sell_ts}\n"
+            f"> Can buy turnips from Daisy Mae for 3 bells {ddays} days ago (Sunday am)"
         )
 
-    async def test_on_message_best_buy(self, client, channel):
+    async def test_on_message_best_buy(self, client, channel, freezer):
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
+        await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
 
         await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
             "__**Best Buying Prices in the Last 12 Hours**__\n"
-            f"> **{BUDDY}:** now for 60 bells\n"
-            f"> **{FRIEND}:** now for 100 bells"
+            f"> **{FRIEND}:** now for 100 bells\n"
+            f"> **{BUDDY}:** now for 120 bells"
         )
 
-    async def test_on_message_best_buy_timezone(self, client, channel):
+    async def test_on_message_best_buy_timezone(self, client, channel, freezer):
+        sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
+        freezer.move_to(sunday_am)
+
         friend_tz = "America/Los_Angeles"
         await client.on_message(
             MockMessage(FRIEND, channel, f"!pref timezone {friend_tz}")
         )
-        friend_now = NOW.astimezone(pytz.timezone(friend_tz))
+        friend_now = sunday_am.astimezone(pytz.timezone(friend_tz))
 
         buddy_tz = "Canada/Saskatchewan"
         await client.on_message(MockMessage(BUDDY, channel, f"!pref timezone {buddy_tz}"))
-        buddy_now = NOW.astimezone(pytz.timezone(buddy_tz))
+        buddy_now = sunday_am.astimezone(pytz.timezone(buddy_tz))
 
         guy_tz = "Africa/Abidjan"
         await client.on_message(MockMessage(GUY, channel, f"!pref timezone {guy_tz}"))
-        # guy_now = NOW.astimezone(pytz.timezone(guy_tz))
+        # guy_now = sunday_am.astimezone(pytz.timezone(guy_tz))
 
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
-        await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 60"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 90"))
-        await client.on_message(MockMessage(BUDDY, channel, "!sell 200"))
-        await client.on_message(MockMessage(GUY, channel, "!sell 800"))
 
         await client.on_message(MockMessage(someone(), channel, "!best buy"))
         assert channel.last_sent_response == (
@@ -1021,6 +1019,7 @@ class TestTurbot:
 
         # then jump ahead a week and log some more
         later = NOW + timedelta(days=7)
+        later_sunday = LAST_SUNDAY + timedelta(days=7)
         freezer.move_to(later)
         await client.on_message(MockMessage(FRIEND, channel, "!buy 102"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 602"))
@@ -1048,10 +1047,10 @@ class TestTurbot:
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("**Resetting data for a new week!**")
         assert client.data.prices.values.tolist() == [
-            [PUNK.id, "buy", 90, NOW],
-            [FRIEND.id, "buy", 102, later],
-            [BUDDY.id, "buy", 122, later],
-            [GUY.id, "buy", 102, later],
+            [PUNK.id, "buy", 90, LAST_SUNDAY],
+            [FRIEND.id, "buy", 102, later_sunday],
+            [BUDDY.id, "buy", 122, later_sunday],
+            [GUY.id, "buy", 102, later_sunday],
             [PUNK.id, "sell", 85, later],
             [PUNK.id, "sell", 86, past],
         ]
