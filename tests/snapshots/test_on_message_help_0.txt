@@ -30,6 +30,9 @@ __**Turbot Help!**__
 **!count** _[comma, separated, list, of, users]_
 >  Provides a count of the number of pieces of collectables for the comma-separated list of users. 
 
+**!export**
+>  Exports all your data. It will be sent to you in a Direct Message.
+
 **!fish** _[name|leaving|arriving]_
 >  Tells you what fish are available now in your hemisphere.
 
@@ -49,6 +52,3 @@ __**Turbot Help!**__
 >  Displays the final graph from the last week before the data was reset.
 
 **!needed** _<fossils|bugs|fish|art|songs>_
->  Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
-
-**!new**

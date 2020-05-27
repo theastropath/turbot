@@ -105,6 +105,7 @@ creature_available_now: __**$kind available right now**__
 creature_available_this_month: __**$kind available this month**__
 day_of_week_invalid: Please use monday, wednesday, tuesday, etc for the day parameter.
 did_you_mean: 'Did you mean: $possible?'
+export: Here's the data you requested.
 fish: '> **$name** (shadow size $shadow) is available $time at $location (sells for
   $price bells) $alert'
 fish_none_available: No fish that you haven't already caught are available at this
@@ -132,6 +133,7 @@ needed_lots: _more than $limit $kind..._
 needed_no_param: 'Please provide a parameter: fossils, bugs, fish, art, or songs.'
 needed_none: No $kind are known to be needed at this time, new users must collect
   at least one before being considered for this search.
+no_dm: This command only works in a group channel.
 no_hemisphere: Please enter your hemisphere choice first using the !pref hemisphere
   command.
 not_a_command: Sorry, there is no command named "$request"

@@ -20,6 +20,7 @@ Discord via the following commands in any of the authorized channels.
 
 - `!about`: Get information about Turbot
 - `!help`: Provides detailed help about all of the following commands
+- `!export`: Send a DM with all the data Turbot has associated with you
 
 ### 💸 Turnips
 

@@ -1,3 +1,6 @@
+>  Lists all the needed items for all the channel members. As the only parameter give the name of the kind of collectable to return.
+
+**!new**
 >  Tells you what new things available in your hemisphere right now.
 
 **!oops**

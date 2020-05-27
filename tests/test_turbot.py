@@ -16,6 +16,7 @@ import pytest
 import pytz
 import toml
 from callee import Matching
+from discord import Embed
 from pandas.testing import assert_frame_equal
 
 import turbot
@@ -37,6 +38,63 @@ class MockMember:
         self.id = member_id
         self.roles = roles
         self.avatar_url = "http://example.com/avatar.png"
+        self.bot = False
+
+        # sent is a spy for tracking calls to send(), it doesn't exist on the real object.
+        # There are also helpers for inspecting calls to sent defined on this class of
+        # the form `last_sent_XXX` and `all_sent_XXX` to make our lives easier.
+        self.sent = MagicMock()
+
+    async def send(self, content=None, *args, **kwargs):
+        self.sent(
+            content,
+            **{param: value for param, value in kwargs.items() if value is not None},
+        )
+
+    @property
+    def last_sent_call(self):
+        args, kwargs = self.sent.call_args
+        return {"args": args, "kwargs": kwargs}
+
+    @property
+    def last_sent_response(self):
+        return self.last_sent_call["args"][0]
+
+    @property
+    def last_sent_embed(self):
+        return self.last_sent_call["kwargs"]["embed"].to_dict()
+
+    @property
+    def all_sent_calls(self):
+        sent_calls = []
+        for sent_call in self.sent.call_args_list:
+            args, kwargs = sent_call
+            sent_calls.append({"args": args, "kwargs": kwargs})
+        return sent_calls
+
+    @property
+    def all_sent_responses(self):
+        return [sent_call["args"][0] for sent_call in self.all_sent_calls]
+
+    @property
+    def all_sent_embeds(self):
+        return [
+            sent_call["kwargs"]["embed"].to_dict()
+            for sent_call in self.all_sent_calls
+            if "embed" in sent_call["kwargs"]
+        ]
+
+    @property
+    def all_sent_files(self):
+        return [
+            sent_call["kwargs"]["file"]
+            for sent_call in self.all_sent_calls
+            if "file" in sent_call["kwargs"]
+        ]
+
+    @property
+    def all_sent_embeds_json(self):
+        return json.dumps(self.all_sent_embeds, indent=4, sort_keys=True)
 
     def __repr__(self):
         return f"{self.name}#{self.id}"
@@ -54,11 +112,9 @@ class MockGuild:
 
 
 class MockChannel:
-    def __init__(self, channel_id, channel_type, channel_name, members):
+    def __init__(self, channel_id, channel_type):
+        self.id = channel_id
         self.type = channel_type
-        self.name = channel_name
-        self.members = members
-        self.guild = MockGuild(channel_id, members)
 
         # sent is a spy for tracking calls to send(), it doesn't exist on the real object.
         # There are also helpers for inspecting calls to sent defined on this class of
@@ -121,11 +177,27 @@ class MockChannel:
         yield
 
 
+class MockTextChannel(MockChannel):
+    def __init__(self, channel_id, channel_name, members):
+        super().__init__(channel_id, "text")
+        self.name = channel_name
+        self.members = members
+        self.guild = MockGuild(channel_id, members)
+
+
+class MockDM(MockChannel):
+    def __init__(self, channel_id):
+        super().__init__(channel_id, "private")
+        self.recipient = None  # can't be set until we know the author of a message
+
+
 class MockMessage:
     def __init__(self, author, channel, content):
         self.author = author
         self.channel = channel
         self.content = content
+        if isinstance(channel, MockDM):
+            channel.recipient = author
 
 
 class MockDiscordClient:
@@ -163,8 +235,11 @@ BUDDY = MockMember("buddy", 82942320688758784, roles=[ADMIN_ROLE, PLAYER_ROLE])
 GUY = MockMember("guy", 82988021019836416)
 DUDE = MockMember("dude", 82988761019835305, roles=[ADMIN_ROLE])
 PUNK = MockMember("punk", 119678027792646146)  # for a memeber that's not in our channel
+BOT = MockMember("robot", 82169567890912256)
+BOT.bot = True
 
 CHANNEL_MEMBERS = [FRIEND, BUDDY, GUY, DUDE, ADMIN]
+ALL_USERS = CHANNEL_MEMBERS + [PUNK, BOT]
 
 S_SPY = Mock(wraps=turbot.s)
 
@@ -200,6 +275,14 @@ def is_discord_file(obj):
     return (obj.__class__.__name__) == "File"
 
 
+def text_channel():
+    return MockTextChannel(1, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+
+
+def private_channel():
+    return MockDM(1)
+
+
 ##############################
 # Test Fixtures
 ##############################
@@ -222,6 +305,7 @@ def set_random_seed():
 def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     monkeypatch.setattr(turbot, "GRAPHCMD_FILE", tmp_path / "graphcmd.png")
     monkeypatch.setattr(turbot, "LASTWEEKCMD_FILE", tmp_path / "lastweek.png")
+    monkeypatch.setattr(turbot, "EXPORT_FILE", tmp_path / "export.json")
     monkeypatch.setattr(turbot, "s", S_SPY)
 
     # To ensure fast tests, assume that calls to generate_graph() always fails. To test
@@ -243,6 +327,10 @@ def client(monkeypatch, mocker, freezer, patch_discord, tmp_path):
     # test as the previous tests could have left data behind.
     for table in bot.data.data_types:
         bot.data.conn.execute(f"DELETE FROM {table};")
+
+    # Make sure that all users have their send calls reset between client tests.
+    for user in ALL_USERS:
+        user.sent = MagicMock()
 
     yield bot
 
@@ -271,11 +359,6 @@ def lastweek(mocker, monkeypatch):
     mock = mocker.Mock(side_effect=create_file, return_value=True)
     monkeypatch.setattr(turbot.Turbot, "generate_graph", mock)
     return mock
-
-
-@pytest.fixture
-def channel():
-    return MockChannel(1, "text", AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
 
 
 SNAPSHOTS_USED = set()
@@ -329,23 +412,23 @@ class TestTurbot:
     async def test_on_ready(self, client):
         await client.on_ready()
 
-    async def test_on_message_non_text(self, client, channel):
+    async def test_on_message_non_text(self, client):
         invalid_channel_type = "voice"
-        channel = MockChannel(
-            6, invalid_channel_type, AUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS
-        )
+        channel = MockChannel(6, invalid_channel_type)
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_from_admin(self, client, channel):
         await client.on_message(MockMessage(ADMIN, channel, "!help"))
         channel.sent.assert_not_called()
 
     async def test_on_message_in_unauthorized_channel(self, client):
-        channel = MockChannel(5, "text", UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
+        channel = MockTextChannel(5, UNAUTHORIZED_CHANNEL, members=CHANNEL_MEMBERS)
         await client.on_message(MockMessage(someone(), channel, "!help"))
         channel.sent.assert_not_called()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_no_request(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!"))
         await client.on_message(MockMessage(someone(), channel, "!!"))
@@ -355,16 +438,29 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, " !   !"))
         channel.sent.assert_not_called()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_ambiguous_request(self, client, channel):
-        await client.on_message(MockMessage(someone(), channel, "!h"))
+        author = someone()
+        msg = MockMessage(author, channel, "!h")
+        if hasattr(channel, "recipient"):
+            assert channel.recipient == author
+        await client.on_message(msg)
         assert channel.last_sent_response == ("Did you mean: !help, !history?")
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_invalid_request(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!xenomorph"))
         assert channel.last_sent_response == (
             'Sorry, there is no command named "xenomorph"'
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
+    async def test_on_message_from_a_bot(self, client, channel):
+        author = BOT
+        await client.on_message(MockMessage(author, channel, "!help"))
+        assert len(channel.all_sent_calls) == 0
+
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_process_long_response_with_file(self, client, channel, monkeypatch):
         file = MockFile("file")
 
@@ -377,6 +473,19 @@ class TestTurbot:
         assert len(channel.all_sent_responses) == 3
         assert channel.all_sent_files == [file]
 
+    @pytest.mark.parametrize(
+        "channel,author", [(text_channel(), GUY), (private_channel(), FRIEND)]
+    )
+    async def test_process_direct_embed(self, client, channel, author, monkeypatch):
+        @turbot.command
+        def mock_help(channel, author, params):
+            return turbot.Direct(Embed()), None
+
+        monkeypatch.setattr(client, "help", mock_help)
+        await client.on_message(MockMessage(author, channel, "!help"))
+        assert json.loads(author.all_sent_embeds_json) == [{"type": "rich"}]
+
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_process_weird_response(self, client, channel, monkeypatch):
         @turbot.command
         def mock_help(channel, author, params):
@@ -386,6 +495,7 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             await client.on_message(MockMessage(someone(), channel, "!help"))
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_at_time_with_tz(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -411,6 +521,7 @@ class TestTurbot:
             [author.id, "sell", amount, monday_evening_adjust],
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_user_timeline(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -448,6 +559,7 @@ class TestTurbot:
             None,
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_user_timeline_buy_monday(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -483,6 +595,7 @@ class TestTurbot:
             None,
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_user_timeline_buy_at_sunday(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -500,6 +613,7 @@ class TestTurbot:
             "> Can buy turnips from Daisy Mae for 90 bells 3 days ago (Sunday am)"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_user_timeline_no_sells(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -527,6 +641,7 @@ class TestTurbot:
             None,
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_user_timeline_sunday_sells(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -563,6 +678,7 @@ class TestTurbot:
             None,
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_at_time(self, client, channel, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
         monday_evening = monday_morning + timedelta(hours=13)
@@ -581,38 +697,45 @@ class TestTurbot:
             [author.id, "sell", amount, monday_evening]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_bad_time(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell 100 funday"))
         assert channel.last_sent_response == (
             "Please provide both the day of the week and time of day."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_bad_day(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell 100 fun morning"))
         assert channel.last_sent_response == (
             "Please use monday, wednesday, tuesday, etc for the day parameter."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_incomplete_time(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell 100 friday pants"))
         assert channel.last_sent_response == (
             "Please use either morning or evening as the time parameter."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_no_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell"))
         assert channel.last_sent_response == (
             "Please include selling price after command name."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_nonnumeric_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell foot"))
         assert channel.last_sent_response == ("Selling price must be a number.")
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_nonpositive_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!sell 0"))
         assert channel.last_sent_response == ("Selling price must be greater than zero.")
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell_extra_space(self, client, channel):
         author = someone()
         amount = somebells()
@@ -622,6 +745,7 @@ class TestTurbot:
         )
         assert client.data.prices.values.tolist() == [[author.id, "sell", amount, NOW]]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_sell(self, client, channel):
         # initial sale
         author = someone()
@@ -661,6 +785,7 @@ class TestTurbot:
             [author.id, "sell", last_amount, NOW],
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_at_time_with_tz(self, client, channel, freezer):
         author = someone()
         author_tz = pytz.timezone("America/Los_Angeles")
@@ -690,6 +815,7 @@ class TestTurbot:
         assert data[0][3].day == sunday_morning_adjust.day
         assert data[0][3].hour < 12
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_at_time(self, client, channel, freezer):
         monday_morning = datetime(1982, 4, 19, tzinfo=pytz.utc)
         command_time = monday_morning + timedelta(days=3)
@@ -712,6 +838,7 @@ class TestTurbot:
         assert data[0][3].day == sunday_morning.day
         assert data[0][3].hour < 12
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_invalid_data(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!sell 50"))
@@ -725,26 +852,33 @@ class TestTurbot:
         )
         assert client.get_user_timeline(author.id) == [None] * 13
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_no_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy"))
         assert channel.last_sent_response == (
             "Please include buying price after command name."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_nonnumeric_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy foot"))
         assert channel.last_sent_response == ("Buying price must be a number.")
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_buy_nonpositive_price(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!buy 0"))
         assert channel.last_sent_response == ("Buying price must be greater than zero.")
 
-    async def test_on_message_help(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, "!help"))
-        for response in channel.all_sent_responses:
+    @pytest.mark.parametrize(
+        "channel,author", [(text_channel(), GUY), (private_channel(), FRIEND)]
+    )
+    async def test_on_message_help(self, client, channel, author, snap):
+        await client.on_message(MockMessage(author, channel, "!help"))
+        for response in author.all_sent_responses:
             snap(response)
-        assert len(channel.all_sent_calls) == 2
+        assert len(author.all_sent_calls) == 2
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_clear(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, f"!buy {somebells()}"))
@@ -755,13 +889,15 @@ class TestTurbot:
         assert channel.last_sent_response == (f"**Cleared history for {author}.**")
         assert client.data.prices.values.tolist() == []
 
-    async def test_on_message_best_bad_param(self, client, channel):
+    async def test_on_message_best_bad_param(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!best dog"))
         assert channel.last_sent_response == (
             "Please choose either best buy or best sell."
         )
 
-    async def test_on_message_best_sell(self, client, channel):
+    async def test_on_message_best_sell(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 200"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 120"))
@@ -777,7 +913,15 @@ class TestTurbot:
             f"> **{FRIEND}:** now for 200 bells (21 hours remaining)"
         )
 
-    async def test_on_message_best_sell_timezone(self, client, channel):
+    async def test_on_message_best_sell_dm(self, client):
+        channel = private_channel()
+        await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
+        await client.on_message(MockMessage(FRIEND, channel, "!sell 200"))
+        await client.on_message(MockMessage(FRIEND, channel, "!best sell"))
+        assert channel.last_sent_response == "This command only works in a group channel."
+
+    async def test_on_message_best_sell_timezone(self, client):
+        channel = text_channel()
         friend_tz = "America/Los_Angeles"
         await client.on_message(
             MockMessage(FRIEND, channel, f"!pref timezone {friend_tz}")
@@ -806,6 +950,7 @@ class TestTurbot:
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 200 bells (5 hours remaining)"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_oops(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!buy 1"))
@@ -821,11 +966,13 @@ class TestTurbot:
             [author.id, "sell", 2, NOW],
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_oops_no_prices(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!oops"))
         assert channel.last_sent_response == "Sorry, you have no data to delete."
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_history_bad_name(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!buy 1"))
@@ -837,6 +984,7 @@ class TestTurbot:
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_history_without_name(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!buy 1"))
@@ -853,7 +1001,8 @@ class TestTurbot:
             f"> Can buy turnips from Daisy Mae for 3 bells {buy_ts}"
         )
 
-    async def test_on_message_history_with_name(self, client, channel):
+    async def test_on_message_history_with_name(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(BUDDY, channel, "!buy 1"))
         await client.on_message(MockMessage(BUDDY, channel, "!sell 2"))
         await client.on_message(MockMessage(BUDDY, channel, "!buy 3"))
@@ -868,6 +1017,7 @@ class TestTurbot:
             f"> Can buy turnips from Daisy Mae for 3 bells {buy_ts}"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_history_timezone(self, client, channel):
         author = someone()
         their_tz = "America/Los_Angeles"
@@ -891,7 +1041,8 @@ class TestTurbot:
             f"> Can buy turnips from Daisy Mae for 3 bells {ddays} days ago (Sunday am)"
         )
 
-    async def test_on_message_best_buy(self, client, channel, freezer):
+    async def test_on_message_best_buy(self, client, freezer):
+        channel = text_channel()
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
@@ -905,7 +1056,8 @@ class TestTurbot:
             f"> **{BUDDY}:** now for 120 bells (2 hours remaining)"
         )
 
-    async def test_on_message_best_buy_no_time_remaining(self, client, channel, freezer):
+    async def test_on_message_best_buy_no_time_remaining(self, client, freezer):
+        channel = text_channel()
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
@@ -918,7 +1070,8 @@ class TestTurbot:
             "__**Best Buying Prices in the Last 12 Hours**__\n" "> None found"
         )
 
-    async def test_on_message_best_buy_timezone(self, client, channel, freezer):
+    async def test_on_message_best_buy_timezone(self, client, freezer):
+        channel = text_channel()
         sunday_am = datetime(2020, 4, 26, 9, tzinfo=pytz.utc)
         freezer.move_to(sunday_am)
 
@@ -946,6 +1099,7 @@ class TestTurbot:
             f"> **{FRIEND}:** {turbot.h(friend_now)} for 100 bells (9 hours remaining)"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_graph(self, client, channel, graph):
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
@@ -961,15 +1115,18 @@ class TestTurbot:
         graph.assert_called_with(channel, None, turbot.GRAPHCMD_FILE)
         assert Path(turbot.GRAPHCMD_FILE).exists()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_lastweek_none(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!lastweek"))
         assert channel.last_sent_response == ("No graph from last week.")
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_lastweek_capitalized(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!LASTWEEK"))
         assert channel.last_sent_response == ("No graph from last week.")
 
-    async def test_on_message_lastweek(self, client, channel, lastweek):
+    async def test_on_message_lastweek(self, client, lastweek):
+        channel = text_channel()
         await client.on_message(MockMessage(someturbotadmin(), channel, "!reset"))
         assert channel.last_sent_response == ("**Resetting data for a new week!**")
         lastweek.assert_called_with(channel, None, turbot.LASTWEEKCMD_FILE)
@@ -980,7 +1137,14 @@ class TestTurbot:
             "__**Historical Graph from Last Week**__", file=Matching(is_discord_file)
         )
 
-    async def test_on_message_reset_not_admin(self, client, channel, freezer):
+    async def test_on_message_reset_dm(self, client, freezer):
+        channel = private_channel()
+        await client.on_message(MockMessage(someone(), channel, "!reset"))
+        assert channel.last_sent_response == "This command only works in a group channel."
+
+    async def test_on_message_reset_not_admin(self, client, freezer):
+        channel = text_channel()
+
         # first log some buy and sell prices
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
@@ -1014,7 +1178,9 @@ class TestTurbot:
 
         assert not Path(turbot.LASTWEEKCMD_FILE).exists()
 
-    async def test_on_message_reset_admin(self, client, channel, freezer, lastweek):
+    async def test_on_message_reset_admin(self, client, freezer, lastweek):
+        channel = text_channel()
+
         # first log some buy and sell prices
         await client.on_message(MockMessage(FRIEND, channel, "!buy 100"))
         await client.on_message(MockMessage(FRIEND, channel, "!sell 600"))
@@ -1080,12 +1246,14 @@ class TestTurbot:
             for lhs, rhs in zip(backup_data, old_data):
                 assert lhs == [str(col) for col in rhs]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect"))
         assert channel.last_sent_response == (
             "Please provide the name of something to mark as collected."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_fossils(self, client, channel):
         # first collect some valid fossils
         author = someone()
@@ -1129,12 +1297,14 @@ class TestTurbot:
         )
         assert client.data.fossils.tail(1).values.tolist() == [[author.id, "plesio body"]]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_songs_unicode(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect Café K.K."))
         assert channel.last_sent_response == (
             "Marked the following songs as collected:\n> Café K.K."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_songs_fuzzy(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!collect cafe"))
         assert channel.last_sent_response == (
@@ -1146,6 +1316,7 @@ class TestTurbot:
             "Marked the following songs as collected:\n> Rockin' K.K."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_fossils_congrats(self, client, channel):
         everything = sorted(list(client.assets["fossils"].all))
         some, rest = everything[:10], everything[10:]
@@ -1172,6 +1343,7 @@ class TestTurbot:
             "**Congratulations, you've collected all fossils!**"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_art(self, client, channel):
         # first collect some fossils
         author = someone()
@@ -1210,7 +1382,8 @@ class TestTurbot:
         )
         assert client.data.art.values.tolist() == []
 
-    async def test_on_message_search_art_no_need_with_bad(self, client, channel):
+    async def test_on_message_search_art_no_need_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect sinking painting, great statue")
         )
@@ -1234,7 +1407,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_search_art(self, client, channel):
+    async def test_on_message_search_art(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect sinking painting, great statue")
         )
@@ -1253,7 +1427,13 @@ class TestTurbot:
             f"> {GUY} needs: wistful painting"
         )
 
-    async def test_on_message_search_art_with_bad(self, client, channel):
+    async def test_on_message_search_dm(self, client):
+        channel = private_channel()
+        await client.on_message(MockMessage(PUNK, channel, "!search foobar"))
+        assert channel.last_sent_response == "This command only works in a group channel."
+
+    async def test_on_message_search_art_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect sinking painting, great statue")
         )
@@ -1273,23 +1453,35 @@ class TestTurbot:
             "> anime waifu"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_count_no_params(self, client, channel, snap):
         await client.on_message(MockMessage(BUDDY, channel, "!count"))
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 1
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_count_bad_name(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!count {PUNK.name}"))
         assert channel.last_sent_response == (
             f"__**Did not recognize the following names**__\n> {PUNK.name}"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_count_when_nothing_collected(self, client, channel, snap):
-        await client.on_message(MockMessage(someone(), channel, f"!count {BUDDY.name}"))
+        author = BUDDY
+        await client.on_message(MockMessage(author, channel, f"!count {BUDDY.name}"))
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 1
 
-    async def test_on_message_count_art(self, client, channel, snap):
+    async def test_on_message_count_when_nothing_collected_other(self, client, snap):
+        channel = text_channel()
+        author = BUDDY
+        await client.on_message(MockMessage(author, channel, f"!count {GUY.name}"))
+        snap(channel.last_sent_response)
+        assert len(channel.all_sent_calls) == 1
+
+    async def test_on_message_count_art(self, client, snap):
+        channel = text_channel()
         author = someone()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect sinking painting, great statue")
@@ -1304,6 +1496,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_some(self, client, channel):
         author = someone()
         art = "sinking painting, academic painting, great statue"
@@ -1330,6 +1523,7 @@ class TestTurbot:
             "> academic painting, great statue, sinking painting"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_all(self, client, channel):
         author = someone()
 
@@ -1344,6 +1538,7 @@ class TestTurbot:
                 in channel.last_sent_response
             )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_art_no_name(self, client, channel):
         author = DUDE
         art = "sinking painting, academic painting, great statue"
@@ -1355,6 +1550,7 @@ class TestTurbot:
             "> academic painting, great statue, sinking painting"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_art_congrats(self, client, channel):
         everything = ",".join(client.assets["art"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -1362,6 +1558,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all art!**"
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_art_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["art"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -1371,7 +1568,8 @@ class TestTurbot:
             snap(response)
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_collected_art_with_name(self, client, channel):
+    async def test_on_message_collected_art_with_name(self, client):
+        channel = text_channel()
         art = "sinking painting, academic painting, great statue"
         await client.on_message(MockMessage(GUY, channel, f"!collect {art}"))
 
@@ -1381,12 +1579,14 @@ class TestTurbot:
             "> academic painting, great statue, sinking painting"
         )
 
-    async def test_on_message_collected_art_bad_name(self, client, channel):
+    async def test_on_message_collected_art_bad_name(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_art(self, client, channel):
         # first collect some art
         author = BUDDY
@@ -1430,6 +1630,7 @@ class TestTurbot:
             [author.id, "tremendous statue"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_art_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["art"].all))
         some, rest = everything[:10], everything[10:]
@@ -1454,7 +1655,8 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_collected_bad_name(self, client, channel):
+    async def test_on_message_collected_bad_name(self, client):
+        channel = text_channel()
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
 
@@ -1463,6 +1665,7 @@ class TestTurbot:
             "Can not find the user named punk in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_no_name(self, client, channel):
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
@@ -1473,7 +1676,8 @@ class TestTurbot:
             "> academic painting, sinking painting"
         )
 
-    async def test_on_message_uncollected_bad_name(self, client, channel):
+    async def test_on_message_uncollected_bad_name(self, client):
+        channel = text_channel()
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
 
@@ -1482,6 +1686,7 @@ class TestTurbot:
             "Can not find the user named punk in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_no_name(self, client, channel, snap):
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
@@ -1496,7 +1701,8 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_uncollected_with_name(self, client, channel, snap):
+    async def test_on_message_uncollected_with_name(self, client, snap):
+        channel = text_channel()
         art = "academic painting, sinking painting"
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {art}"))
 
@@ -1510,13 +1716,15 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_search_no_list(self, client, channel):
+    async def test_on_message_search_no_list(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!search"))
         assert channel.last_sent_response == (
             "Please provide the name of a collectable to search for."
         )
 
-    async def test_on_message_search_all_no_need(self, client, channel):
+    async def test_on_message_search_all_no_need(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber, ammonite"))
         await client.on_message(
@@ -1529,7 +1737,8 @@ class TestTurbot:
             "least one item before they are considered for this search."
         )
 
-    async def test_on_message_search_fossil_no_need_with_bad(self, client, channel):
+    async def test_on_message_search_fossil_no_need_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber, ammonite"))
         await client.on_message(
@@ -1545,7 +1754,8 @@ class TestTurbot:
             "> unicorn bits"
         )
 
-    async def test_on_message_search_fossil(self, client, channel):
+    async def test_on_message_search_fossil(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
         await client.on_message(MockMessage(GUY, channel, "!collect amber, ammonite"))
@@ -1559,7 +1769,8 @@ class TestTurbot:
             f"> {GUY} needs fossils: ankylo skull"
         )
 
-    async def test_on_message_search_fossil_with_bad(self, client, channel):
+    async def test_on_message_search_fossil_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
         await client.on_message(MockMessage(GUY, channel, "!collect amber, ammonite"))
@@ -1578,18 +1789,21 @@ class TestTurbot:
             "> unicorn bits"
         )
 
-    async def test_on_message_search_with_only_bad(self, client, channel):
+    async def test_on_message_search_with_only_bad(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(PUNK, channel, "!search unicorn bits"))
         assert channel.last_sent_response == (
             "Did not recognize the following collectables:\n" "> unicorn bits"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_no_list(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!uncollect"))
         assert channel.last_sent_response == (
             "Please provide the name of something to mark as uncollected."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_fossil(self, client, channel):
         # first collect some fossils
         author = someone()
@@ -1626,6 +1840,7 @@ class TestTurbot:
         )
         assert client.data.fossils.values.tolist() == []
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_with_only_bad(self, client, channel):
         fossils = "a foot, unicorn bits"
         await client.on_message(MockMessage(someone(), channel, f"!uncollect {fossils}"))
@@ -1633,6 +1848,7 @@ class TestTurbot:
             "Unrecognized collectable names:\n> a foot, unicorn bits"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_fossils_congrats(self, client, channel):
         author = someone()
         everything = ", ".join(sorted(client.assets["fossils"].all))
@@ -1643,6 +1859,7 @@ class TestTurbot:
             "**Congratulations, you've collected all fossils!**"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_fossils_congrats(self, client, channel, snap):
         author = DUDE
         everything = ", ".join(sorted(client.assets["fossils"].all))
@@ -1654,19 +1871,27 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_needed_no_param(self, client, channel):
+    async def test_on_message_needed_dm(self, client):
+        channel = private_channel()
+        await client.on_message(MockMessage(someone(), channel, "!needed"))
+        assert channel.last_sent_response == "This command only works in a group channel."
+
+    async def test_on_message_needed_no_param(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed"))
         assert channel.last_sent_response == (
             "Please provide a parameter: fossils, bugs, fish, art, or songs."
         )
 
-    async def test_on_message_needed_bad_param(self, client, channel):
+    async def test_on_message_needed_bad_param(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed food"))
         assert channel.last_sent_response == (
             "Invalid parameter, use one of: fossils, bugs, fish, art, or songs."
         )
 
-    async def test_on_message_needed_fossils(self, client, channel):
+    async def test_on_message_needed_fossils(self, client):
+        channel = text_channel()
         everything = sorted(list(client.assets["fossils"].all))
 
         fossils = ",".join(everything[3:])
@@ -1687,7 +1912,8 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 fossils..._"
         )
 
-    async def test_on_message_needed_songs(self, client, channel):
+    async def test_on_message_needed_songs(self, client):
+        channel = text_channel()
         everything = sorted(list(client.assets["songs"].all))
 
         songs = ",".join(everything[3:])
@@ -1705,14 +1931,16 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 songs..._"
         )
 
-    async def test_on_message_needed_fossils_none(self, client, channel):
+    async def test_on_message_needed_fossils_none(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed fossils"))
         assert channel.last_sent_response == (
             "No fossils are known to be needed at this time, "
             "new users must collect at least one before being considered for this search."
         )
 
-    async def test_on_message_needed_bugs(self, client, channel):
+    async def test_on_message_needed_bugs(self, client):
+        channel = text_channel()
         everything = sorted(list(client.assets["bugs"].all))
 
         bugs = ",".join(everything[3:])
@@ -1730,14 +1958,16 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 bugs..._"
         )
 
-    async def test_on_message_needed_bugs_none(self, client, channel):
+    async def test_on_message_needed_bugs_none(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed bugs"))
         assert channel.last_sent_response == (
             "No bugs are known to be needed at this time, "
             "new users must collect at least one before being considered for this search."
         )
 
-    async def test_on_message_needed_fish(self, client, channel):
+    async def test_on_message_needed_fish(self, client):
+        channel = text_channel()
         everything = sorted(list(client.assets["fish"].all))
 
         fish = ",".join(everything[3:])
@@ -1755,14 +1985,16 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 fish..._"
         )
 
-    async def test_on_message_needed_fish_none(self, client, channel):
+    async def test_on_message_needed_fish_none(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed fish"))
         assert channel.last_sent_response == (
             "No fish are known to be needed at this time, "
             "new users must collect at least one before being considered for this search."
         )
 
-    async def test_on_message_needed_art(self, client, channel):
+    async def test_on_message_needed_art(self, client):
+        channel = text_channel()
         everything = sorted(list(client.assets["art"].all))
 
         art = ",".join(everything[3:])
@@ -1780,13 +2012,15 @@ class TestTurbot:
             f"> **{GUY}** needs _more than 10 art..._"
         )
 
-    async def test_on_message_needed_art_none(self, client, channel):
+    async def test_on_message_needed_art_none(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, "!needed art"))
         assert channel.last_sent_response == (
             "No art are known to be needed at this time, "
             "new users must collect at least one before being considered for this search."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_fossils_no_name(self, client, channel):
         author = someone()
         fossils = "amber, ammonite ,ankylo skull"
@@ -1797,7 +2031,8 @@ class TestTurbot:
             f"__**3 fossils donated by {author}**__\n" "> amber, ammonite, ankylo skull"
         )
 
-    async def test_on_message_collected_fossils_with_name(self, client, channel):
+    async def test_on_message_collected_fossils_with_name(self, client):
+        channel = text_channel()
         fossils = "amber, ammonite ,ankylo skull"
         await client.on_message(MockMessage(GUY, channel, f"!collect {fossils}"))
 
@@ -1806,13 +2041,15 @@ class TestTurbot:
             f"__**3 fossils donated by {GUY}**__\n" "> amber, ammonite, ankylo skull"
         )
 
-    async def test_on_message_collected_fossils_bad_name(self, client, channel):
+    async def test_on_message_collected_fossils_bad_name(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
-    async def test_on_message_count_fossils(self, client, channel, snap):
+    async def test_on_message_count_fossils(self, client, snap):
+        channel = text_channel()
         author = someone()
         await client.on_message(MockMessage(FRIEND, channel, "!collect amber, ammonite"))
         await client.on_message(MockMessage(BUDDY, channel, "!collect amber"))
@@ -1823,6 +2060,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_predict_no_buy(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!predict"))
@@ -1830,12 +2068,14 @@ class TestTurbot:
             f"There is no recent buy price for {author}."
         )
 
-    async def test_on_message_predict_bad_user(self, client, channel):
+    async def test_on_message_predict_bad_user(self, client):
+        channel = text_channel()
         await client.on_message(MockMessage(someone(), channel, f"!predict {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_predict(self, client, channel, freezer, graph):
         author = someone()
 
@@ -1866,6 +2106,7 @@ class TestTurbot:
             file=Matching(is_discord_file),
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_predict_error(self, client, channel, freezer):
         author = someone()
 
@@ -1892,9 +2133,8 @@ class TestTurbot:
             "Details: <https://turnipprophet.io/?prices=102.93.87.86.79..69>"
         )
 
-    async def test_on_message_predict_with_timezone(
-        self, client, channel, freezer, graph
-    ):
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
+    async def test_on_message_predict_with_tz(self, client, channel, freezer, graph):
         author = someone()
         user_tz = pytz.timezone("America/Los_Angeles")
         await client.on_message(
@@ -1923,6 +2163,7 @@ class TestTurbot:
             file=Matching(is_discord_file),
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_get_last_price(self, client, channel, freezer, spoof_session):
         # when there's no data for the user
         assert client.get_last_price(GUY.id) is None
@@ -1948,6 +2189,7 @@ class TestTurbot:
         await client.on_message(MockMessage(GUY, channel, "!sell 98"))
         assert client.get_last_price(GUY.id) == 98
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_no_hemisphere(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!fish"))
         assert channel.last_sent_response == (
@@ -1955,6 +2197,7 @@ class TestTurbot:
             "using the !pref hemisphere command."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_none_found(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -1964,6 +2207,7 @@ class TestTurbot:
             'Did not find any fish searching for "Blinky".'
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_multiple_users(self, client, channel):
         await client.on_message(MockMessage(GUY, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
@@ -1973,6 +2217,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!fish sea"))
         await client.on_message(MockMessage(FRIEND, channel, "!fish sea"))
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_search_query(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -1994,6 +2239,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 6
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_search_leaving(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2008,6 +2254,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 5
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_search_arriving(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2019,6 +2266,7 @@ class TestTurbot:
         snap(channel.all_sent_responses[2])
         assert len(channel.all_sent_calls) == 3
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_few(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2041,6 +2289,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 5
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2053,6 +2302,7 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_case_insensitive(self, client, channel, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2066,7 +2316,8 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_bugs_case_insensitive(
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
+    async def test_on_message_bugs_icase_insensitive(
         self, client, channel, snap, without_bugs_header
     ):
         author = someone()
@@ -2082,6 +2333,7 @@ class TestTurbot:
         loaded_dtypes = [str(t) for t in prices.dtypes.tolist()]
         assert loaded_dtypes == ["int64", "object", "int64", "datetime64[ns, UTC]"]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_no_hemisphere(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!bugs"))
         assert channel.last_sent_response == (
@@ -2089,6 +2341,7 @@ class TestTurbot:
             "first using the !pref hemisphere command."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_none_found(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2097,6 +2350,7 @@ class TestTurbot:
             'Did not find any bugs searching for "Shelob".'
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_multiple_users(self, client, channel):
         await client.on_message(MockMessage(GUY, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
@@ -2106,6 +2360,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!bugs butt"))
         await client.on_message(MockMessage(FRIEND, channel, "!bugs butt"))
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_search_query_many(
         self, client, channel, without_bugs_header, snap
     ):
@@ -2115,6 +2370,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 2
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_search_query_few(
         self, client, channel, without_bugs_header, snap
     ):
@@ -2131,6 +2387,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 5
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_header(self, client, channel, with_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2146,6 +2403,7 @@ class TestTurbot:
         snap(channel.all_sent_responses[2])
         assert len(channel.all_sent_calls) == 3
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_search_leaving(
         self, client, channel, without_bugs_header, freezer, snap
     ):
@@ -2161,6 +2419,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         len(channel.all_sent_calls) == 3
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug_search_arriving(
         self, client, channel, without_bugs_header, snap
     ):
@@ -2176,6 +2435,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 7
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_new(self, client, channel, without_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2186,6 +2446,7 @@ class TestTurbot:
         snap(channel.all_sent_responses[4])
         assert len(channel.all_sent_calls) == 5
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_new_first_day(
         self, client, channel, freezer, without_bugs_header, snap
     ):
@@ -2201,6 +2462,7 @@ class TestTurbot:
         snap(channel.all_sent_responses[4])
         assert len(channel.all_sent_calls) == 5
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bug(self, client, channel, without_bugs_header, snap):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
@@ -2209,11 +2471,13 @@ class TestTurbot:
         snap(channel.all_sent_responses[2])
         assert len(channel.all_sent_calls) == 3
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_art_fulllist(self, client, channel, snap):
         await client.on_message(MockMessage(someone(), channel, "!art"))
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 1
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_art_correctnames(self, client, channel, snap):
         await client.on_message(
             MockMessage(someone(), channel, "!art amazing painting, proper painting",)
@@ -2221,6 +2485,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 1
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_art_invalidnames(self, client, channel, snap):
         await client.on_message(
             MockMessage(someone(), channel, "!art academic painting, asdf",)
@@ -2287,6 +2552,7 @@ class TestTurbot:
         assert subject(1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == ["Jan"]
         assert subject(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) == []
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_info(self, client, channel, snap):
         author = DUDE
         prefs = {
@@ -2304,6 +2570,7 @@ class TestTurbot:
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == len(prefs) * 2
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_about(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!about"))
         assert len(channel.all_sent_calls) == 1
@@ -2331,6 +2598,7 @@ class TestTurbot:
             f"[{version}](https://pypi.org/project/turbot/{version}/)"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_info_old_user(self, client, channel, monkeypatch):
         # Simulate the condition where a user exists in the data file,
         # but is no longer on the server.
@@ -2340,32 +2608,39 @@ class TestTurbot:
         await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
         assert channel.last_sent_response == "No users found."
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_info_not_found(self, client, channel):
         await client.on_message(MockMessage(DUDE, channel, "!pref hemisphere northern"))
         await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
         assert channel.last_sent_response == "No users found."
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_info_no_users(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, f"!info {PUNK.name}"))
         assert channel.last_sent_response == "No users found."
 
-    async def test_on_message_info_no_prefs(self, client, channel, snap):
+    async def test_on_message_info_no_prefs(self, client, snap):
+        channel = text_channel()
         author = DUDE
         await client.on_message(MockMessage(author, channel, "!buy 100"))
         await client.on_message(MockMessage(someone(), channel, f"!info {author.name}"))
         snap(channel.all_sent_embeds_json)
         assert len(channel.all_sent_calls) == 2
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_info_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!info"))
         assert channel.last_sent_response == "Please provide a search term."
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_discord_user_from_name_guard(self, channel):
         assert turbot.discord_user_from_name(channel, None) == None
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_discord_user_name_guard(self, channel):
         assert turbot.discord_user_name(channel, None) == None
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_no_params(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref"))
         assert channel.last_sent_response == (
@@ -2373,12 +2648,14 @@ class TestTurbot:
             "hemisphere, timezone, island, friend, fruit, nickname, creator."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_no_value(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref creator"))
         assert channel.last_sent_response == (
             "Please provide the value for your creator preference."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_invalid_pref(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref shazbot"))
         assert channel.last_sent_response == (
@@ -2386,6 +2663,7 @@ class TestTurbot:
             "hemisphere, timezone, island, friend, fruit, nickname, creator."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_hemisphere_invalid(self, client, channel):
         await client.on_message(
             MockMessage(someone(), channel, "!pref hemisphere upwards")
@@ -2394,6 +2672,7 @@ class TestTurbot:
             'Please provide either "northern" or "southern" as your hemisphere name.'
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_hemisphere(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref hemisphere souTherN"))
@@ -2412,12 +2691,14 @@ class TestTurbot:
             [author.id, "northern"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_friend_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref friend upwards"))
         assert channel.last_sent_response == (
             "Your switch friend code should be 12 numbers."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_friend(self, client, channel):
         author = someone()
         await client.on_message(
@@ -2436,12 +2717,14 @@ class TestTurbot:
             [author.id, "111122223333"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_creator_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref creator upwards"))
         assert channel.last_sent_response == (
             "Your Animal Crossing creator code should be 12 numbers."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_creator(self, client, channel):
         author = someone()
         await client.on_message(
@@ -2454,12 +2737,14 @@ class TestTurbot:
             [author.id, "123456789012"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_fruit_invalid(self, client, channel):
         await client.on_message(MockMessage(someone(), channel, "!pref fruit upwards"))
         assert channel.last_sent_response == (
             "Your native fruit can be apple, cherry, orange, peach, or pear."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_fruit(self, client, channel):
         author = someone()
         await client.on_message(MockMessage(author, channel, "!pref fruit apple"))
@@ -2470,6 +2755,7 @@ class TestTurbot:
             [author.id, "apple"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_timezone_invalid(self, client, channel):
         await client.on_message(
             MockMessage(someone(), channel, "!pref timezone Mars/Noctis_City")
@@ -2480,6 +2766,7 @@ class TestTurbot:
             "complete list of TZ names."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_timezone(self, client, channel):
         author = someone()
         await client.on_message(
@@ -2513,6 +2800,7 @@ class TestTurbot:
             [author.id, "US/Eastern"]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_island(self, client, channel):
         author = someone()
         island = "Koholint Island"
@@ -2524,6 +2812,7 @@ class TestTurbot:
             [author.id, island]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_pref_nickname(self, client, channel):
         author = someone()
         name = "Chuck Noland"
@@ -2535,6 +2824,7 @@ class TestTurbot:
             [author.id, name]
         ]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_fish(self, client, channel):
         # first collect some fossils
         author = someone()
@@ -2575,7 +2865,8 @@ class TestTurbot:
         )
         assert client.data.fish.values.tolist() == []
 
-    async def test_on_message_search_fish_no_need_with_bad(self, client, channel):
+    async def test_on_message_search_fish_no_need_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect snapping turtle, giant snakehead")
         )
@@ -2601,7 +2892,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_search_fish(self, client, channel):
+    async def test_on_message_search_fish(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect snapping turtle, giant snakehead")
         )
@@ -2619,7 +2911,8 @@ class TestTurbot:
             f"> {GUY} needs: wistful painting"
         )
 
-    async def test_on_message_search_fish_with_bad(self, client, channel):
+    async def test_on_message_search_fish_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect snapping turtle, giant snakehead")
         )
@@ -2637,7 +2930,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_count_fish(self, client, channel, snap):
+    async def test_on_message_count_fish(self, client, snap):
+        channel = text_channel()
         author = someone()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect snapping turtle, giant snakehead")
@@ -2652,6 +2946,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_fish_no_name(self, client, channel):
         author = DUDE
         fish = "snapping turtle, bluegill, giant snakehead"
@@ -2663,6 +2958,7 @@ class TestTurbot:
             "> bluegill, giant snakehead, snapping turtle"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_fish_congrats(self, client, channel):
         everything = ",".join(client.assets["fish"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -2670,6 +2966,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all fish!**"
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_fish_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["fish"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -2680,7 +2977,8 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_collected_fish_with_name(self, client, channel):
+    async def test_on_message_collected_fish_with_name(self, client):
+        channel = text_channel()
         fish = "snapping turtle, bluegill, giant snakehead"
         await client.on_message(MockMessage(GUY, channel, f"!collect {fish}"))
 
@@ -2690,12 +2988,14 @@ class TestTurbot:
             "> bluegill, giant snakehead, snapping turtle"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_fish_bad_name(self, client, channel):
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_fish(self, client, channel):
         # first collect some fish
         author = BUDDY
@@ -2735,6 +3035,7 @@ class TestTurbot:
 
         assert client.data.fish.tail(1).values.tolist() == [[author.id, "tadpole"]]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_fish_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["fish"].all))
         some, rest = everything[:10], everything[10:]
@@ -2759,6 +3060,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_fish_none_available(self, client, channel):
         everything = ",".join(client.assets["fish"].all)
         await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
@@ -2845,6 +3147,7 @@ class TestTurbot:
         assert subject(datetime(2020, 4, 6, 22)) == {"seven", "nine", "three", "two"}
         assert subject(datetime(2020, 4, 6, 23)) == {"seven", "nine", "three"}
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_bugs(self, client, channel):
         # first collect some bugs
         author = someone()
@@ -2883,7 +3186,8 @@ class TestTurbot:
         )
         assert client.data.bugs.values.tolist() == []
 
-    async def test_on_message_search_bugs_no_need_with_bad(self, client, channel):
+    async def test_on_message_search_bugs_no_need_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
         )
@@ -2907,7 +3211,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_search_bugs(self, client, channel):
+    async def test_on_message_search_bugs(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
         )
@@ -2925,7 +3230,8 @@ class TestTurbot:
             f"> {GUY} needs: wistful painting"
         )
 
-    async def test_on_message_search_bugs_with_bad(self, client, channel):
+    async def test_on_message_search_bugs_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
         )
@@ -2943,7 +3249,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_count_bugs(self, client, channel, snap):
+    async def test_on_message_count_bugs(self, client, snap):
+        channel = text_channel()
         author = someone()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect stinkbug, great purple emperor")
@@ -2958,6 +3265,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_bugs_no_name(self, client, channel):
         author = DUDE
         bugs = "stinkbug, bell cricket, great purple emperor"
@@ -2969,6 +3277,7 @@ class TestTurbot:
             "> bell cricket, great purple emperor, stinkbug"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_bugs_congrats(self, client, channel):
         everything = ",".join(client.assets["bugs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -2976,6 +3285,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all bugs!**"
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_bugs_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["bugs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -2986,7 +3296,8 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_collected_bugs_with_name(self, client, channel):
+    async def test_on_message_collected_bugs_with_name(self, client):
+        channel = text_channel()
         bugs = "stinkbug, bell cricket, great purple emperor"
         await client.on_message(MockMessage(GUY, channel, f"!collect {bugs}"))
 
@@ -2996,12 +3307,14 @@ class TestTurbot:
             "> bell cricket, great purple emperor, stinkbug"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_bugs_bad_name(self, client, channel):
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_bugs(self, client, channel):
         # first collect some bugs
         author = BUDDY
@@ -3040,6 +3353,7 @@ class TestTurbot:
         )
         assert client.data.bugs.tail(1).values.tolist() == [[author.id, "tiger beetle"]]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_bugs_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["bugs"].all))
         some, rest = everything[:10], everything[10:]
@@ -3064,6 +3378,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_bugs_none_available(self, client, channel):
         everything = ",".join(client.assets["bugs"].all)
         await client.on_message(MockMessage(BUDDY, channel, "!pref hemisphere northern"))
@@ -3074,6 +3389,7 @@ class TestTurbot:
         )
         assert len(channel.all_sent_calls) == 3
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollect_songs(self, client, channel):
         # first collect some songs
         author = someone()
@@ -3110,7 +3426,8 @@ class TestTurbot:
         )
         assert client.data.songs.values.tolist() == []
 
-    async def test_on_message_search_songs_no_need_with_bad(self, client, channel):
+    async def test_on_message_search_songs_no_need_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect k.k. safari, k.k. groove")
         )
@@ -3132,7 +3449,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_search_songs(self, client, channel):
+    async def test_on_message_search_songs(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect k.k. safari, k.k. groove")
         )
@@ -3150,7 +3468,8 @@ class TestTurbot:
             f"> {GUY} needs: wistful painting"
         )
 
-    async def test_on_message_search_songs_with_bad(self, client, channel):
+    async def test_on_message_search_songs_with_bad(self, client):
+        channel = text_channel()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect k.k. safari, k.k. groove")
         )
@@ -3168,7 +3487,8 @@ class TestTurbot:
             "> anime waifu"
         )
 
-    async def test_on_message_count_songs(self, client, channel, snap):
+    async def test_on_message_count_songs(self, client, snap):
+        channel = text_channel()
         author = someone()
         await client.on_message(
             MockMessage(FRIEND, channel, "!collect k.k. safari, k.k. groove")
@@ -3183,6 +3503,7 @@ class TestTurbot:
         snap(channel.last_sent_response)
         assert len(channel.all_sent_calls) == 4
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_songs_no_name(self, client, channel):
         author = DUDE
         songs = "k.k. safari, k.k. bazaar, k.k. groove"
@@ -3194,6 +3515,7 @@ class TestTurbot:
             "> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_songs_congrats(self, client, channel):
         everything = ",".join(client.assets["songs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -3201,6 +3523,7 @@ class TestTurbot:
         await client.on_message(MockMessage(BUDDY, channel, "!collected"))
         channel.last_sent_response == "**Congratulations, you've collected all songs!**"
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_uncollected_songs_congrats(self, client, channel, snap):
         everything = ",".join(client.assets["songs"].all)
         await client.on_message(MockMessage(BUDDY, channel, f"!collect {everything}"))
@@ -3211,7 +3534,8 @@ class TestTurbot:
         snap(channel.all_sent_responses[3])
         assert len(channel.all_sent_calls) == 4
 
-    async def test_on_message_collected_songs_with_name(self, client, channel):
+    async def test_on_message_collected_songs_with_name(self, client):
+        channel = text_channel()
         songs = "safari, bazaar, groove"
         await client.on_message(MockMessage(GUY, channel, f"!collect {songs}"))
 
@@ -3221,12 +3545,14 @@ class TestTurbot:
             "> K.K. Bazaar, K.K. Groove, K.K. Safari"
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collected_songs_bad_name(self, client, channel):
         await client.on_message(MockMessage(BUDDY, channel, f"!collected {PUNK.name}"))
         assert channel.last_sent_response == (
             f"Can not find the user named {PUNK.name} in this channel."
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_songs(self, client, channel):
         # first collect some songs
         author = BUDDY
@@ -3265,6 +3591,7 @@ class TestTurbot:
         )
         assert client.data.songs.tail(1).values.tolist() == [[author.id, "K.K. Tango"]]
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_on_message_collect_songs_congrats(self, client, channel, snap):
         everything = sorted(list(client.assets["songs"].all))
         some, rest = everything[:10], everything[10:]
@@ -3293,6 +3620,7 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             client.data.foobar
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     async def test_exception_from_command(self, client, channel, monkeypatch):
         def boom(*_):
             raise RuntimeError("Ka-boom!")
@@ -3301,14 +3629,23 @@ class TestTurbot:
         with pytest.raises(RuntimeError):
             await client.on_message(MockMessage(someone(), channel, "!sell 100"))
 
-    async def test_on_message_authorize_non_admin(self, client, channel):
+    async def test_on_message_authorize_non_admin(self, client):
+        channel = text_channel()
         author = somenonturbotadmin()
         channels = "some, list of, channels"
         await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
         assert channel.last_sent_response == "Sorry, you are not a Turbot Admin."
         assert client.data.authorized_channels.values.tolist() == []
 
-    async def test_on_message_authorize_admin(self, client, channel):
+    async def test_on_message_authorize_dm(self, client):
+        channel = private_channel()
+        author = someturbotadmin()
+        channels = "some, list of, channels"
+        await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
+        assert channel.last_sent_response == "This command only works in a group channel."
+
+    async def test_on_message_authorize_admin(self, client):
+        channel = text_channel()
         author = someturbotadmin()
         channels = "some, list of, channels"
         await client.on_message(MockMessage(author, channel, f"!authorize {channels}"))
@@ -3322,13 +3659,37 @@ class TestTurbot:
             [channel.guild.id, "channels"],
         ]
 
-        bad = MockChannel(channel.guild.id, "text", "bob", members=CHANNEL_MEMBERS)
+        bad = MockTextChannel(channel.guild.id, "bob", members=CHANNEL_MEMBERS)
         await client.on_message(MockMessage(someone(), bad, "!sell 100"))
         assert len(bad.all_sent_calls) == 0
 
-        good = MockChannel(channel.guild.id, "text", "some", members=CHANNEL_MEMBERS)
+        good = MockTextChannel(channel.guild.id, "some", members=CHANNEL_MEMBERS)
         await client.on_message(MockMessage(someone(), good, "!sell 100"))
         assert len(good.all_sent_calls) == 1
+
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
+    async def test_on_message_export(self, client, channel, snap):
+        author = GUY
+        await client.on_message(MockMessage(author, channel, "!pref island Konohagakure"))
+        await client.on_message(MockMessage(author, channel, "!pref nick Might Guy"))
+        await client.on_message(MockMessage(author, channel, "!pref hemisphere Northern"))
+        await client.on_message(MockMessage(author, channel, "!pref tz Asia/Tokyo"))
+        await client.on_message(MockMessage(author, channel, "!collect amber"))
+        await client.on_message(MockMessage(author, channel, "!collect amber, ammonite"))
+        await client.on_message(MockMessage(author, channel, "!collect Hypno, Love Song"))
+        await client.on_message(MockMessage(author, channel, "!collect blowfish, gar"))
+        await client.on_message(MockMessage(author, channel, "!collect stinkbug"))
+        await client.on_message(MockMessage(author, channel, "!collect scary painting"))
+        await client.on_message(MockMessage(author, channel, "!buy 100"))
+        await client.on_message(MockMessage(author, channel, "!sell 300"))
+
+        await client.on_message(MockMessage(author, channel, "!export"))
+        author.sent.assert_called_with(
+            "Here's the data you requested.", file=Matching(is_discord_file)
+        )
+        with open(turbot.EXPORT_FILE) as f:
+            data = json.loads(f.read())
+            snap(json.dumps(data, indent=4, sort_keys=True))
 
 
 class TestFigures:
@@ -3413,42 +3774,50 @@ class TestFigures:
             """
         )
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     def test_get_graph_predictive_error(self, client, channel, spoof_session):
         self.set_error_prices(client)
         client.get_graph(channel, BUDDY, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     def test_get_graph_predictive_bad_user(self, client, channel, spoof_session):
         self.set_example_prices(client)
         client.get_graph(channel, PUNK, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     def test_get_graph_historical_no_users(self, client, channel):
         client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
     def test_get_graph_predictive_no_data(self, client, channel, spoof_session):
         client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
         assert not Path(turbot.GRAPHCMD_FILE).exists()
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_historical_with_bogus_data(self, client, channel):
+    def test_get_graph_historical_with_bogus_data(self, client):
+        channel = text_channel()
         self.set_bogus_prices(client)
         client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
         return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_historical(self, client, channel):
+    def test_get_graph_historical(self, client):
+        channel = text_channel()
         self.set_example_prices(client)
         return client.get_graph(channel, None, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_predictive_friend(self, client, channel, spoof_session):
+    def test_get_graph_predictive_friend(self, client, spoof_session):
+        channel = text_channel()
         self.set_example_prices(client)
         return client.get_graph(channel, FRIEND, turbot.GRAPHCMD_FILE)
 
     @pytest.mark.mpl_image_compare
-    def test_get_graph_predictive_dude(self, client, channel, spoof_session):
+    def test_get_graph_predictive_dude(self, client, spoof_session):
+        channel = text_channel()
         self.set_example_prices(client)
         return client.get_graph(channel, DUDE, turbot.GRAPHCMD_FILE)
 

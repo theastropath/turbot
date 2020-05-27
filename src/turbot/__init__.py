@@ -44,6 +44,7 @@ DEFAULT_CONFIG_CHANNELS = RUNTIME_ROOT / "channels.txt"
 TMP_DIR = RUNTIME_ROOT / "tmp"
 GRAPHCMD_FILE = TMP_DIR / "graphcmd.png"
 LASTWEEKCMD_FILE = TMP_DIR / "lastweek.png"
+EXPORT_FILE = TMP_DIR / "export.json"
 MIGRATIONS_FILE = DB_DIR / "migrations.txt"
 MIGRATIONS_DIR = SCRIPTS_DIR / "migrations"
 
@@ -60,6 +61,13 @@ DAYS = {  # Based on values from datetime.isoweekday()
     "sunday": 7,
 }
 IDAYS = dict(map(reversed, DAYS.items()))  # Reverse lookup from DAYS dict
+
+
+class Direct:
+    """Use this to indicate that a command should send a DM."""
+
+    def __init__(self, response):
+        self.response = response
 
 
 class PrefValidate:
@@ -216,8 +224,13 @@ def discord_user_from_name(channel, name):
     if name is None:
         return None
     lname = name.lower()
-    members = channel.members
-    return next(filter(lambda member: lname in str(member).lower(), members), None)
+    if hasattr(channel, "members"):  # channels
+        members = channel.members
+        return next(filter(lambda member: lname in str(member).lower(), members), None)
+    else:  # direct messages
+        recipient = channel.recipient
+        rvalue = recipient if name in str(recipient).lower() else None
+        return rvalue
 
 
 def discord_user_from_id(channel, user_id):
@@ -225,8 +238,12 @@ def discord_user_from_id(channel, user_id):
     if user_id is None:
         return None
     iid = int(user_id)
-    members = channel.members
-    return next(filter(lambda member: iid == member.id, members), None)
+    if hasattr(channel, "members"):  # channels
+        members = channel.members
+        return next(filter(lambda member: iid == member.id, members), None)
+    else:  # direct messages
+        recipient = channel.recipient
+        return recipient if recipient.id == user_id else None
 
 
 def discord_user_name(channel, name_or_id):
@@ -580,6 +597,11 @@ class Turbot(discord.Client):
                     raise
                 finally:
                     self.session.close()
+            if isinstance(response, Direct):
+                send_direct = True
+                response = response.response
+            else:
+                send_direct = False
             if not isinstance(response, list):
                 response = [response]
             last_reply_index = len(response) - 1
@@ -595,14 +617,20 @@ class Turbot(discord.Client):
                             and n == last_reply_index
                             else None
                         )
-                        await message.channel.send(page, file=file)
+                        if send_direct:
+                            await message.author.send(page, file=file)
+                        else:
+                            await message.channel.send(page, file=file)
                 elif isinstance(reply, discord.embeds.Embed):
                     file = (
                         attachment
                         if attachment is not None and n == last_reply_index
                         else None
                     )
-                    await message.channel.send(embed=reply, file=file)
+                    if send_direct:
+                        await message.author.send(embed=reply, file=file)
+                    else:
+                        await message.channel.send(embed=reply, file=file)
                 else:
                     raise RuntimeError("non-string non-embed reply not supported")
 
@@ -612,8 +640,14 @@ class Turbot(discord.Client):
 
     async def on_message(self, message):
         """Behavior when the client gets a message from Discord."""
-        # only respond in text channels
-        if str(message.channel.type) != "text":
+        # don't respond to any bots
+        if message.author.bot:
+            return
+
+        private = str(message.channel.type) == "private"
+
+        # only respond in text channels and to direct messages
+        if not private and str(message.channel.type) != "text":
             return
 
         # don't respond to yourself
@@ -624,22 +658,23 @@ class Turbot(discord.Client):
         if not message.content.startswith("!"):
             return
 
-        # check for admin authorized channels on this server
-        guild_id = message.channel.guild.id
-        rows = self.data.conn.execute(
-            f"SELECT * FROM authorized_channels WHERE guild = {guild_id};"
-        )
-        authorized_channels = set(row["name"] for row in rows)
-        if authorized_channels and message.channel.name not in authorized_channels:
-            return
+        if not private:
+            # check for admin authorized channels on this server
+            guild_id = message.channel.guild.id
+            rows = self.data.conn.execute(
+                f"SELECT * FROM authorized_channels WHERE guild = {guild_id};"
+            )
+            authorized_channels = set(row["name"] for row in rows)
+            if authorized_channels and message.channel.name not in authorized_channels:
+                return
 
-        # fallback to checking against channels authorized at application startup time
-        if (
-            not authorized_channels
-            and self.channels
-            and message.channel.name not in self.channels
-        ):
-            return
+            # fallback to checking against channels authorized at application startup time
+            if (
+                not authorized_channels
+                and self.channels
+                and message.channel.name not in self.channels
+            ):
+                return
 
         await self.process(message)
 
@@ -703,7 +738,7 @@ class Turbot(discord.Client):
             usage += f"\n>  {use}"
             usage += "\n"
         usage += "\n_Turbot created by TheAstropath_"
-        return usage, None
+        return Direct(usage), None
 
     class _PriceTimeError(Exception):
         def __init__(self, key):
@@ -810,6 +845,9 @@ class Turbot(discord.Client):
         Only Turbot Admin members can run this command. Generates a final graph for use
         with !lastweek and resets all data for all users.
         """
+        if str(channel.type) == "private":
+            return s("no_dm"), None
+
         if not is_turbot_admin(channel, author):
             return s("not_admin"), None
 
@@ -909,6 +947,9 @@ class Turbot(discord.Client):
         The default is to look for the best sell.
         @ [buy|sell]
         """
+        if str(channel.type) == "private":
+            return s("no_dm"), None
+
         kind = params[0].lower() if params else "sell"
         if kind not in ["sell", "buy"]:
             return s("best_invalid_param"), None
@@ -1043,6 +1084,9 @@ class Turbot(discord.Client):
         the in-game item name, and more than one can be provided if separated by commas.
         @ <comma, separated, list, of, collectables>
         """
+        if str(channel.type) == "private":
+            return s("no_dm"), None
+
         if not params:
             return s("search_no_params"), None
 
@@ -1133,6 +1177,9 @@ class Turbot(discord.Client):
         give the name of the kind of collectable to return.
         @ <fossils|bugs|fish|art|songs>
         """
+        if str(channel.type) == "private":
+            return s("no_dm"), None
+
         if not params:
             return s("needed_no_param"), None
 
@@ -1656,15 +1703,26 @@ class Turbot(discord.Client):
         Set the list of channels where Turbot is authorized to respond.
         @ <your, list, of, channels>
         """
+        if str(channel.type) == "private":
+            return s("no_dm"), None
         if not is_turbot_admin(channel, author):
             return s("not_admin"), None
         names = [name.strip() for name in " ".join(params).split(",")]
-        session = self.data.Session()
-        session.query(AuthorizedChannel).filter_by(guild=channel.guild.id).delete()
+        self.session.query(AuthorizedChannel).filter_by(guild=channel.guild.id).delete()
         for name in names:
-            session.add(AuthorizedChannel(guild=channel.guild.id, name=name))
-        session.commit()
+            self.session.add(AuthorizedChannel(guild=channel.guild.id, name=name))
         return s("authorize", channels=", ".join(names)), None
+
+    @command
+    def export(self, channel, author, params):
+        """
+        Exports all your data. It will be sent to you in a Direct Message.
+        """
+        self.ensure_user_exists(author)
+        user = self.session.query(User).get(author.id)
+        with open(EXPORT_FILE, "w") as f, redirect_stdout(f):
+            print(json.dumps(user.to_dict()))
+        return Direct(s("export")), discord.File(EXPORT_FILE)
 
 
 def get_token(token_file):  # pragma: no cover
