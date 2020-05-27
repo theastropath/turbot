@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import pytz
 from dateutil.relativedelta import relativedelta
-from humanize import naturaltime
+from humanize import naturaldelta, naturaltime
 from sqlalchemy import Date, and_, cast, desc
 from unidecode import unidecode
 
@@ -134,6 +134,8 @@ class PrefValidate:
 
 def h(dt):
     """Convertes a datetime to something readable by a human."""
+    if isinstance(dt, timedelta):
+        return naturaldelta(dt)
     if hasattr(dt, "tz_convert"):  # pandas-datetime-like objects
         dt = dt.to_pydatetime()
     naive_dt = dt.replace(tzinfo=None)
@@ -866,13 +868,13 @@ class Turbot(discord.Client):
         yours = prices[prices.author == target_id]
         lines = [s("history_header", name=target_name)]
         for _, row in yours.iterrows():
-            time = self.to_usertime(target_id, row.timestamp)
+            usertime = self.to_usertime(target_id, row.timestamp)
             lines.append(
                 s(
                     f"history_{row.kind}",
                     price=row.price,
-                    timestamp=h(time),
-                    day_and_time=day_and_time(time),
+                    timestamp=h(usertime),
+                    day_and_time=day_and_time(usertime),
                 )
             )
         return "\n".join(lines), None
@@ -911,6 +913,10 @@ class Turbot(discord.Client):
         if kind not in ["sell", "buy"]:
             return s("best_invalid_param"), None
 
+        fudge_minutes = 5  # it takes a while to get over to an island
+        commandtime = datetime.now(pytz.utc) + timedelta(minutes=fudge_minutes)
+        commandtime = self.to_usertime(author.id, commandtime)
+
         prices = self.data.prices
         past = datetime.now(pytz.utc) - timedelta(hours=12)
         sells = prices[(prices.kind == kind) & (prices.timestamp > past)]
@@ -920,8 +926,28 @@ class Turbot(discord.Client):
         for _, row in bests.iterrows():
             name = discord_user_from_id(channel, row.author)
             if name:
-                timestamp = h(self.to_usertime(row.author, row.timestamp))
-                lines.append(s("best", name=name, price=row.price, timestamp=timestamp))
+                usertime = self.to_usertime(row.author, row.timestamp)
+                closing = datetime(
+                    year=usertime.year,
+                    month=usertime.month,
+                    day=usertime.day,
+                    hour=22 if kind == "sell" else 12,
+                    tzinfo=usertime.tzinfo,
+                )
+                if closing <= commandtime:
+                    continue  # sell/buy is no longer available anymore
+                remaining = closing - commandtime
+                lines.append(
+                    s(
+                        "best",
+                        name=name,
+                        price=row.price,
+                        timestamp=h(usertime),
+                        remaining=h(remaining),
+                    )
+                )
+        if len(lines) == 1:
+            lines.append(s("best_none_found"))
         return "\n".join(lines), None
 
     @command
@@ -1327,11 +1353,11 @@ class Turbot(discord.Client):
     def creatures_available_now(self, now, df):
         """Returns the names of creatures in df that are available right now."""
         for _, row in df.iterrows():
-            time = row["time"]
-            if time.lower() == "all day":
+            available_time = row["time"]
+            if available_time.lower() == "all day":
                 yield row["name"]
             else:
-                ranges = time.lower().split("&")
+                ranges = available_time.lower().split("&")
                 for r in ranges:
                     lhs, rhs = [t.strip().lower() for t in r.split("-")]
                     lhs_hour, lhs_ampm = lhs.split(" ")
