@@ -3691,6 +3691,34 @@ class TestTurbot:
             data = json.loads(f.read())
             snap(json.dumps(data, indent=4, sort_keys=True))
 
+    @pytest.mark.parametrize("channel", [text_channel(), private_channel()])
+    async def test_collect_all_available_fish(self, client, channel):
+        author = someone()
+        await client.on_message(MockMessage(author, channel, "!pref hemisphere northern"))
+        await client.on_message(MockMessage(author, channel, "!fish"))
+        fish_responses = channel.all_sent_responses[1:]
+
+        # find all the available fish this month
+        available_now = []
+        done = False
+        for response in fish_responses:
+            if done:
+                break
+            for line in response.split("\n"):
+                if line.startswith("> **"):
+                    matches = list(re.findall("^> \*\*([^*]+)\*\*", line))
+                    assert len(matches) == 1
+                    available_now.append(matches[0])
+
+        # collect all those fish
+        fish = ", ".join(available_now)
+        await client.on_message(MockMessage(author, channel, f"!collect {fish}"))
+
+        # verify we don't get congrats for this
+        await client.on_message(MockMessage(author, channel, "!collected"))
+        all_responses = channel.all_sent_responses
+        assert not any("Congratulations" in response for response in all_responses)
+
 
 class TestFigures:
     # Some realistic price data sampled from the wild:
