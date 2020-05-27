@@ -61,11 +61,18 @@ class Price(Base):
     price = Column(Integer, nullable=False)
     timestamp = Column(String(50), nullable=False)
 
+    def to_dict(self):
+        return {
+            "author": self.author,
+            "kind": self.kind,
+            "price": self.price,
+            "timestamp": self.timestamp,
+        }
+
 
 class User(Base):
     __tablename__ = "users"
     author = Column(BigInteger, primary_key=True, nullable=False)
-    hemisphere = Column(String(15))
     hemisphere = Column(String(50))
     timezone = Column(String(50))
     island = Column(String(50))
@@ -80,6 +87,24 @@ class User(Base):
     fish = relationship("Fish", backref="user")
     art = relationship("Art", backref="user")
     fossils = relationship("Fossil", backref="user")
+
+    def to_dict(self):
+        return {
+            "author": self.author,
+            "hemisphere": self.hemisphere,
+            "timezone": self.timezone,
+            "island": self.island,
+            "friend": self.friend,
+            "fruit": self.fruit,
+            "nickname": self.nickname,
+            "creator": self.creator,
+            "prices": [price.to_dict() for price in self.prices],
+            "songs": sorted([song.name for song in self.songs]),
+            "bugs": sorted([bug.name for bug in self.bugs]),
+            "fish": sorted([fish.name for fish in self.fish]),
+            "art": sorted([art.name for art in self.art]),
+            "fossils": sorted([fossil.name for fossil in self.fossils]),
+        }
 
     def get_timezone(self):
         return pytz.timezone(self.timezone) if self.timezone else pytz.UTC

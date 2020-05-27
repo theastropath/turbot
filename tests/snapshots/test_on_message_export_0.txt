@@ -1,0 +1,42 @@
+{
+    "art": [
+        "scary painting"
+    ],
+    "author": 82988021019836416,
+    "bugs": [
+        "stinkbug"
+    ],
+    "creator": null,
+    "fish": [
+        "blowfish",
+        "gar"
+    ],
+    "fossils": [
+        "amber",
+        "ammonite"
+    ],
+    "friend": null,
+    "fruit": null,
+    "hemisphere": "northern",
+    "island": "Konohagakure",
+    "nickname": "Might Guy",
+    "prices": [
+        {
+            "author": 82988021019836416,
+            "kind": "buy",
+            "price": 100,
+            "timestamp": "1982-04-17 15:00:00+00:00"
+        },
+        {
+            "author": 82988021019836416,
+            "kind": "sell",
+            "price": 300,
+            "timestamp": "1982-04-24 00:00:00+00:00"
+        }
+    ],
+    "songs": [
+        "Hypno K.K.",
+        "K.K. Love Song"
+    ],
+    "timezone": "Asia/Tokyo"
+}
