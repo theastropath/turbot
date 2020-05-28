@@ -180,3 +180,6 @@ class Data:
         query = f"SELECT {','.join(columns)} FROM {attr};"
         df = pd.read_sql_query(query, self.conn, parse_dates=parse_dates)
         return df.fillna("").astype(self.dtypes[attr])
+
+    def __getitem__(self, key):
+        return getattr(self, key)
