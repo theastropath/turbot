@@ -70,10 +70,10 @@ class Direct:
         self.response = response
 
 
-class PrefValidate:
-    """Provides utilites for validating user input of preferences"""
+class Preferences:
+    """Provides utilites for validating user input of preferences."""
 
-    PREFRENCES = [
+    KEYS = [
         "hemisphere",
         "timezone",
         "island",
@@ -88,7 +88,7 @@ class PrefValidate:
     @classmethod
     def key(cls, value):
         value = value.lower()
-        if value in cls.PREFRENCES:
+        if value in cls.KEYS:
             return value
         return {
             "code": "friendcode",
@@ -138,6 +138,10 @@ class PrefValidate:
     @classmethod
     def island(cls, value):
         return value
+
+    @classmethod
+    def validate(cls, key, value):
+        return getattr(cls, key)(value)
 
 
 def h(dt):
@@ -262,7 +266,8 @@ def discord_user_id(channel, name):
     """Returns the discord user id name from the given channel and name."""
     if not name:
         return None
-    return getattr(discord_user_from_name(channel, name), "id", None)
+    user = discord_user_from_name(channel, name)
+    return user.id if user else None
 
 
 def is_turbot_admin(channel, user_or_member):
@@ -1094,7 +1099,7 @@ class Turbot(discord.Client):
         valid, invalid = self.assets.validate(items)
 
         def get_results(kind, valid_items):
-            store = getattr(self.data, kind)
+            store = self.data[kind]
             users = store.author.unique()
             results = defaultdict(list)
             for collected_item in valid_items:
@@ -1151,7 +1156,7 @@ class Turbot(discord.Client):
         lines = []
 
         def add_lines(kind, fullset):
-            store = getattr(self.data, kind)
+            store = self.data[kind]
             your_items = store[store.author == target_id]
             collected_items = set(your_items.name.unique())
             remaining_items = fullset - collected_items
@@ -1188,7 +1193,7 @@ class Turbot(discord.Client):
             return s("needed_invalid_param"), None
 
         fullset = self.assets[kind].all
-        store = getattr(self.data, kind)
+        store = self.data[kind]
         authors = [member.id for member in channel.members if member.id != self.user.id]
         total = pd.DataFrame(list(product(authors, fullset)), columns=store.columns)
         merged = total.merge(store, indicator=True, how="outer")
@@ -1226,7 +1231,7 @@ class Turbot(discord.Client):
             return s("cant_find_user", name=target), None
 
         def get_collection(kind):
-            store = getattr(self.data, kind)
+            store = self.data[kind]
             your_items = store[store.author == target_id]
             return set(your_items.name.unique())
 
@@ -1285,16 +1290,16 @@ class Turbot(discord.Client):
         Set one of your user preferences. @ <preference> <value>
         """
         if not params:
-            return s("pref_no_params", prefs=", ".join(PrefValidate.PREFRENCES)), None
+            return s("pref_no_params", prefs=", ".join(Preferences.KEYS)), None
 
-        pref = PrefValidate.key(params[0])
+        pref = Preferences.key(params[0])
         if not pref:
-            return s("pref_invalid_pref", prefs=", ".join(PrefValidate.PREFRENCES)), None
+            return s("pref_invalid_pref", prefs=", ".join(Preferences.KEYS)), None
         if len(params) <= 1:
             return s("pref_no_value", pref=pref), None
 
         value = " ".join(params[1:])
-        validated_value = getattr(PrefValidate, pref)(value)
+        validated_value = Preferences.validate(pref, value)
         if isinstance(validated_value, list):
             return s("did_you_mean", possible=", ".join(validated_value)), None
         if not validated_value:
@@ -1329,7 +1334,7 @@ class Turbot(discord.Client):
 
         def add_valid_lines(kind, fullset):
             lines.append(s(f"count_{kind}_valid_header"))
-            store = getattr(self.data, kind)
+            store = self.data[kind]
             for user_name, user_id in sorted(valid):
                 yours = store[store.author == user_id]
                 collected = set(yours.name.unique())
@@ -1868,7 +1873,7 @@ def main(
         token=get_token(bot_token_file),
         channels=auth_channels,
         db_url=database_url,
-        log_level=getattr(logging, "DEBUG" if verbose else log_level),
+        log_level="DEBUG" if verbose else log_level,
     )
 
     if dev:
