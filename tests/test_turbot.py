@@ -201,7 +201,7 @@ class MockMessage:
 
 
 class MockDiscordClient:
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.user = ADMIN
 
 

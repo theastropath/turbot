@@ -1,11 +1,13 @@
+import asyncio
 import inspect
 import json
 import logging
 import random
 import re
 import sys
+import time
 from collections import defaultdict
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 from datetime import datetime, timedelta
 from itertools import product
 from os import getenv
@@ -49,6 +51,7 @@ MIGRATIONS_FILE = DB_DIR / "migrations.txt"
 MIGRATIONS_DIR = SCRIPTS_DIR / "migrations"
 
 # Application Settings
+METRICS_INTERVAL = 15  # seconds
 EMBED_LIMIT = 5  # more embeds in a row than this causes issues
 BASE_PROPHET_URL = "https://turnipprophet.io/?prices="
 DAYS = {  # Based on values from datetime.isoweekday()
@@ -295,10 +298,17 @@ def command(f):
 class Turbot(discord.Client):
     """Discord turnip bot"""
 
-    def __init__(self, token="", channels=[], db_url=DEFAULT_DB_URL, log_level=None):
-        if log_level:  # pragma: no cover
-            logging.basicConfig(level=log_level)
-        super().__init__()
+    def __init__(
+        self,
+        token="",
+        channels=[],
+        db_url=DEFAULT_DB_URL,
+        log_level=logging.ERROR,
+        metrics=False,
+    ):
+        logging.basicConfig(level=log_level)
+        loop = asyncio.get_event_loop()
+        super().__init__(loop=loop)
         self.token = token
         self.channels = channels
         self.last_backup_filename = None
@@ -323,8 +333,43 @@ class Turbot(discord.Client):
         # load static application data
         self.assets = Assets()
 
+        # begin metrics logging
+        self._metrics = None
+        if metrics:  # pragma: no cover
+            loop.create_task(self._begin_metrics())
+
     def run(self):  # pragma: no cover
         super().run(self.token)
+
+    async def _begin_metrics(self):  # pragma: no cover
+        if not self._metrics:
+            self._metrics = logging.getLogger("turbot-metrics")
+            self._metrics.setLevel(logging.INFO)
+        while True:
+            data = {"is_ready": self.is_ready(), "guilds#len": len(self.guilds)}
+            metrics = [
+                m
+                for m in inspect.getmembers(self, lambda m: not inspect.isroutine(m))
+                if m[0].endswith("_spent_time")
+            ]
+            data.update(metrics)
+            self._metrics.info(json.dumps(data))
+            await asyncio.sleep(METRICS_INTERVAL)
+
+    @contextmanager
+    def _capture_metrics(self, kind):
+        start_time = time.time()
+        yield
+        spent_time = time.time() - start_time
+        if not hasattr(self, f"{kind}_max_spent_time") or spent_time > getattr(
+            self, f"{kind}_max_spent_time"
+        ):
+            setattr(self, f"{kind}_max_spent_time", spent_time)
+        if not hasattr(self, f"{kind}_avg_spent_time"):
+            setattr(self, f"{kind}_avg_spent_time", spent_time)
+        else:
+            avg = getattr(self, f"{kind}_avg_spent_time")
+            setattr(self, f"{kind}_avg_spent_time", (avg + spent_time) / 2.0)
 
     def backup_prices(self, data):
         """Backs up the prices data to a datetime stamped file."""
@@ -453,10 +498,11 @@ class Turbot(discord.Client):
 
     def generate_graph(self, channel, target_user, graphname):  # pragma: no cover
         """Generates a nice looking graph of user data."""
-        plot = self.get_graph(channel, target_user, graphname)
-        success = plot is not None
-        plt.close("all")
-        return success
+        with self._capture_metrics("graph"):
+            plot = self.get_graph(channel, target_user, graphname)
+            success = plot is not None
+            plt.close("all")
+            return success
 
     def append_price(self, author, kind, price, at):
         """Adds a price to the prices data file for the given author and kind."""
@@ -681,7 +727,8 @@ class Turbot(discord.Client):
             ):
                 return
 
-        await self.process(message)
+        with self._capture_metrics("process"):
+            await self.process(message)
 
     async def on_ready(self):
         """Behavior when the client has successfully connected to Discord."""
@@ -1799,6 +1846,9 @@ def apply_migrations():  # pragma: no cover
 )
 @click.option("-v", "--verbose", count=True, help="Sets log level to DEBUG.")
 @click.option(
+    "-m", "--metrics", default=False, is_flag=True, help="Enables metrics logging."
+)
+@click.option(
     "-b",
     "--bot-token-file",
     default=DEFAULT_CONFIG_TOKEN,
@@ -1852,6 +1902,7 @@ def apply_migrations():  # pragma: no cover
 def main(
     log_level,
     verbose,
+    metrics,
     bot_token_file,
     channel,
     auth_channels_file,
@@ -1874,6 +1925,7 @@ def main(
         channels=auth_channels,
         db_url=database_url,
         log_level="DEBUG" if verbose else log_level,
+        metrics=metrics,
     )
 
     if dev:
