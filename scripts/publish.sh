@@ -43,7 +43,7 @@ fi
 run "poetry version '$KIND'"
 
 # run tests to ensure the build is good
-run "poetry run pytest"
+run "tox"
 
 # fetch the version from pyproject.toml
 VERSION="$(grep "^version" < pyproject.toml | cut -d= -f2 | sed 's/"//g;s/ //g;s/^/v/;')"

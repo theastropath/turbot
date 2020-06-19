@@ -213,6 +213,20 @@ have to be a collaborator for this project on PyPI to be able to do this.
 Contact [lexicalunit@lexicalunit.com](mailto:lexicalunit@lexicalunit.com) to
 be added to the project.
 
+Once you have that set up, you can release a new version by running:
+
+```shell
+scripts/publish.sh [major|minor|patch]
+```
+
+You must select either `major`, `minor`, or `patch` as the release kind. Please
+follow [semver](https://semver.org/) for guidance on what kind of release to
+make. But basically:
+
+- Major: Breaking changes.
+- Minor: New features.
+- Patch: Bug fixes.
+
 ### Manually
 
 To release a new version of `turbot`, use `poetry`:
@@ -220,10 +234,11 @@ To release a new version of `turbot`, use `poetry`:
 ```shell
 poetry version [major|minor|patch]
 tox # verify that all tests pass for all environments
-git commit -am "Release vM.N.P"
-git push
 poetry build
+git commit -am "Release vM.N.P"
 poetry publish
+git tag 'vM.N.P'
+git push --tags origin master
 ```
 
 > **Note:** The reason you should run `tox` after running the `poetry version`
