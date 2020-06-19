@@ -137,6 +137,13 @@ For more details see [our documentation on Heroku support](HEROKU.md).
 You can also run Turbot via docker. See
 [our documentation on Docker Support](DOCKER.md) for help.
 
+## ❤️ Contributing
+
+If you'd like to become a part of the Turbot development community please first
+know that we have a documented [code of conduct](CODE_OF_CONDUCT.md) and then
+see our [documentation on how to contribute](CONTRIBUTING.md) for details on
+how to get started.
+
 ---
 
 [MIT][mit] © [TheAstropath][theastropath], [lexicalunit][lexicalunit] et [al][contributors]
