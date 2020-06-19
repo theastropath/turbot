@@ -3913,7 +3913,7 @@ class TestCodebase:
                 "Offending snapshot files:\n"
                 f"{offenders}\n"
                 "Consider refacotring them to avoid using snapshots. Tests that use "
-                "snapshots are harder to reason about when they fail. Whenever possilbe "
+                "snapshots are harder to reason about when they fail. Whenever possible "
                 "a test with inline data is much easier to reason about and refactor."
             )
 
