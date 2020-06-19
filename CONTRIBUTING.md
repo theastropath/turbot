@@ -152,15 +152,18 @@ tox -- -k codebase
 
 ## Updating application data
 
-Data on art, bugs, and fish comes directly from
-[the Animal Crossing fandom page][wiki] and then compiled into a csv file in the
-package's `data` directory. The scripts to do this are included in the `scripts`
-directory. Run them to fetch the latest data:
+Data on collectables such as art, bugs, fish, fossils, songs, etc..., comes
+directly from [the Animal Crossing fandom page][wiki] and is then compiled into
+a csv file in the package's `data` directory. The scripts to do this are
+included in the `scripts` directory. Run them to fetch the latest data:
 
 ```shell
 poetry run scripts/update_art_data.py
 poetry run scripts/update_bugs_data.py
 poetry run scripts/update_fish_data.py
+poetry run scripts/update_fossils_data.py
+poetry run scripts/update_songs_data.py
+...
 ```
 
 ## Updating baseline figures
@@ -184,25 +187,52 @@ repository:
 poetry run pytest -k your_test_function --snapshot-update
 ```
 
+Where `your_test_function` is the name of the test you'd like to update.
+
 ## Release process
+
+There's two methods for doing a release. You can use a script to handle
+everything for your automatically, or you can basically do every step in that
+script manually. Both methods are described below but I recommend the script.
+
+### Scripted
+
+To do a release automatically there is a *NIX script available in the `scripts`
+directory to help. To use it you will need to have non-interactive
+`poetry publish` enabled by running:
+
+```shell
+poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"
+```
+
+If you don't have one, you can create your PyPI token for this command by going
+to the
+[PyPI settings for turbot](https://pypi.org/manage/project/turbot/settings/)
+and clicking on the `Create a token for turbot` button there. Of course you will
+have to be a collaborator for this project on PyPI to be able to do this.
+Contact [lexicalunit@lexicalunit.com](mailto:lexicalunit@lexicalunit.com) to
+be added to the project.
+
+### Manually
 
 To release a new version of `turbot`, use `poetry`:
 
 ```shell
 poetry version [major|minor|patch]
-poetry run pytest -k test_on_message_about --snapshot-update
-git commit -am "Release vM.M.P"
+tox # verify that all tests pass for all environments
+git commit -am "Release vM.N.P"
 git push
 poetry build
 poetry publish
 ```
 
-> **Note:** The reason you have to run `pytest` after running the
-> `poetry version` command is because we must update some test snapshots as the
-> version number can appear in them. Failure to do this will result in a
-> failing build on `master`.
+> **Note:** The reason you should run `tox` after running the `poetry version`
+> command is to ensure that all test still pass after the version is updated.
+> In the past, some test snapshots needed to be updated after the version
+> string was changed. Hopefully this will not regress in the future but it's
+> better to be safe than accidentally create a broken release.
 
-You can get the `M.M.P` version numbers from `pyproject.toml` after you've run
+You can get the `M.N.P` version numbers from `pyproject.toml` after you've run
 the `poetry version` command. On a *NIX shell you could also get automatically
 it like so:
 
@@ -216,11 +246,6 @@ When you use the `poetry publish` command you will be prompted for your
 After publishing you can view the package at its
 [pypi.org project page](https://pypi.org/project/turbot/) to see that everything
 looks good.
-
-> **Note:** If you want to do this release process automatically there is a
-> *NIX script available in the `scripts` directory to help. To use it you will
-> need to have non-interactive `poetry publish` enabled by running:
-> `poetry config pypi-token.pypi "YOUR-PYPI-TOKEN-GOES-HERE"`.
 
 ## Database migrations
 
