@@ -11,8 +11,6 @@
 
 A Discord bot for everything _Animal Crossing: New Horizons_.
 
-[![add-bot][add-img]][add-bot]
-
 ## 📱 Using Turbot
 
 Once you've connected the bot to your server, you can interact with it over
@@ -148,8 +146,6 @@ how to get started.
 
 [MIT][mit] © [TheAstropath][theastropath], [lexicalunit][lexicalunit] et [al][contributors]
 
-[add-bot]:          https://discordapp.com/api/oauth2/authorize?client_id=699774176155926599&permissions=247872&scope=bot
-[add-img]:          https://user-images.githubusercontent.com/1903876/82262797-71745100-9916-11ea-8b65-b3f656115e4f.png
 [black-badge]:      https://img.shields.io/badge/code%20style-black-000000.svg
 [black]:            https://github.com/psf/black
 [build-badge]:      https://github.com/theastropath/turbot/workflows/build/badge.svg
